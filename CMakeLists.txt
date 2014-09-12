@@ -39,6 +39,19 @@ endif()
 
 # -- DEPENDENCIES -------------------------------------------
 
+# Armadillo
+find_package(Armadillo 4.300.3 REQUIRED)
+include_directories(SYSTEM ${ARMADILLO_INCLUDE_DIRS})
+set(LIBS ${LIBS} ${ARMADILLO_LIBRARIES})
+
+# Thread Building Blocks
+find_package(TBB)
+if (TBB_FOUND)
+    include_directories(SYSTEM ${TBB_INCLUDE_DIRS})
+    set(LIBS ${LIBS} ${TBB_LIBRARIES})
+    add_definitions(-DWITH_TBB)
+endif()
+
 # FastKPM
 find_package(FastKPM REQUIRED)
 include_directories(SYSTEM ${FASTKPM_INCLUDE_DIRS})

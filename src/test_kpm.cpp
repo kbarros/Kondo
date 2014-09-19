@@ -14,8 +14,14 @@
 namespace tibidy {
     using namespace fkpm;
     
-    // TODO: move to fastkpm
-    double exactEnergy(arma::sp_cx_mat H, double kB_T, double mu) {
+    template <typename T>
+    arma::Mat<T> sparse_to_dense(arma::SpMat<T> that) {
+        int m = that.n_rows;
+        return arma::eye<arma::Mat<T>>(m, m) * that;
+    }
+    
+    template <typename T>
+    double exactEnergy(arma::SpMat<T> H, double kB_T, double mu) {
         auto eigs = arma::eig_gen(sparse_to_dense(H));
         double ret = 0.0;
         for (auto x : eigs) {
@@ -40,9 +46,9 @@ namespace tibidy {
     
     void testKPM1() {
         int n = 4;
-        arma::sp_cx_mat H(n, n);
-        H(0, 0) = 5.0;
-        H(1, 1) = -5.0;
+        SpMatCoo<arma::cx_double> H(n, n);
+        H.add(0, 0, 5.0);
+        H.add(1, 1, -5.0);
         auto g = [](double x) { return x*x; };
         auto f = [](double x) { return 2*x; }; // dg/dx
         
@@ -71,7 +77,7 @@ namespace tibidy {
         cout << "energy (v3) " << E3 << endl;
         
         engine->stoch_orbital(f_c);
-        double E4 = arma::cdot(engine->R, (H/2)*engine->xi).real(); // note: g(x) = (x/2) f(x)
+        double E4 = arma::cdot(engine->R, (H.to_arma()/2)*engine->xi).real(); // note: g(x) = (x/2) f(x)
         cout << "energy (v4) " << E4 << " expected 40.9998\n";
         
         cout << "derivative <";
@@ -88,14 +94,13 @@ namespace tibidy {
         std::normal_distribution<double> normal;
         
         // Build noisy tri-diagonal matrix
-        MatrixBuilder<arma::cx_double> mb;
+        SpMatCoo<arma::cx_double> H(n, n);
         for (int i = 0; i < n; i++) {
             auto x = 1.0 + noise * arma::cx_double(normal(rng), normal(rng));
             int j = (i-1+n)%n;
-            mb.add(i, j, x);
-            mb.add(j, i, conj(x));
+            H.add(i, j, x);
+            H.add(j, i, conj(x));
         }
-        auto H = mb.build(n, n);
         double kB_T = 0.0;
         double mu = 0.2;
         
@@ -115,13 +120,13 @@ namespace tibidy {
         engine1->set_H(H, es);
         engine2->set_H(H, es);
         
-        double E1 = exactEnergy(H, kB_T, mu);
+        double E1 = exactEnergy(H.to_arma(), kB_T, mu);
         double eps = 1e-6;
         int i=0, j=1;
         arma::sp_cx_mat dH(n, n);
         dH(i, j) = eps;
         dH(j, i) = eps;
-        auto dE_dH_1 = (exactEnergy(H+dH, kB_T, mu)-exactEnergy(H-dH, kB_T, mu)) / (2*eps);
+        double dE_dH_1 = (exactEnergy<arma::cx_double>(H.to_arma()+dH, kB_T, mu)-exactEnergy<arma::cx_double>(H.to_arma()-dH, kB_T, mu)) / (2*eps);
         
         engine1->set_R_identity();
         double E2 = moment_product(g_c, engine1->moments(M));

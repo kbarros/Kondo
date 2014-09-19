@@ -58,21 +58,26 @@ namespace tibidy {
         auto g_c = expansion_coefficients(M, Mq, g, es);
         auto f_c = expansion_coefficients(M, Mq, f, es);
         
-        double E1 = engine->trace(g_c);
+        auto mu = engine->moments(M);
+        double E1 = moment_product(g_c, mu);
         cout << "energy (v1) " << E1 << " expected 50.0004 for M=1000\n";
         
-        auto gamma = moment_transform(engine->moments(M), Mq);
+        auto gamma = moment_transform(mu, Mq);
         double E2 = density_product(gamma, g, es);
         cout << "energy (v2) " << E2 << endl;
         
-        double E3 = engine->trace(g_c, arma::speye<arma::sp_cx_mat>(n, n));
+        engine->stoch_orbital(g_c);
+        double E3 = arma::cdot(engine->R, engine->xi).real();
         cout << "energy (v3) " << E3 << endl;
         
-        double E4 = engine->trace(f_c, H/2); // note: g(x) = (x/2) f(x)
+        engine->stoch_orbital(f_c);
+        double E4 = arma::cdot(engine->R, (H/2)*engine->xi).real(); // note: g(x) = (x/2) f(x)
         cout << "energy (v4) " << E4 << " expected 40.9998\n";
         
-        cout << "derivative " << engine->deriv(f_c) << endl;
-        cout << "expected <10, -10, 0, 0>\n";
+        cout << "derivative <";
+        for (int i = 0; i < 4; i++)
+            cout << engine->stoch_element(i, i);
+        cout << "> expected <10, -10, 0, 0>\n";
     }
     
     void testKPM2() {
@@ -119,19 +124,22 @@ namespace tibidy {
         auto dE_dH_1 = (exactEnergy(H+dH, kB_T, mu)-exactEnergy(H-dH, kB_T, mu)) / (2*eps);
         
         engine1->set_R_identity();
-        double E2 = engine1->trace(g_c);
-        auto dE_dH_2 = engine1->deriv(f_c);
+        double E2 = moment_product(g_c, engine1->moments(M));
+        engine1->stoch_orbital(f_c);
+        double dE_dH_2 = (engine1->stoch_element(i, j) + engine1->stoch_element(j, i)).real();
         
         engine2->set_R_uncorrelated(rng);
-        double E3 = engine2->trace(g_c);
-        auto dE_dH_3 = engine2->deriv(f_c);
+        double E3 = moment_product(g_c, engine2->moments(M));
+        engine2->stoch_orbital(f_c);
+        auto dE_dH_3 = (engine2->stoch_element(i, j) + engine2->stoch_element(j, i)).real();
         
         Vec<int> grouping(n);
         for (int i = 0; i < n; i++)
             grouping[i] = i%engine2->s;
         engine2->set_R_correlated(grouping, rng);
-        double E4 = engine2->trace(g_c);
-        auto dE_dH_4 = engine2->deriv(f_c);
+        double E4 = moment_product(g_c, engine2->moments(M));
+        engine2->stoch_orbital(f_c);
+        auto dE_dH_4 = (engine2->stoch_element(i, j) + engine2->stoch_element(j, i)).real();
         
         cout << "Exact energy            " << E1 << endl;
         cout << "Det. KPM energy         " << E2 << endl;
@@ -139,9 +147,9 @@ namespace tibidy {
         cout << "Stoch. energy (corr.)   " << E4 << endl << endl;
         
         cout << "Exact deriv.            " << dE_dH_1 << endl;
-        cout << "Det. KPM deriv.         " << (arma::cx_double)dE_dH_2(i, j) + (arma::cx_double)dE_dH_2(j, i) << endl;
-        cout << "Stoch. deriv. (uncorr.) " << (arma::cx_double)dE_dH_3(i, j) + (arma::cx_double)dE_dH_3(j, i) << endl;
-        cout << "Stoch. deriv. (corr.)   " << (arma::cx_double)dE_dH_4(i, j) + (arma::cx_double)dE_dH_4(j, i) << endl;
+        cout << "Det. KPM deriv.         " << dE_dH_2 << endl;
+        cout << "Stoch. deriv. (uncorr.) " << dE_dH_3 << endl;
+        cout << "Stoch. deriv. (corr.)   " << dE_dH_4 << endl;
     }
 }
 

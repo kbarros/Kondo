@@ -44,9 +44,10 @@ namespace tibidy {
         }
     }
     
+    template <typename T>
     void testKPM1() {
         int n = 4;
-        SpMatCoo<arma::cx_double> H(n, n);
+        SpMatCoo<T> H(n, n);
         H.add(0, 0, 5.0);
         H.add(1, 1, -5.0);
         auto g = [](double x) { return x*x; };
@@ -55,9 +56,9 @@ namespace tibidy {
         double extra = 0.1;
         double tolerance = 1e-2;
         auto es = energy_scale(H, extra, tolerance);
-        auto engine = mk_engine_cx(n, n);
+        auto engine = mk_engine<T>();
+        engine->set_R_identity(n);
         engine->set_H(H, es);
-        engine->set_R_identity();
         
         int M = 1000;
         int Mq = 4*M;
@@ -73,30 +74,31 @@ namespace tibidy {
         cout << "energy (v2) " << E2 << endl;
         
         engine->stoch_orbital(g_c);
-        double E3 = arma::cdot(engine->R, engine->xi).real();
+        double E3 = std::real(arma::cdot(engine->R, engine->xi));
         cout << "energy (v3) " << E3 << endl;
         
         engine->stoch_orbital(f_c);
-        double E4 = arma::cdot(engine->R, (H.to_arma()/2)*engine->xi).real(); // note: g(x) = (x/2) f(x)
+        double E4 = std::real(arma::cdot(engine->R, (H.to_arma()/2)*engine->xi)); // note: g(x) = (x/2) f(x)
         cout << "energy (v4) " << E4 << " expected 40.9998\n";
         
         cout << "derivative <";
         for (int i = 0; i < 4; i++)
-            cout << engine->stoch_element(i, i);
+            cout << engine->stoch_element(i, i) << " ";
         cout << "> expected <10, -10, 0, 0>\n";
     }
     
     void testKPM2() {
         int n = 100;
+        int s = n/4;
         double noise = 0.2;
         RNG rng;
         rng.seed(0);
         std::normal_distribution<double> normal;
         
         // Build noisy tri-diagonal matrix
-        SpMatCoo<arma::cx_double> H(n, n);
+        SpMatCoo<cx_double> H(n, n);
         for (int i = 0; i < n; i++) {
-            auto x = 1.0 + noise * arma::cx_double(normal(rng), normal(rng));
+            auto x = 1.0 + noise * cx_double(normal(rng), normal(rng));
             int j = (i-1+n)%n;
             H.add(i, j, x);
             H.add(j, i, conj(x));
@@ -115,10 +117,8 @@ namespace tibidy {
         int Mq = 4*M;
         auto g_c = expansion_coefficients(M, Mq, g, es);
         auto f_c = expansion_coefficients(M, Mq, f, es);
-        auto engine1 = mk_engine_cx(n, n);
-        auto engine2 = mk_engine_cx(n, n/4);
-        engine1->set_H(H, es);
-        engine2->set_H(H, es);
+        auto engine = mk_engine_cx();
+        engine->set_H(H, es);
         
         double E1 = exactEnergy(H.to_arma(), kB_T, mu);
         double eps = 1e-6;
@@ -126,25 +126,25 @@ namespace tibidy {
         arma::sp_cx_mat dH(n, n);
         dH(i, j) = eps;
         dH(j, i) = eps;
-        double dE_dH_1 = (exactEnergy<arma::cx_double>(H.to_arma()+dH, kB_T, mu)-exactEnergy<arma::cx_double>(H.to_arma()-dH, kB_T, mu)) / (2*eps);
+        double dE_dH_1 = (exactEnergy<cx_double>(H.to_arma()+dH, kB_T, mu)-exactEnergy<cx_double>(H.to_arma()-dH, kB_T, mu)) / (2*eps);
         
-        engine1->set_R_identity();
-        double E2 = moment_product(g_c, engine1->moments(M));
-        engine1->stoch_orbital(f_c);
-        double dE_dH_2 = (engine1->stoch_element(i, j) + engine1->stoch_element(j, i)).real();
+        engine->set_R_identity(n);
+        double E2 = moment_product(g_c, engine->moments(M));
+        engine->stoch_orbital(f_c);
+        double dE_dH_2 = (engine->stoch_element(i, j) + engine->stoch_element(j, i)).real();
         
-        engine2->set_R_uncorrelated(rng);
-        double E3 = moment_product(g_c, engine2->moments(M));
-        engine2->stoch_orbital(f_c);
-        auto dE_dH_3 = (engine2->stoch_element(i, j) + engine2->stoch_element(j, i)).real();
+        engine->set_R_uncorrelated(n, s, rng);
+        double E3 = moment_product(g_c, engine->moments(M));
+        engine->stoch_orbital(f_c);
+        auto dE_dH_3 = (engine->stoch_element(i, j) + engine->stoch_element(j, i)).real();
         
         Vec<int> grouping(n);
         for (int i = 0; i < n; i++)
-            grouping[i] = i%engine2->s;
-        engine2->set_R_correlated(grouping, rng);
-        double E4 = moment_product(g_c, engine2->moments(M));
-        engine2->stoch_orbital(f_c);
-        auto dE_dH_4 = (engine2->stoch_element(i, j) + engine2->stoch_element(j, i)).real();
+            grouping[i] = i%s;
+        engine->set_R_correlated(grouping, s, rng);
+        double E4 = moment_product(g_c, engine->moments(M));
+        engine->stoch_orbital(f_c);
+        auto dE_dH_4 = (engine->stoch_element(i, j) + engine->stoch_element(j, i)).real();
         
         cout << "Exact energy            " << E1 << endl;
         cout << "Det. KPM energy         " << E2 << endl;
@@ -160,7 +160,7 @@ namespace tibidy {
 
 int main(int argc,char **argv) {
     tibidy::testExpansionCoeffs();
-    tibidy::testKPM1();
+    tibidy::testKPM1<double>();
     tibidy::testKPM2();
 }
 

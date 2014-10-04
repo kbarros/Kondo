@@ -62,6 +62,7 @@ set(LIBS ${LIBS} ${FASTKPM_LIBRARIES})
 
 # -- BUILD -------------------------------------------
 
+include_directories(src)
 add_subdirectory(src)
 
 

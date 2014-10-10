@@ -76,7 +76,7 @@ public:
     }
     
     template <typename S>
-    operator Vec3<S>() {
+    operator Vec3<S>() const {
         return Vec3<S>(x, y, z);
     }
     

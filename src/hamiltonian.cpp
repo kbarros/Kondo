@@ -73,9 +73,15 @@ Model::Model(double J, std::unique_ptr<Lattice> lattice) {
     this->J = J;
     this->lattice = std::move(lattice);
     int n_sites = this->lattice->n_sites();
+    
     H = fkpm::SpMatCoo<fkpm::cx_double>(2*n_sites, 2*n_sites);
+    
     spin.assign(n_sites, vec3{0, 0, 0});
     force.assign(n_sites, vec3{0, 0, 0});
+    vel.assign(n_sites, vec3{0, 0, 0});
+    
+    scratch1.assign(n_sites, vec3{0, 0, 0});
+    scratch2.assign(n_sites, vec3{0, 0, 0});
 }
 
 
@@ -89,18 +95,15 @@ static Vec3<fkpm::cx_double> pauli[2][2] {
     {{1, I, 0}, {0, 0, -1}}
 };
 
-fkpm::SpMatCoo<fkpm::cx_double>& Model::set_hamiltonian() {
+fkpm::SpMatCoo<fkpm::cx_double>& Model::set_hamiltonian(Vec<vec3> const& spin) {
     H.clear();
     
-    // hopping term
     lattice->add_hoppings(H);
     
-    // hund coupling term
     for (int i = 0; i < lattice->n_sites(); i++) {
         for (int s1 = 0; s1 < 2; s1++) {
             for (int s2 = 0; s2 < 2; s2++) {
-                fkpm::cx_double coupling = -J * pauli[s1][s2].dot(spin[i]);
-                H.add(2*i+s1, 2*i+s2, coupling);
+                H.add(2*i+s1, 2*i+s2, -J * pauli[s1][s2].dot(spin[i]));
             }
         }
     }
@@ -108,24 +111,21 @@ fkpm::SpMatCoo<fkpm::cx_double>& Model::set_hamiltonian() {
     return H;
 }
 
-Vec<vec3>& Model::set_forces(std::function<fkpm::cx_double(int, int)> const& dE_dH) {
-    // Use chain rule to transform derivative wrt matrix elements dE/dH, into derivative wrt spin indices
-    //   dE/dS = dE/dH_ij dH_ij/dS
-    int n_sites = lattice->n_sites();
-    
-    for (int i = 0; i < n_sites; i++) {
+void Model::set_forces(std::function<fkpm::cx_double(int, int)> const& D, Vec<vec3>& force) {
+    for (int k = 0; k < lattice->n_sites(); k++) {
         Vec3<fkpm::cx_double> dE_dS(0, 0, 0);
         
+        // Apply chain rule: dE/dS = dH_ij/dS D_ji
+        // where D_ij = dE/dH_ji is the density matrix
         for (int s1 = 0; s1 < 2; s1 ++) {
             for (int s2 = 0; s2 < 2; s2 ++) {
-                Vec3<fkpm::cx_double> dH_dS = -J * pauli[s1][s2];
-                dE_dS += dE_dH(2*i+s1, 2*i+s2) * dH_dS;
+                auto dH_ij_dS = -J * pauli[s1][s2];
+                auto D_ji = D(2*k+s2, 2*k+s1);
+                dE_dS += dH_ij_dS * D_ji;
             }
         }
         
         assert(imag(dE_dS).norm() < 1e-8);
-        force[i] = -real(dE_dS);
+        force[k] = -real(dE_dS);
     }
-    
-    return force;
 }

@@ -8,8 +8,6 @@ template <typename T>
 using Vec = std::vector<T>;
 
 
-// hamiltonian.cpp
-
 class Lattice {
 public:
     static std::unique_ptr<Lattice> square(int w, int h, double t1, double t2, double t3);
@@ -30,10 +28,13 @@ public:
     Vec<vec3> force;
     Vec<vec3> vel;
     
+    Vec<vec3> scratch1;
+    Vec<vec3> scratch2;
+    
     Model(double J, std::unique_ptr<Lattice> lattice);
     
-    fkpm::SpMatCoo<fkpm::cx_double>& set_hamiltonian();
-    Vec<vec3>& set_forces(std::function<fkpm::cx_double(int, int)> const& dE_dH);
+    fkpm::SpMatCoo<fkpm::cx_double>& set_hamiltonian(Vec<vec3> const& spin);
+    void set_forces(std::function<fkpm::cx_double(int, int)> const& D, Vec<vec3>& force);
 };
 
 #endif /* defined(__kondo__) */

@@ -3,6 +3,7 @@
 #define __iostream__util__
 
 #include <iostream>
+#include <iomanip>
 #include <vector>
 
 template<class T>

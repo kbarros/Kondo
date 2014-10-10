@@ -3,3 +3,6 @@ target_link_libraries(test_kpm ${LIBS})
 
 add_executable(kondo hamiltonian.cpp kondo.cpp)
 target_link_libraries(kondo ${LIBS})
+
+add_executable(test_kondo hamiltonian.cpp test_kondo.cpp)
+target_link_libraries(test_kondo ${LIBS})

@@ -12,23 +12,28 @@ using Vec = std::vector<T>;
 
 class Lattice {
 public:
-    static std::unique_ptr<Lattice> build_square(int w, int h, double t1, double t2, double t3);
-
-    Vec<vec3<double>> spins;
-    Vec<vec3<double>> forces;
+    static std::unique_ptr<Lattice> square(int w, int h, double t1, double t2, double t3);
+    
     virtual int n_sites() = 0;
-    virtual void set_spins(std::string const& name) = 0;
-    virtual void fill_hoppings(fkpm::SpMatCoo<fkpm::cx_double>& H) = 0;
+    virtual vec3 position(int i) = 0;
+    virtual void set_spins(std::string const& name, Vec<vec3>& spin) = 0;
+    virtual void add_hoppings(fkpm::SpMatCoo<fkpm::cx_double>& H) = 0;
 };
 
-class Hamiltonian {
+class Model {
 public:
-    int n_sites;
-    fkpm::SpMatCoo<fkpm::cx_double> H;
+    double J = 0;
     std::unique_ptr<Lattice> lattice;
+    fkpm::SpMatCoo<fkpm::cx_double> H;
     
-    fkpm::SpMatCoo<fkpm::cx_double>& build();
-    Vec<vec3<double>>& calculate_forces(std::function<double(int, int)> const& dE_dH);
+    Vec<vec3> spin;
+    Vec<vec3> force;
+    Vec<vec3> vel;
+    
+    Model(double J, std::unique_ptr<Lattice> lattice);
+    
+    fkpm::SpMatCoo<fkpm::cx_double>& set_hamiltonian();
+    Vec<vec3>& set_forces(std::function<fkpm::cx_double(int, int)> const& dE_dH);
 };
 
 #endif /* defined(__kondo__) */

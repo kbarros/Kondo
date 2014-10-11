@@ -12,7 +12,7 @@ void testKondo1() {
     double kB_T = 0;
     double mu = 0.103;
     
-    auto m = Model(J, Lattice::square(w, h, t1, t2, t3));
+    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J);
     m.lattice->set_spins("ferro", m.spin);
     m.spin[0] = vec3(1, 1, 1).normalize();
     
@@ -37,18 +37,20 @@ void testKondo1() {
     double E2 = moment_product(g_c, engine->moments(M)) / n_sites;
     
     auto Ha = m.H.to_arma();
-    cout << "H: " << Ha(0, 0) << " " << Ha(1, 0) << "    [(-0.288675,0) (-0.288675,-0.288675)]\n";
-    cout << "   " << Ha(0, 1) << " " << Ha(1, 1) << "    [(-0.288675,0.288675) (0.288675,0)]\n\n";
+    cout << "H: " << Ha(0, 0) << " " << Ha(1, 0) << "\n  [(-0.288675,0)  (-0.288675,-0.288675)]\n";
+    cout << "   " << Ha(0, 1) << " " << Ha(1, 1) << "\n  [(-0.288675,0.288675) (0.288675,0)]\n\n";
 
     engine->stoch_orbital(f_c);
     auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
-    cout << "D: " << D(0, 0) << " " << D(1, 0) << "    [(0.517246,0) (0.0154766,0.0507966)]\n";
-    cout << "   " << D(0, 1) << " " << D(1, 1) << "    [(0.0154766,-0.0507966) (0.415652,0)]\n\n";
-    m.set_forces(D, m.force);
+    cout << "D: " << D(0, 0) << " " << D(1, 0) << "\n  [(0.517246,0)           (0.0154766,0.0507966)]\n";
+    cout << "   " << D(0, 1) << " " << D(1, 1) << "\n  [(0.0154766,-0.0507966) (0.415652,0)]\n\n";
+    
+    Vec<vec3>& force = m.scratch1;
+    m.set_forces(D, force);
     
     cout << std::setprecision(9);
-    cout << "grand energy " <<  E1 << " " << E2 << "    [-1.98657216 -1.98657194]\n";
-    cout << "force " << m.force[0] << "    [<x=0.0154765841, y=0.0507965543, z=0.0507965543>]\n\n";
+    cout << "grand energy " <<  E1 << " " << E2 << "\n            [-1.98657216 -1.98657194]\n";
+    cout << "force " << force[0] << "\n     [<x=0.0154765841, y=0.0507965543, z=0.0507965543>]\n\n";
 }
 
 int main(int argc,char **argv) {

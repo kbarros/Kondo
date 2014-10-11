@@ -64,20 +64,17 @@ public:
     }
 };
 
-std::unique_ptr<Lattice> Lattice::square(int w, int h, double t1, double t2, double t3) {
+std::unique_ptr<Lattice> Lattice::mk_square(int w, int h, double t1, double t2, double t3) {
     return std::unique_ptr<Lattice>(new SquareLattice(w, h, t1, t2, t3));
 }
 
 
-Model::Model(double J, std::unique_ptr<Lattice> lattice) {
-    this->J = J;
-    this->lattice = std::move(lattice);
-    int n_sites = this->lattice->n_sites();
-    
+Model::Model(std::unique_ptr<Lattice> lattice, double J):
+    n_sites(lattice->n_sites()), lattice(std::move(lattice)), J(J)
+{
     H = fkpm::SpMatCoo<fkpm::cx_double>(2*n_sites, 2*n_sites);
     
     spin.assign(n_sites, vec3{0, 0, 0});
-    force.assign(n_sites, vec3{0, 0, 0});
     vel.assign(n_sites, vec3{0, 0, 0});
     
     scratch1.assign(n_sites, vec3{0, 0, 0});
@@ -100,7 +97,7 @@ fkpm::SpMatCoo<fkpm::cx_double>& Model::set_hamiltonian(Vec<vec3> const& spin) {
     
     lattice->add_hoppings(H);
     
-    for (int i = 0; i < lattice->n_sites(); i++) {
+    for (int i = 0; i < n_sites; i++) {
         for (int s1 = 0; s1 < 2; s1++) {
             for (int s2 = 0; s2 < 2; s2++) {
                 H.add(2*i+s1, 2*i+s2, -J * pauli[s1][s2].dot(spin[i]));
@@ -112,7 +109,7 @@ fkpm::SpMatCoo<fkpm::cx_double>& Model::set_hamiltonian(Vec<vec3> const& spin) {
 }
 
 void Model::set_forces(std::function<fkpm::cx_double(int, int)> const& D, Vec<vec3>& force) {
-    for (int k = 0; k < lattice->n_sites(); k++) {
+    for (int k = 0; k < n_sites; k++) {
         Vec3<fkpm::cx_double> dE_dS(0, 0, 0);
         
         // Apply chain rule: dE/dS = dH_ij/dS D_ji

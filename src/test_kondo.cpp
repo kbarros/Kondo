@@ -14,7 +14,7 @@ void testKondo1() {
     
     auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J);
     m.lattice->set_spins("ferro", m.spin);
-    m.spin[0] = vec3(1, 1, 1).normalize();
+    m.spin[0] = vec3(1, 1, 1).normalized();
     
     m.set_hamiltonian(m.spin);
     int n = m.H.n_rows;
@@ -45,7 +45,7 @@ void testKondo1() {
     cout << "D: " << D(0, 0) << " " << D(1, 0) << "\n  [(0.517246,0)           (0.0154766,0.0507966)]\n";
     cout << "   " << D(0, 1) << " " << D(1, 1) << "\n  [(0.0154766,-0.0507966) (0.415652,0)]\n\n";
     
-    Vec<vec3>& force = m.scratch1;
+    Vec<vec3>& force = m.dyn_stor[0];
     m.set_forces(D, force);
     
     cout << std::setprecision(9);

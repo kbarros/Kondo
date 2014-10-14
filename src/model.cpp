@@ -75,10 +75,11 @@ Model::Model(std::unique_ptr<Lattice> lattice, double J):
     H = fkpm::SpMatCoo<fkpm::cx_double>(2*n_sites, 2*n_sites);
     
     spin.assign(n_sites, vec3{0, 0, 0});
-    vel.assign(n_sites, vec3{0, 0, 0});
     
-    scratch1.assign(n_sites, vec3{0, 0, 0});
-    scratch2.assign(n_sites, vec3{0, 0, 0});
+    dyn_stor[0].assign(n_sites, vec3{0, 0, 0});
+    dyn_stor[1].assign(n_sites, vec3{0, 0, 0});
+    dyn_stor[2].assign(n_sites, vec3{0, 0, 0});
+    dyn_stor[3].assign(n_sites, vec3{0, 0, 0});
 }
 
 

@@ -26,10 +26,9 @@ public:
     SpMatCoo<cx_double> H;
     
     Vec<vec3> spin;
-    Vec<vec3> vel;
     
-    Vec<vec3> scratch1;
-    Vec<vec3> scratch2;
+    // used by Dynamics to store intermediate data between steps
+    Vec<vec3> dyn_stor[4];
     
     Model(std::unique_ptr<Lattice> lattice, double J);
     
@@ -39,17 +38,24 @@ public:
 
 
 class Dynamics {
+protected:
+    // vector components are each unit gaussian
+    vec3 gaussian_vec3(RNG& rng);
+    // project p to space perpendicular to x
+    vec3 project_tangent(vec3 x, vec3 p);
+    
 public:
     typedef std::function<void(Vec<vec3> const& spin, Vec<vec3> const& force)> CalcForce;
     
-    // Relaxation
-    static std::unique_ptr<Dynamics> mk_overdamped(double kB_T);
-    // Grønbech-Jensen Farago velocity explicit
-//    static std::unique_ptr<Dynamics> mk_gjf(double gamma, double kB_T);
-    // Heun-p stochastic Landau Lifshitz
-//    static std::unique_ptr<Dynamics> mk_sll(double gamma, double kB_T);
+    // Overdamped relaxation using Euler integration
+    static std::unique_ptr<Dynamics> mk_overdamped(double kB_T, double dt);
+    // Inertial Langevin dynamics using Grønbech-Jensen Farago, velocity explicit
+    static std::unique_ptr<Dynamics> mk_gjf(double gamma, double kB_T, double dt);
+    // Stochastic Landau Lifshitz using Heun-p
+    static std::unique_ptr<Dynamics> mk_sll(double gamma, double kB_T, double dt);
     
-    virtual void step(CalcForce const& calc_force, double dt, Model& m) = 0;
+    virtual void init_step(CalcForce const& calc_force, RNG& rng, Model& m) {}
+    virtual void step(CalcForce const& calc_force, RNG& rng, Model& m) = 0;
 };
 
 

@@ -40,14 +40,22 @@ public:
     }
     
     T dot(Vec3<T> const& that) const {
-        return x*std::conj(that.x) + y*std::conj(that.y) + z*std::conj(that.z);
+        return x*that.x + y*that.y + z*that.z;
     }
     
-    auto norm() const -> decltype(std::norm(x)) {
-        return sqrt(std::norm(x) + std::norm(y) + std::norm(z));
+    Vec3<T> cross(Vec3<T> const& that) const {
+        return {y*that.z-z*that.y, z*that.x-x*that.z, x*that.y-y*that.x};
     }
     
-    Vec3<T> normalize() const {
+    T norm2() const {
+        return dot(*this);
+    }
+    
+    T norm() const {
+        return sqrt(norm2());
+    }
+    
+    Vec3<T> normalized() const {
         return *this / norm();
     }
     

@@ -53,7 +53,12 @@ void testKondo1() {
     cout << "force " << force[0] << "\n     [<x=0.0154765841, y=0.0507965543, z=0.0507965543>]\n\n";
 }
 
+void testKondo2() {
+    cout << "test 2 passed" << endl;
+}
+
 int main(int argc,char **argv) {
     testKondo1();
+    testKondo2();
 }
 

@@ -8,36 +8,6 @@
 using namespace std::placeholders;
 
 
-std::string default_input = R"(
-J = 0.5
-kB_T = 0.0
-B_zeeman = 0.0
-B_orbital_idx = 0
-time_per_dump = 10.0
-init_spins = "ferro"
-
-[kpm]
-cheby_order = 500
-cheby_order_precise = 500
-n_vectors = 64
-n_vectors_precise = 64
-
-[ensemble]
-type = "grand"
-mu = 0.0
-
-[dynamics]
-type = "overdamped"
-dt = 0.2
-
-[lattice]
-type = "square"
-w = 6
-h = 6
-t1 = -1.0
-)";
-
-
 std::unique_ptr<Lattice> mk_lattice(cpptoml::toml_group g) {
     auto type = g.get_unwrap<std::string>("lattice.type");
     if (type == "square") {
@@ -74,28 +44,20 @@ std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
 
 
 int main(int argc, char *argv[]) {
-    std::unique_ptr<std::istream> input;
-    if (argc == 1) {
-        cout << "Using default input parameters.\n";
-        input = std::make_unique<std::stringstream>(default_input);
-    }
-    else if (argc == 2) {
-        auto file = std::make_unique<std::ifstream>(argv[1]);
-        if (file->is_open()) {
-            cout << "Using input file `" << argv[1] << "`\n";
-            input = std::move(file);
-        }
-        else {
-            cerr << "Unable to open file `" << argv[1] << "`!\n";
-            std::abort();
-        }
-    }
-    else {
-        cout << "Usage: " << argv[0] << " <config.toml>\n";
+    if (argc != 2) {
+        cout << "Usage: " << argv[0] << " <base_dir>\n";
         std::exit(EXIT_SUCCESS);
     }
+    std::string base_dir(argv[1]);
+    auto input_name = base_dir + "/config.toml";
+    auto input_file = std::ifstream(input_name);
+    if (!input_file.is_open()) {
+        cerr << "Unable to open file `" << input_name << "`!\n";
+        std::abort();
+    }
     
-    cpptoml::parser p{*input};
+    cout << "Using input file `" << input_name << "`\n";
+    cpptoml::parser p{input_file};
     cpptoml::toml_group g = p.parse();
     
     RNG rng(g.get_unwrap<int64_t>("seed"));
@@ -128,18 +90,49 @@ int main(int argc, char *argv[]) {
     Vec<double> moments(M);
     Vec<double> gamma(Mq);
     
+    // Write json file for visualization
+    std::ofstream json_file(base_dir + "/cfg.json");
+    json_file <<
+    R"(// Automatically generated for backward-compatibility with visualization tools
+{
+  "T": 0,
+  "mu": 0,
+  "order": 0,
+  "order_exact": 0,
+  "dt_per_rand": 0,
+  "nrand": 0,
+  "dumpPeriod": 0,
+  "initSpin": 0,
+  "model": {
+)";
+    json_file << "    \"type\": \"" << g.get_unwrap<std::string>("lattice.type") << "\",\n";
+    json_file << "    \"w\": " << g.get_unwrap<int64_t>("lattice.w") << ",\n";
+    json_file << "    \"h\": " << g.get_unwrap<int64_t>("lattice.h") << ",";
+    json_file << R"(
+    "t": 0,
+    "t1": 0,
+    "t2": 0,
+    "J_H": 0,
+    "B_n": 0
+  }
+})";
+    json_file.close();
+    
     auto build_kpm = [&](Vec<vec3> const& spin) {
         m.set_hamiltonian(spin);
         engine->set_H(m.H, es);
         int n = m.H.n_rows;
-        if (s >= n)
+        if (s >= n) {
             engine->set_R_identity(n);
-        else
+        } else {
             engine->set_R_uncorrelated(n, s, rng);
+        }
         moments = engine->moments(M);
         gamma = moment_transform(moments, Mq);
         if (ensemble_type == "canonical") {
             mu = filling_to_mu(gamma, es, /*kB_T*/0, filling, delta_filling);
+        } else {
+            filling = mu_to_filling(gamma, es, kB_T, mu);
         }
         auto c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, kB_T, mu), es);
         engine->stoch_orbital(c);
@@ -160,11 +153,11 @@ int main(int argc, char *argv[]) {
         } else {
             e = electronic_grand_energy(gamma, es, kB_T, mu) / m.n_sites;
         }
-        if (!boost::filesystem::is_directory("dump/")) {
-            boost::filesystem::create_directory("dump/");
+        if (!boost::filesystem::is_directory(base_dir+"/dump")) {
+            boost::filesystem::create_directory(base_dir+"/dump");
         }
         std::stringstream fname;
-        fname << "dump/dump" << std::setfill('0') << std::setw(4) << step << ".json";
+        fname << base_dir << "/dump/dump" << std::setfill('0') << std::setw(4) << step << ".json";
         if (boost::filesystem::exists(fname.str())) {
             cerr << "Refuse to overwrite file '" << fname.str() << "'!\n";
             std::abort();
@@ -172,7 +165,24 @@ int main(int argc, char *argv[]) {
         
         cout << "Dumping file '" << fname.str() << "', time=" << step*dt << ", energy=" << e << endl;
         std::ofstream dump_file(fname.str());
-        dump_file << "Writing this to a file.\n";
+        dump_file << "{\"time\":" << step*dt <<
+            ",\"action\":" << e <<
+            ",\"filling\":" << filling <<
+            ",\"mu\":" << mu <<
+            ",\"eig\":[]" <<
+            ",\"moments\":[";
+        for (int i = 0; i < moments.size(); i++) {
+            dump_file << moments[i];
+            if (i < moments.size()-1) dump_file << ",";
+        }
+        dump_file << "],\"spin\":[";
+        for (int i = 0; i < m.n_sites; i++) {
+            dump_file << m.spin[i].x << ",";
+            dump_file << m.spin[i].y << ",";
+            dump_file << m.spin[i].z;
+            if (i < m.n_sites-1) dump_file << ",";
+        }
+        dump_file << "]}";
         dump_file.close();
     };
     
@@ -185,8 +195,6 @@ int main(int argc, char *argv[]) {
         }
         dynamics->step(calc_force, rng, m);
     }
-    
-    build_kpm(m.spin);
 
     return 0;
 }

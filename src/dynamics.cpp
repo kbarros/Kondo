@@ -1,20 +1,20 @@
 #include "kondo.h"
 
 
-vec3 Dynamics::gaussian_vec3(RNG& rng) {
+static vec3 gaussian_vec3(RNG& rng) {
     static std::normal_distribution<double> dist;
     return { dist(rng), dist(rng), dist(rng) };
 }
 
-vec3 Dynamics::project_tangent(vec3 x, vec3 p) {
+static vec3 project_tangent(vec3 x, vec3 p) {
     return p - x * (p.dot(x) / x.norm2());
 }
 
 
 class Overdamped: public Dynamics {
 public:
-    double kB_T, dt;
-    Overdamped(double kB_T, double dt): kB_T(kB_T), dt(dt) {}
+    double kB_T;
+    Overdamped(double kB_T, double dt): kB_T(kB_T) { this->dt = dt; }
     
     void step(CalcForce const& calc_force, RNG& rng, Model& m) {
         Vec<vec3>& f = m.dyn_stor[0];
@@ -23,23 +23,26 @@ public:
             vec3 beta = sqrt(dt*2*kB_T) * gaussian_vec3(rng);
             m.spin[i] += project_tangent(m.spin[i], dt*f[i]+beta);
             m.spin[i] = m.spin[i].normalized();
+//            std::cout << "s["<<i<<"] = " << m.spin[i] << " " << m.spin[i].norm() << std::endl;
+//            std::cout << "f["<<i<<"] = " << f[i] << std::endl;
         }
     }
 };
 std::unique_ptr<Dynamics> Dynamics::mk_overdamped(double kB_T, double dt) {
-    return std::unique_ptr<Dynamics>(new Overdamped(kB_T, dt));
+    return std::make_unique<Overdamped>(kB_T, dt);
 }
 
 
 class GJF: public Dynamics {
 public:
-    double gamma, kB_T, dt;
+    double alpha, kB_T;
     double a, b;
     double mass = 1;
     
-    GJF(double gamma, double kB_T, double dt): gamma(gamma), kB_T(kB_T), dt(dt) {
-        double denom = 1 + gamma*dt/(2*mass);
-        a = (1 - gamma*dt/(2*mass))/denom;
+    GJF(double alpha, double kB_T, double dt): alpha(alpha), kB_T(kB_T) {
+        this->dt = dt;
+        double denom = 1 + alpha*dt/(2*mass);
+        a = (1 - alpha*dt/(2*mass))/denom;
         b = 1 / denom;
     }
     
@@ -58,7 +61,7 @@ public:
         Vec<vec3>& beta = m.dyn_stor[3];
         
         for (int i = 0; i < m.n_sites; i++) {
-            beta[i] = sqrt(dt*2*gamma*kB_T) * gaussian_vec3(rng);
+            beta[i] = sqrt(dt*2*alpha*kB_T) * gaussian_vec3(rng);
             vec3 ds = b*dt*v[i] + (b*dt*dt/(2*mass))*f1[i] + (b*dt/(2*mass))*beta[i];
             s[i] += project_tangent(s[i], ds);
             s[i] = s[i].normalized();
@@ -75,16 +78,16 @@ public:
         }
     }
 };
-std::unique_ptr<Dynamics> Dynamics::mk_gjf(double gamma, double kB_T, double dt) {
-    return std::unique_ptr<Dynamics>(new GJF(gamma, kB_T, dt));
+std::unique_ptr<Dynamics> Dynamics::mk_gjf(double alpha, double kB_T, double dt) {
+    return std::make_unique<GJF>(alpha, kB_T, dt);
 }
 
 
 class SLL: public Dynamics {
 public:
-    double gamma, kB_T, dt;
+    double alpha, kB_T;
     
-    SLL(double gamma, double kB_T, double dt): gamma(gamma), kB_T(kB_T), dt(dt) {}
+    SLL(double alpha, double kB_T, double dt): alpha(alpha), kB_T(kB_T) { this->dt = dt; }
     
     void step(CalcForce const& calc_force, RNG& rng, Model& m) {
         Vec<vec3>& s    = m.spin;
@@ -93,7 +96,7 @@ public:
         Vec<vec3>& fp   = m.dyn_stor[2];
         Vec<vec3>& beta = m.dyn_stor[3];
         
-        double D = (gamma / (1 + gamma*gamma)) * kB_T;
+        double D = (alpha / (1 + alpha*alpha)) * kB_T;
         for (int i = 0; i < m.n_sites; i++) {
             beta[i] = sqrt(dt*2*D) * gaussian_vec3(rng);
         }
@@ -101,8 +104,8 @@ public:
         // one euler step accumulated into s
         auto accum_euler = [&](Vec<vec3> const& f, double scale, Vec<vec3>& s) {
             for (int i = 0; i < m.n_sites; i++) {
-                vec3 a     = - f[i]    - gamma*s[i].cross(f[i]);
-                vec3 sigma = - beta[i] - gamma*s[i].cross(beta[i]);
+                vec3 a     = - f[i]    - alpha*s[i].cross(f[i]);
+                vec3 sigma = - beta[i] - alpha*s[i].cross(beta[i]);
                 vec3 ds    = s[i].cross(a*dt + sigma);
                 s[i] += scale * ds;
             }
@@ -121,8 +124,8 @@ public:
         }
     }
 };
-std::unique_ptr<Dynamics> Dynamics::mk_sll(double gamma, double kB_T, double dt) {
-    return std::unique_ptr<Dynamics>(new SLL(gamma, kB_T, dt));
+std::unique_ptr<Dynamics> Dynamics::mk_sll(double alpha, double kB_T, double dt) {
+    return std::make_unique<SLL>(alpha, kB_T, dt);
 }
 
 

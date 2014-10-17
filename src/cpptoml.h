@@ -514,6 +514,20 @@ class toml_group : public toml_base
         std::cerr << "Could not find key '" << key << "' in TOML group:\n{\n" << *this << "}" << std::endl;
         std::exit(1);
     }
+
+    /**
+     * Helper function that attempts to get a toml_value corresponding
+     * to the template parameter from a given key. If not found, will
+     * return default value. Will resolve "qualified keys".
+     *
+     * Added by Kipton Barros, Oct 4, 2014.
+     */
+    template <class T>
+    T get_unwrap(const std::string& key, T default_value) const
+    {
+        auto v = get_as<T>(key);
+        return v ? *v : default_value;
+    }
     
     /**
      * Adds an element to the keygroup.

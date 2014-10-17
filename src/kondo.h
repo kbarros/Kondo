@@ -7,6 +7,15 @@
 using namespace fkpm;
 
 
+// C++14 feature missing in C++11
+namespace std {
+    template<typename T, typename ...Args>
+    std::unique_ptr<T> make_unique( Args&& ...args ) {
+        return std::unique_ptr<T>( new T( std::forward<Args>(args)... ) );
+    }
+}
+
+
 class Lattice {
 public:
     static std::unique_ptr<Lattice> mk_square(int w, int h, double t1, double t2, double t3);
@@ -38,21 +47,16 @@ public:
 
 
 class Dynamics {
-protected:
-    // vector components are each unit gaussian
-    vec3 gaussian_vec3(RNG& rng);
-    // project p to space perpendicular to x
-    vec3 project_tangent(vec3 x, vec3 p);
-    
 public:
-    typedef std::function<void(Vec<vec3> const& spin, Vec<vec3> const& force)> CalcForce;
+    typedef std::function<void(Vec<vec3> const& spin, Vec<vec3>& force)> CalcForce;
+    double dt;
     
     // Overdamped relaxation using Euler integration
     static std::unique_ptr<Dynamics> mk_overdamped(double kB_T, double dt);
     // Inertial Langevin dynamics using Grønbech-Jensen Farago, velocity explicit
-    static std::unique_ptr<Dynamics> mk_gjf(double gamma, double kB_T, double dt);
+    static std::unique_ptr<Dynamics> mk_gjf(double alpha, double kB_T, double dt);
     // Stochastic Landau Lifshitz using Heun-p
-    static std::unique_ptr<Dynamics> mk_sll(double gamma, double kB_T, double dt);
+    static std::unique_ptr<Dynamics> mk_sll(double alpha, double kB_T, double dt);
     
     virtual void init_step(CalcForce const& calc_force, RNG& rng, Model& m) {}
     virtual void step(CalcForce const& calc_force, RNG& rng, Model& m) = 0;

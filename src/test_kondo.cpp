@@ -6,12 +6,11 @@ using namespace std::placeholders;
 
 void testKondo1() {
     int w = 6, h = 6;
-    int n_sites = w*h;
     double t1 = -1, t2 = 0, t3 = -0.5;
     double J = 0.5;
     double kB_T = 0;
     double mu = 0.103;
-    
+
     auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J);
     m.lattice->set_spins("ferro", m.spin);
     m.spin[0] = vec3(1, 1, 1).normalized();
@@ -21,7 +20,7 @@ void testKondo1() {
     
     arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
     std::sort(eigs.begin(), eigs.end());
-    double E1 = electronic_grand_energy(eigs, kB_T, mu) / n_sites;
+    double E1 = electronic_grand_energy(eigs, kB_T, mu) / m.n_sites;
     
     double extra = 0.1;
     double tolerance = 1e-2;
@@ -34,7 +33,7 @@ void testKondo1() {
     engine->set_H(m.H, es);
     engine->set_R_identity(n);
     
-    double E2 = moment_product(g_c, engine->moments(M)) / n_sites;
+    double E2 = moment_product(g_c, engine->moments(M)) / m.n_sites;
     
     auto Ha = m.H.to_arma();
     cout << "H: " << Ha(0, 0) << " " << Ha(1, 0) << "\n  [(-0.288675,0)  (-0.288675,-0.288675)]\n";

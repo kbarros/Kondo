@@ -56,6 +56,12 @@ find_package(FastKPM REQUIRED)
 include_directories(SYSTEM ${FASTKPM_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${FASTKPM_LIBRARIES})
 
+# Boost
+set(Boost_USE_MULTITHREADED ON)
+find_package(Boost REQUIRED COMPONENTS MPI FILESYSTEM SYSTEM)
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
+set(LIBS ${LIBS} ${Boost_LIBRARIES}) # ${Boost_FILESYSTEM_LIBRARY} 
+
 
 # -- BUILD -------------------------------------------
 

@@ -41,7 +41,20 @@
 
 namespace cpptoml
 {
+    
+/**
+ * Helper function to convert a TOML template parameter into a string
+ *
+ * Added by Kipton Barros, Oct 4, 2014.
+ */
+template <typename T> std::string toml_type_name();
+template <> std::string toml_type_name<int64_t>()     { return "int64_t"; }
+template <> std::string toml_type_name<double>()      { return "double"; }
+template <> std::string toml_type_name<bool>()        { return "bool"; }
+template <> std::string toml_type_name<std::string>() { return "std::string"; }
+template <> std::string toml_type_name<std::tm>()     { return "std::tm"; }
 
+    
 template <class T>
 class option
 {
@@ -511,10 +524,10 @@ class toml_group : public toml_base
         if (v) {
             return *v;
         }
-        std::cerr << "Could not find key '" << key << "' in TOML group:\n{\n" << *this << "}" << std::endl;
+        std::cerr << "Could not find key '" << key << "' of type '" << toml_type_name<T>() << "' in TOML group:\n{\n" << *this << "}" << std::endl;
         std::exit(1);
     }
-
+    
     /**
      * Helper function that attempts to get a toml_value corresponding
      * to the template parameter from a given key. If not found, will

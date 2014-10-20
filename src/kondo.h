@@ -15,10 +15,27 @@ namespace std {
     }
 }
 
+template<typename T>
+Vec3<T> gaussian_vec3(RNG& rng) {
+    static std::normal_distribution<T> dist;
+    return { dist(rng), dist(rng), dist(rng) };
+}
+
+// project vector p onto plane that is normal to x
+template<typename T>
+Vec3<T> project_tangent(vec3 x, vec3 p) {
+    return p - x * (p.dot(x) / x.norm2());
+}
+
+constexpr double Pi = 3.141592653589793238463;
+
 
 class Lattice {
 public:
+    static void set_spins_random(RNG& rng, Vec<vec3>& spin);
     static std::unique_ptr<Lattice> mk_square(int w, int h, double t1, double t2, double t3);
+    static std::unique_ptr<Lattice> mk_triangular(int w, int h, double t1, double t2, double t3);
+    static std::unique_ptr<Lattice> mk_kagome(int w, int h, double t1);
     
     virtual int n_sites() = 0;
     virtual vec3 position(int i) = 0;

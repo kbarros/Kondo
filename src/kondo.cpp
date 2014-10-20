@@ -72,7 +72,12 @@ int main(int argc, char *argv[]) {
     auto delta_filling = g.get_unwrap<double>("ensemble.delta_filling", nan);
     
     Model m = mk_model(g);
-    m.lattice->set_spins(g.get_unwrap<std::string>("init_spins"), m.spin);
+    auto init_spins = g.get_unwrap<std::string>("init_spins");
+    if (init_spins == "random") {
+        Lattice::set_spins_random(rng, m.spin);
+    } else {
+        m.lattice->set_spins(init_spins, m.spin);
+    }
     
     m.set_hamiltonian(m.spin);
     double extra = 0.1;

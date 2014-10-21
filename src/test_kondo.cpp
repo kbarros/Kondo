@@ -40,15 +40,15 @@ void testKondo1() {
 
     engine->stoch_orbital(f_c);
     auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
-    cout << "D: " << D(0, 0) << " " << D(1, 0) << "\n  [(0.517246,0)           (0.0154766,0.0507966)]\n";
-    cout << "   " << D(0, 1) << " " << D(1, 1) << "\n  [(0.0154766,-0.0507966) (0.415652,0)]\n\n";
+    cout << "D: " << D(0, 0) << " " << D(1, 0) << "\n  [(0.481926,0) (0.0507966,0.0507966)\n";
+    cout << "   " << D(0, 1) << " " << D(1, 1) << "\n  [(0.0507966,-0.0507966) (0.450972,0)]\n\n";
     
     Vec<vec3>& force = m.dyn_stor[0];
     m.set_forces(D, force);
     
     cout << std::setprecision(9);
     cout << "grand energy " <<  E1 << " " << E2 << "\n            [-1.98657216 -1.98657194]\n";
-    cout << "force " << force[0] << "\n     [<x=0.0154765841, y=0.0507965543, z=0.0507965543>]\n\n";
+    cout << "force " << force[0] << "\n     [<x=0.0507965542, y=0.0507965542, z=0.015476587>]\n\n";
 }
 
 void testKondo2() {

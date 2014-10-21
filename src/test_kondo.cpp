@@ -68,7 +68,7 @@ void testKondo2() {
 }
 
 int main(int argc,char **argv) {
-    // testKondo1();
+    testKondo1();
     testKondo2();
 }
 

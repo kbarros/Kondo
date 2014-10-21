@@ -88,20 +88,20 @@ public:
         return Vec3<S>(x, y, z);
     }
     
-    template <typename S>
-    friend Vec3<S> real(Vec3<std::complex<S>> v) {
-        return {std::real(v.x), std::real(v.y), std::real(v.z)};
-    }
-    
-    template <typename S>
-    friend Vec3<S> imag(Vec3<std::complex<S>> v) {
-        return {std::imag(v.x), std::imag(v.y), std::imag(v.z)};
-    }
-    
     friend std::ostream& operator<< (std::ostream& os, Vec3<T> const& v) {
         return os << "<x=" << v.x << ", y=" << v.y << ", z=" << v.z << ">";
     }
 };
+
+template <typename S>
+Vec3<S> real(Vec3<std::complex<S>> v) {
+    return {std::real(v.x), std::real(v.y), std::real(v.z)};
+}
+
+template <typename S>
+Vec3<S> imag(Vec3<std::complex<S>> v) {
+    return {std::imag(v.x), std::imag(v.y), std::imag(v.z)};
+}
 
 typedef Vec3<float> fvec3;
 typedef Vec3<double> vec3;

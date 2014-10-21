@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
     }
     std::string base_dir(argv[1]);
     auto input_name = base_dir + "/config.toml";
-    auto input_file = std::ifstream(input_name);
+    std::ifstream input_file(input_name);
     if (!input_file.is_open()) {
         cerr << "Unable to open file `" << input_name << "`!\n";
         std::abort();

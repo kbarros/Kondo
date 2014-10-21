@@ -14,8 +14,13 @@ std::unique_ptr<Lattice> mk_lattice(cpptoml::toml_group g) {
         return Lattice::mk_square(
             g.get_unwrap<int64_t>("lattice.w"), g.get_unwrap<int64_t>("lattice.h"), g.get_unwrap<double>("lattice.t1"),
             g.get_unwrap<double>("lattice.t2", 0.0), g.get_unwrap<double>("lattice.t3", 0.0));
-    } else if (type == "triangle") {
-        return nullptr;
+    } else if (type == "triangular") {
+        return Lattice::mk_triangular(
+            g.get_unwrap<int64_t>("lattice.w"), g.get_unwrap<int64_t>("lattice.h"), g.get_unwrap<double>("lattice.t1"),
+            g.get_unwrap<double>("lattice.t2", 0.0), g.get_unwrap<double>("lattice.t3", 0.0));
+    } else if (type == "kagome") {
+        return Lattice::mk_kagome(
+            g.get_unwrap<int64_t>("lattice.w"), g.get_unwrap<int64_t>("lattice.h"), g.get_unwrap<double>("lattice.t1"));
     }
     cerr << "Unsupported lattice type `" << type << "`!\n";
     std::abort();
@@ -171,7 +176,7 @@ int main(int argc, char *argv[]) {
             boost::filesystem::create_directory(base_dir+"/dump");
         }
         std::stringstream fname;
-        fname << base_dir << "/dump/dump" << std::setfill('0') << std::setw(4) << step << ".json";
+        fname << base_dir << "/dump/dump" << std::setfill('0') << std::setw(4) << step/steps_per_dump << ".json";
         if (!overwrite_dump && boost::filesystem::exists(fname.str())) {
             cerr << "Refuse to overwrite file '" << fname.str() << "'!\n";
             std::abort();

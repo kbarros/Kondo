@@ -22,7 +22,8 @@ std::unique_ptr<Lattice> mk_lattice(cpptoml::toml_group g) {
 }
 
 Model mk_model(cpptoml::toml_group g) {
-    return {mk_lattice(g), g.get_unwrap<double>("J")};
+    double B_zeeman = g.get_unwrap<double>("B_zeeman", 0);
+    return {mk_lattice(g), g.get_unwrap<double>("J"), {B_zeeman, 0, 0}};
 }
 
 std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
@@ -32,9 +33,9 @@ std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
     if (type == "overdamped") {
         return Dynamics::mk_overdamped(kB_T, dt);
     } else if (type == "gjf") {
-        return Dynamics::mk_gjf(g.get_unwrap<double>("alpha"), kB_T, dt);
+        return Dynamics::mk_gjf(g.get_unwrap<double>("dynamics.alpha"), kB_T, dt);
     } else if (type == "sll") {
-        return Dynamics::mk_sll(g.get_unwrap<double>("alpha"), kB_T, dt);
+        return Dynamics::mk_sll(g.get_unwrap<double>("dynamics.alpha"), kB_T, dt);
     }
     cerr << "Unsupported dynamics type `" << type << "`!\n";
     std::abort();
@@ -57,19 +58,25 @@ int main(int argc, char *argv[]) {
     }
     
     cout << "Using input file `" << input_name << "`\n";
+
     cpptoml::parser p{input_file};
     cpptoml::toml_group g = p.parse();
     
     RNG rng(g.get_unwrap<int64_t>("seed"));
     double kB_T = g.get_unwrap<double>("kB_T");
-    double time_per_dump = g.get_unwrap<double>("time_per_dump");
-    double max_time = g.get_unwrap<double>("max_time");
+    bool overwrite_dump = g.get_unwrap<bool>("overwrite_dump");
+    int steps_per_dump = g.get_unwrap<int64_t>("steps_per_dump");
+    int max_steps = g.get_unwrap<int64_t>("max_steps");
     
     auto nan = std::numeric_limits<double>::quiet_NaN();
     auto ensemble_type = g.get_unwrap<std::string>("ensemble.type");
-    auto mu = g.get_unwrap<double>("ensemble.mu", nan);
-    auto filling = g.get_unwrap<double>("ensemble.filling", nan);
-    auto delta_filling = g.get_unwrap<double>("ensemble.delta_filling", nan);
+    double mu=nan, filling=nan, delta_filling=nan;
+    if (ensemble_type == "grand") {
+        mu = g.get_unwrap<double>("ensemble.mu");
+    } else {
+        filling = g.get_unwrap<double>("ensemble.filling");
+        delta_filling = g.get_unwrap<double>("ensemble.delta_filling");
+    }
     
     Model m = mk_model(g);
     auto init_spins = g.get_unwrap<std::string>("init_spins");
@@ -80,9 +87,11 @@ int main(int argc, char *argv[]) {
     }
     
     m.set_hamiltonian(m.spin);
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = energy_scale(m.H, extra, tolerance);
+    
+    EnergyScale es{g.get_unwrap<double>("kpm.energy_scale_lo"), g.get_unwrap<double>("kpm.energy_scale_hi")};
+    // double extra = 0.1;
+    // double tolerance = 1e-2;
+    // auto es = energy_scale(m.H, extra, tolerance);
     
     int M = g.get_unwrap<int64_t>("kpm.cheby_order");
     int s = g.get_unwrap<int64_t>("kpm.n_vectors");
@@ -152,24 +161,24 @@ int main(int argc, char *argv[]) {
     // assumes build_kpm() has already been called
     auto dump = [&](int step, double dt) {
         build_kpm(m.spin);
-        double e;
+        double e = m.classical_potential();
         if (ensemble_type == "canonical") {
-            e = electronic_energy(gamma, es, kB_T, filling, mu) / m.n_sites;
+            e += electronic_energy(gamma, es, kB_T, filling, mu) / m.n_sites;
         } else {
-            e = electronic_grand_energy(gamma, es, kB_T, mu) / m.n_sites;
+            e += electronic_grand_energy(gamma, es, kB_T, mu) / m.n_sites;
         }
         if (!boost::filesystem::is_directory(base_dir+"/dump")) {
             boost::filesystem::create_directory(base_dir+"/dump");
         }
         std::stringstream fname;
         fname << base_dir << "/dump/dump" << std::setfill('0') << std::setw(4) << step << ".json";
-        if (boost::filesystem::exists(fname.str())) {
+        if (!overwrite_dump && boost::filesystem::exists(fname.str())) {
             cerr << "Refuse to overwrite file '" << fname.str() << "'!\n";
             std::abort();
         }
         
-        cout << "Dumping file '" << fname.str() << "', time=" << step*dt << ", energy=" << e << endl;
-        std::ofstream dump_file(fname.str());
+        cout << "Dumping file '" << fname.str() << "', time=" << step*dt << ", energy=" << e << ", n=" << filling << ", mu=" << mu << endl;
+        std::ofstream dump_file(fname.str(), std::ios::trunc);
         dump_file << "{\"time\":" << step*dt <<
             ",\"action\":" << e <<
             ",\"filling\":" << filling <<
@@ -193,8 +202,7 @@ int main(int argc, char *argv[]) {
     
     auto dynamics = mk_dynamics(g);
     dynamics->init_step(calc_force, rng, m);
-    for (int step = 0; step*dynamics->dt < max_time; step++) {
-        int steps_per_dump = int(time_per_dump/dynamics->dt + 0.5);
+    for (int step = 0; step < max_steps; step++) {
         if (step % steps_per_dump == 0) {
             dump(step, dynamics->dt);
         }

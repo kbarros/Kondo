@@ -49,6 +49,7 @@ public:
     int n_sites;
     std::unique_ptr<Lattice> lattice;
     double J;
+    vec3 B_zeeman;
     SpMatCoo<cx_double> H;
     
     Vec<vec3> spin;
@@ -56,9 +57,10 @@ public:
     // used by Dynamics to store intermediate data between steps
     Vec<vec3> dyn_stor[4];
     
-    Model(std::unique_ptr<Lattice> lattice, double J);
+    Model(std::unique_ptr<Lattice> lattice, double J, vec3 B_zeeman);
     
     SpMatCoo<cx_double>& set_hamiltonian(Vec<vec3> const& spin);
+    double classical_potential();
     void set_forces(std::function<cx_double(int, int)> const& D, Vec<vec3>& force);
 };
 

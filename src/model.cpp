@@ -4,8 +4,8 @@
 #include <cassert>
 
 
-Model::Model(std::unique_ptr<Lattice> lattice, double J):
-    n_sites(lattice->n_sites()), lattice(std::move(lattice)), J(J)
+Model::Model(std::unique_ptr<Lattice> lattice, double J, vec3 B_zeeman):
+    n_sites(lattice->n_sites()), lattice(std::move(lattice)), J(J), B_zeeman(B_zeeman)
 {
     H = fkpm::SpMatCoo<fkpm::cx_double>(2*n_sites, 2*n_sites);
     
@@ -44,6 +44,14 @@ fkpm::SpMatCoo<fkpm::cx_double>& Model::set_hamiltonian(Vec<vec3> const& spin) {
     return H;
 }
 
+double Model::classical_potential() {
+    double acc = 0;
+    for (int i = 0; i < n_sites; i++) {
+        acc += -B_zeeman.dot(spin[i]);
+    }
+    return acc;
+}
+
 void Model::set_forces(std::function<fkpm::cx_double(int, int)> const& D, Vec<vec3>& force) {
     for (int k = 0; k < n_sites; k++) {
         Vec3<fkpm::cx_double> dE_dS(0, 0, 0);
@@ -60,5 +68,7 @@ void Model::set_forces(std::function<fkpm::cx_double(int, int)> const& D, Vec<ve
         
         assert(imag(dE_dS).norm() < 1e-8);
         force[k] = -real(dE_dS);
+        
+        force[k] += B_zeeman;
     }
 }

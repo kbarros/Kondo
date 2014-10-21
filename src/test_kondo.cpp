@@ -11,7 +11,7 @@ void testKondo1() {
     double kB_T = 0;
     double mu = 0.103;
 
-    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J);
+    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, {0,0,0});
     m.lattice->set_spins("ferro", m.spin);
     m.spin[0] = vec3(1, 1, 1).normalized();
     
@@ -19,7 +19,6 @@ void testKondo1() {
     int n = m.H.n_rows;
     
     arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
-    std::sort(eigs.begin(), eigs.end());
     double E1 = electronic_grand_energy(eigs, kB_T, mu) / m.n_sites;
     
     double extra = 0.1;
@@ -53,11 +52,23 @@ void testKondo1() {
 }
 
 void testKondo2() {
-    cout << "test 2 passed" << endl;
+    int w = 6, h = 6;
+    double t1 = -1;
+    double J = 0.1;
+    double kB_T = 0;
+    double mu = -1.0;
+    
+    auto m = Model(Lattice::mk_kagome(w, h, t1), J, {0,0,0});
+    m.lattice->set_spins("ncp2", m.spin);
+    m.set_hamiltonian(m.spin);
+    arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
+    double e = electronic_grand_energy(eigs, kB_T, mu);
+    
+    cout << "ncp2 " << e/m.n_sites << "     [-1.04384301]\n";
 }
 
 int main(int argc,char **argv) {
-    testKondo1();
+    // testKondo1();
     testKondo2();
 }
 

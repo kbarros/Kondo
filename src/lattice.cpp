@@ -8,6 +8,69 @@ void Lattice::set_spins_random(RNG &rng, Vec<vec3> &spin) {
     }
 }
 
+class LinearLattice: public Lattice {
+public:
+    int w;
+    double t1, t2;
+    
+    LinearLattice(int w, double t1, double t2):
+    w(w), t1(t1), t2(t2)
+    { }
+    
+    int n_sites() { return w; }
+    
+    vec3 position(int i) {
+        return {double(i), 0, 0};
+    }
+    
+    void set_spins(std::string const& name, Vec<vec3>& spin) {
+        if (name == "ferro") {
+            spin.assign(n_sites(), vec3{0, 0, 1});
+        }
+        else {
+            std::cerr << "Unknown configuration type `" << name << "`\n";
+        }
+    }
+    
+    int coord2idx(int x) {
+        return(x%w+w)%w;
+    }
+    
+    void add_hoppings(fkpm::SpMatCoo<fkpm::cx_double>& H) {
+        for (int i = 0; i < w; i++) {
+            static int nn1_sz = 2;
+            static int nn1_dx[] { 1, -1 };
+            for (int nn = 0; nn < nn1_sz; nn++) {
+                // nn1
+                int j = coord2idx(i + nn1_dx[nn]);
+                H.add(2*i+0, 2*j+0, t1);
+                H.add(2*i+1, 2*j+1, t1);
+                
+                // nn3, dx scaled by 2
+                j = coord2idx(i + 2*nn1_dx[nn]);
+                H.add(2*i+0, 2*j+0, t2);
+                H.add(2*i+1, 2*j+1, t2);
+            }
+        }
+    }
+    
+    void set_colors(int n_colors, Vec<int>& colors) {
+        if (n_sites() % n_colors != 0) {
+            std::cerr << "n_colors=" << n_colors << "is not a divisor of lattice size w=" << n_sites() << std::endl;
+            abort();
+        }
+        colors.resize(n_sites());
+        for (int i = 0; i < n_sites(); i++) {
+            colors[i] = i % n_colors;
+        }
+    }
+};
+
+std::unique_ptr<Lattice> Lattice::mk_linear(int w, double t1, double t2) {
+    return std::make_unique<LinearLattice>(w, t1, t2);
+}
+
+
 class SquareLattice: public Lattice {
 public:
     int w, h;
@@ -15,7 +78,7 @@ public:
     
     SquareLattice(int w, int h, double t1, double t2, double t3):
     w(w), h(h), t1(t1), t2(t2), t3(t3)
-    {}
+    { assert(t2==0 && "t2 not yet implemented for square lattice."); }
     
     int n_sites() { return w*h; }
     
@@ -50,18 +113,37 @@ public:
                 static int nn1_dx[] { 1, 0, -1, 0 };
                 static int nn1_dy[] { 0, 1, 0, -1 };
                 for (int nn = 0; nn < nn1_sz; nn++) {
+                    // nn1
                     int j = coord2idx(x + nn1_dx[nn], y + nn1_dy[nn]);
                     H.add(2*i+0, 2*j+0, t1);
                     H.add(2*i+1, 2*j+1, t1);
-                }
-                
-                // nn3 dx and dy are same as nn1, but multiplied by 2
-                for (int nn = 0; nn < nn1_sz; nn++) {
-                    int j = coord2idx(x + 2*nn1_dx[nn], y + 2*nn1_dy[nn]);
+                    
+                    // nn3, dx and dy scaled by 2
+                    j = coord2idx(x + 2*nn1_dx[nn], y + 2*nn1_dy[nn]);
                     H.add(2*i+0, 2*j+0, t3);
                     H.add(2*i+1, 2*j+1, t3);
                 }
             }
+        }
+    }
+    
+    void set_colors(int n_colors, Vec<int>& colors) {
+        int c_len = int(sqrt(n_colors));
+        if (c_len*c_len != n_colors) {
+            std::cerr << "n_colors=" << n_colors << " is not a perfect square\n";
+            abort();
+        }
+        if (w % c_len != 0 || h % c_len != 0) {
+            std::cerr << "sqrt(n_colors)=" << c_len << " is not a divisor of lattice size (w,h)=(" << w << "," << h << ")\n";
+            abort();
+        }
+        colors.resize(n_sites());
+        for (int i = 0; i < n_sites(); i++) {
+            int x = i%w;
+            int y = i/h;
+            int cx = x%c_len;
+            int cy = y%c_len;
+            colors[i] = cy*c_len + cx;
         }
     }
 };
@@ -80,7 +162,7 @@ public:
     
     TriangularLattice(int w, int h, double t1, double t2, double t3):
     w(w), h(h), t1(t1), t2(t2), t3(t3)
-    {}
+    { assert(t2==0 && "t2 not yet implemented for triangular lattice."); }
     
     int n_sites() { return w*h; }
     
@@ -136,18 +218,37 @@ public:
                 static int nn1_dx[] {1, 1, 0, -1, -1, 0};
                 static int nn1_dy[] {0, 1, 1, 0, -1, -1};
                 for (int nn = 0; nn < nn1_sz; nn++) {
+                    // nn1
                     int j = coord2idx(x + nn1_dx[nn], y + nn1_dy[nn]);
                     H.add(2*i+0, 2*j+0, t1);
                     H.add(2*i+1, 2*j+1, t1);
-                }
-                
-                // nn3 dx and dy are same as nn1, but multiplied by 2
-                for (int nn = 0; nn < nn1_sz; nn++) {
-                    int j = coord2idx(x + 2*nn1_dx[nn], y + 2*nn1_dy[nn]);
+
+                    // nn3, dx and dy scaled by 2
+                    j = coord2idx(x + 2*nn1_dx[nn], y + 2*nn1_dy[nn]);
                     H.add(2*i+0, 2*j+0, t3);
                     H.add(2*i+1, 2*j+1, t3);
                 }
             }
+        }
+    }
+    
+    void set_colors(int n_colors, Vec<int>& colors) {
+        int c_len = int(sqrt(n_colors));
+        if (c_len*c_len != n_colors) {
+            std::cerr << "n_colors=" << n_colors << " is not a perfect square\n";
+            abort();
+        }
+        if (w % c_len != 0 || h % c_len != 0) {
+            std::cerr << "sqrt(n_colors)=" << c_len << " is not a divisor of lattice size (w,h)=(" << w << "," << h << ")\n";
+            abort();
+        }
+        colors.resize(n_sites());
+        for (int i = 0; i < n_sites(); i++) {
+            int x = i%w;
+            int y = i/h;
+            int cx = x%c_len;
+            int cy = y%c_len;
+            colors[i] = cy*c_len + cx;
         }
     }
 };
@@ -303,6 +404,33 @@ public:
                         H.add(2*i+0, 2*j+0, t1);
                         H.add(2*i+1, 2*j+1, t1);
                     }
+                }
+            }
+        }
+    }
+    
+    void set_colors(int n_colors, Vec<int>& colors) {
+        if (n_colors%3 != 0) {
+            std::cerr << "n_colors=" << n_colors << " is not a multiple of 3\n";
+            abort();
+        }
+        int c_len = int(sqrt(n_colors/3));
+        if (c_len*c_len != n_colors/3) {
+            std::cerr << "n_colors/3=" << n_colors/3 << " is not a perfect square\n";
+            abort();
+        }
+        if (w % c_len != 0 || h % c_len != 0) {
+            std::cerr << "sqrt(n_colors/3)=" << c_len << " is not a divisor of lattice size (w,h)=(" << w << "," << h << ")\n";
+            abort();
+        }
+        colors.resize(n_sites());
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int cx = x%c_len;
+                int cy = y%c_len;
+                for (int v = 0; v < 3; v++) {
+                    int i = coord2idx(v, x, y);
+                    colors[i] = 3*(cy*c_len+cx) + v;
                 }
             }
         }

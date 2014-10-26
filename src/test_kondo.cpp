@@ -67,8 +67,75 @@ void testKondo2() {
     cout << "ncp2 " << e/m.n_sites << "     [-1.04384301]\n";
 }
 
+void testKondo3() {
+    RNG rng(0);
+    int w = 32;
+    int h = w;
+    double t1 = -1; // t2 = 0, t3 = 0;
+    double J = 0.5;
+    vec3 B_zeeman(0, 0, 0);
+    double kB_T = 0;
+    double mu = 0;
+    int n_colors = 3;
+    int n_orbs = 2;
+    int s = n_colors*n_orbs;
+    
+//    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, B_zeeman);
+    auto m = Model(Lattice::mk_kagome(w, h, t1), J, B_zeeman);
+    
+//    m.lattice->set_spins_random(rng, m.spin);
+    m.lattice->set_spins("ferro", m.spin);
+    m.set_hamiltonian(m.spin);
+    
+    Vec<int> c;
+    m.lattice->set_colors(n_colors, c);
+    Vec<int> groups;
+    for (int i = 0; i < m.n_sites; i++) {
+        for (int o = 0; o < n_orbs; o++) {
+            groups.push_back(c[i]*n_orbs + o);
+        }
+    }
+    
+    double extra = 0.1;
+    double tolerance = 1e-2;
+    auto es = energy_scale(m.H, extra, tolerance);
+    int M = 1000;
+    int Mq = 4*M;
+    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, kB_T, mu), es);
+    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, kB_T, mu), es);
+    auto engine = mk_engine_cx();
+    engine->set_H(m.H, es);
+    
+    Vec<vec3>& f1 = m.dyn_stor[0];
+    Vec<vec3>& f2 = m.dyn_stor[1];
+    
+    auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
+    
+//    engine->set_R_identity(m.H.n_rows);
+//    engine->set_R_uncorrelated(m.H.n_rows, s, rng);
+    engine->set_R_correlated(groups, s, rng);
+    engine->stoch_orbital(f_c);
+    m.set_forces(D, f1);
+    
+//    engine->set_R_identity(m.H.n_rows);
+//    engine->set_R_uncorrelated(m.H.n_rows, s, rng);
+    engine->set_R_correlated(groups, s, rng);
+    engine->stoch_orbital(f_c);
+    m.set_forces(D, f2);
+    
+    double acc = 0;
+    for (int i = 0; i < m.n_sites; i++) {
+        acc += (f1[i] - f2[i]).norm2()/2;
+    }
+    double f_var = acc / m.n_sites;
+    
+    cout << std::setprecision(9);
+    cout << "f_var " << f_var << endl;
+}
+
 int main(int argc,char **argv) {
-    testKondo1();
-    testKondo2();
+//    testKondo1();
+//    testKondo2();
+    testKondo3();
 }
 

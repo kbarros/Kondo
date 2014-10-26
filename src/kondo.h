@@ -33,6 +33,7 @@ constexpr double Pi = 3.141592653589793238463;
 class Lattice {
 public:
     static void set_spins_random(RNG& rng, Vec<vec3>& spin);
+    static std::unique_ptr<Lattice> mk_linear(int w, double t1, double t2);
     static std::unique_ptr<Lattice> mk_square(int w, int h, double t1, double t2, double t3);
     static std::unique_ptr<Lattice> mk_triangular(int w, int h, double t1, double t2, double t3);
     static std::unique_ptr<Lattice> mk_kagome(int w, int h, double t1);
@@ -41,6 +42,7 @@ public:
     virtual vec3 position(int i) = 0;
     virtual void set_spins(std::string const& name, Vec<vec3>& spin) = 0;
     virtual void add_hoppings(SpMatCoo<cx_double>& H) = 0;
+    virtual void set_colors(int n_colors, Vec<int>& colors) = 0;
 };
 
 

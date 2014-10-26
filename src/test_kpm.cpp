@@ -71,8 +71,7 @@ void testKPM2() {
     int n = 100;
     int s = n/4;
     double noise = 0.2;
-    RNG rng;
-    rng.seed(0);
+    RNG rng(0);
     std::normal_distribution<double> normal;
     
     // Build noisy tri-diagonal matrix
@@ -120,10 +119,10 @@ void testKPM2() {
     engine->stoch_orbital(f_c);
     auto dE_dH_3 = (engine->stoch_element(i, j) + engine->stoch_element(j, i)).real();
     
-    Vec<int> grouping(n);
+    Vec<int> groups(n);
     for (int i = 0; i < n; i++)
-        grouping[i] = i%s;
-    engine->set_R_correlated(grouping, s, rng);
+        groups[i] = i%s;
+    engine->set_R_correlated(groups, rng);
     double E4 = moment_product(g_c, engine->moments(M));
     engine->stoch_orbital(f_c);
     auto dE_dH_4 = (engine->stoch_element(i, j) + engine->stoch_element(j, i)).real();

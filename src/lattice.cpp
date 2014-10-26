@@ -2,6 +2,17 @@
 #include <cassert>
 
 
+static Vec<int> colors_to_groups(Vec<int> const& colors, int n_orbs) {
+    Vec<int> groups(colors.size()*n_orbs);
+    for (int i = 0; i < colors.size(); i++) {
+        for (int o = 0; o < n_orbs; o++) {
+            groups[i*n_orbs+o] = n_orbs*colors[i] + o;
+        }
+    }
+    return groups;
+}
+
+
 void Lattice::set_spins_random(RNG &rng, Vec<vec3> &spin) {
     for (int i = 0; i < spin.size(); i++) {
         spin[i] = gaussian_vec3<double>(rng).normalized();
@@ -54,15 +65,17 @@ public:
         }
     }
     
-    void set_colors(int n_colors, Vec<int>& colors) {
+    Vec<int> groups(int n_colors) {
+        n_colors = std::min(n_colors, n_sites());
         if (n_sites() % n_colors != 0) {
             std::cerr << "n_colors=" << n_colors << "is not a divisor of lattice size w=" << n_sites() << std::endl;
             abort();
         }
-        colors.resize(n_sites());
+        Vec<int> colors(n_sites());
         for (int i = 0; i < n_sites(); i++) {
             colors[i] = i % n_colors;
         }
+        return colors_to_groups(colors, 2);
     }
 };
 
@@ -127,7 +140,8 @@ public:
         }
     }
     
-    void set_colors(int n_colors, Vec<int>& colors) {
+    Vec<int> groups(int n_colors) {
+        n_colors = std::min(n_colors, n_sites());
         int c_len = int(sqrt(n_colors));
         if (c_len*c_len != n_colors) {
             std::cerr << "n_colors=" << n_colors << " is not a perfect square\n";
@@ -137,7 +151,7 @@ public:
             std::cerr << "sqrt(n_colors)=" << c_len << " is not a divisor of lattice size (w,h)=(" << w << "," << h << ")\n";
             abort();
         }
-        colors.resize(n_sites());
+        Vec<int> colors(n_sites());
         for (int i = 0; i < n_sites(); i++) {
             int x = i%w;
             int y = i/h;
@@ -145,6 +159,7 @@ public:
             int cy = y%c_len;
             colors[i] = cy*c_len + cx;
         }
+        return colors_to_groups(colors, 2);
     }
 };
 
@@ -232,7 +247,8 @@ public:
         }
     }
     
-    void set_colors(int n_colors, Vec<int>& colors) {
+    Vec<int> groups(int n_colors) {
+        n_colors = std::min(n_colors, n_sites());
         int c_len = int(sqrt(n_colors));
         if (c_len*c_len != n_colors) {
             std::cerr << "n_colors=" << n_colors << " is not a perfect square\n";
@@ -242,7 +258,7 @@ public:
             std::cerr << "sqrt(n_colors)=" << c_len << " is not a divisor of lattice size (w,h)=(" << w << "," << h << ")\n";
             abort();
         }
-        colors.resize(n_sites());
+        Vec<int> colors(n_sites());
         for (int i = 0; i < n_sites(); i++) {
             int x = i%w;
             int y = i/h;
@@ -250,6 +266,7 @@ public:
             int cy = y%c_len;
             colors[i] = cy*c_len + cx;
         }
+        return colors_to_groups(colors, 2);
     }
 };
 
@@ -409,7 +426,8 @@ public:
         }
     }
     
-    void set_colors(int n_colors, Vec<int>& colors) {
+    Vec<int> groups(int n_colors) {
+        n_colors = std::min(n_colors, n_sites());
         if (n_colors%3 != 0) {
             std::cerr << "n_colors=" << n_colors << " is not a multiple of 3\n";
             abort();
@@ -423,7 +441,7 @@ public:
             std::cerr << "sqrt(n_colors/3)=" << c_len << " is not a divisor of lattice size (w,h)=(" << w << "," << h << ")\n";
             abort();
         }
-        colors.resize(n_sites());
+        Vec<int> colors(n_sites());
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int cx = x%c_len;
@@ -434,6 +452,7 @@ public:
                 }
             }
         }
+        return colors_to_groups(colors, 2);
     }
 };
 

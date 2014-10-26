@@ -98,12 +98,12 @@ int main(int argc, char *argv[]) {
     // double tolerance = 1e-2;
     // auto es = energy_scale(m.H, extra, tolerance);
     
-    int M      = g.get_unwrap<int64_t>("kpm.cheby_order");
-    int M_prec = g.get_unwrap<int64_t>("kpm.cheby_order_precise");
-    int Mq      = 4*M;
-    int Mq_prec = 4*M_prec;
-    int s      = g.get_unwrap<int64_t>("kpm.n_vectors");
-    int s_prec = g.get_unwrap<int64_t>("kpm.n_vectors_precise");
+    int M                = g.get_unwrap<int64_t>("kpm.cheby_order");
+    int M_prec           = g.get_unwrap<int64_t>("kpm.cheby_order_precise");
+    int Mq               = 4*M;
+    int Mq_prec          = 4*M_prec;
+    Vec<int> groups      = m.lattice->groups(g.get_unwrap<int64_t>("kpm.n_colors"));
+    Vec<int> groups_prec = m.lattice->groups(g.get_unwrap<int64_t>("kpm.n_colors_precise"));
     
     // variables that will be updated in `build_kpm(spin)`
     auto engine = mk_engine_cx();
@@ -138,15 +138,10 @@ int main(int argc, char *argv[]) {
 })";
     json_file.close();
     
-    auto build_kpm = [&](Vec<vec3> const& spin, int M, int Mq, int s) {
+    auto build_kpm = [&](Vec<vec3> const& spin, int M, int Mq, Vec<int> const& groups) {
         m.set_hamiltonian(spin);
         engine->set_H(m.H, es);
-        int n = m.H.n_rows;
-        if (s >= n) {
-            engine->set_R_identity(n);
-        } else {
-            engine->set_R_uncorrelated(n, s, rng);
-        }
+        engine->set_R_correlated(groups, rng);
         moments = engine->moments(M);
         gamma = moment_transform(moments, Mq);
         if (ensemble_type == "canonical") {
@@ -159,14 +154,14 @@ int main(int argc, char *argv[]) {
     };
     
     auto calc_force = [&](Vec<vec3> const& spin, Vec<vec3>& force) {
-        build_kpm(spin, M, Mq, s);
+        build_kpm(spin, M, Mq, groups);
         auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
         m.set_forces(D, force);
     };
     
     // assumes build_kpm() has already been called
     auto dump = [&](int step, double dt) {
-        build_kpm(m.spin, M_prec, Mq_prec, s_prec);
+        build_kpm(m.spin, M_prec, Mq_prec, groups_prec);
         double e = m.classical_potential();
         if (ensemble_type == "canonical") {
             e += electronic_energy(gamma, es, kB_T, filling, mu) / m.n_sites;

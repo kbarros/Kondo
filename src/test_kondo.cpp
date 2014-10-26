@@ -77,8 +77,6 @@ void testKondo3() {
     double kB_T = 0;
     double mu = 0;
     int n_colors = 3;
-    int n_orbs = 2;
-    int s = n_colors*n_orbs;
     
 //    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, B_zeeman);
     auto m = Model(Lattice::mk_kagome(w, h, t1), J, B_zeeman);
@@ -87,14 +85,7 @@ void testKondo3() {
     m.lattice->set_spins("ferro", m.spin);
     m.set_hamiltonian(m.spin);
     
-    Vec<int> c;
-    m.lattice->set_colors(n_colors, c);
-    Vec<int> groups;
-    for (int i = 0; i < m.n_sites; i++) {
-        for (int o = 0; o < n_orbs; o++) {
-            groups.push_back(c[i]*n_orbs + o);
-        }
-    }
+    Vec<int> groups = m.lattice->groups(n_colors);
     
     double extra = 0.1;
     double tolerance = 1e-2;
@@ -112,14 +103,14 @@ void testKondo3() {
     auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
     
 //    engine->set_R_identity(m.H.n_rows);
-//    engine->set_R_uncorrelated(m.H.n_rows, s, rng);
-    engine->set_R_correlated(groups, s, rng);
+//    engine->set_R_uncorrelated(m.H.n_rows, n_colors*2, rng);
+    engine->set_R_correlated(groups, rng);
     engine->stoch_orbital(f_c);
     m.set_forces(D, f1);
     
 //    engine->set_R_identity(m.H.n_rows);
-//    engine->set_R_uncorrelated(m.H.n_rows, s, rng);
-    engine->set_R_correlated(groups, s, rng);
+//    engine->set_R_uncorrelated(m.H.n_rows, n_colors*2, rng);
+    engine->set_R_correlated(groups, rng);
     engine->stoch_orbital(f_c);
     m.set_forces(D, f2);
     

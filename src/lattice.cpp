@@ -88,9 +88,10 @@ class SquareLattice: public Lattice {
 public:
     int w, h;
     double t1, t2, t3;
+    double phi_x;
     
-    SquareLattice(int w, int h, double t1, double t2, double t3):
-    w(w), h(h), t1(t1), t2(t2), t3(t3)
+    SquareLattice(int w, int h, double t1, double t2, double t3, double phi_x):
+    w(w), h(h), t1(t1), t2(t2), t3(t3), phi_x(phi_x)
     { assert(t2==0 && "t2 not yet implemented for square lattice."); }
     
     int n_sites() { return w*h; }
@@ -173,16 +174,18 @@ public:
                 static int nn1_sz = 4;
                 static int nn1_dx[] { 1, 0, -1, 0 };
                 static int nn1_dy[] { 0, 1, 0, -1 };
+                
                 for (int nn = 0; nn < nn1_sz; nn++) {
-                    // nn1
-                    int j = coord2idx(x + nn1_dx[nn], y + nn1_dy[nn]);
-                    H.add(2*i+0, 2*j+0, t1);
-                    H.add(2*i+1, 2*j+1, t1);
-                    
-                    // nn3, dx and dy scaled by 2
-                    j = coord2idx(x + 2*nn1_dx[nn], y + 2*nn1_dy[nn]);
-                    H.add(2*i+0, 2*j+0, t3);
-                    H.add(2*i+1, 2*j+1, t3);
+                    auto add_hopping = [&](int dx, int dy, double t) {
+                        cx_double phase = exp(I*(2*Pi*dx*phi_x/w));
+                        int j = coord2idx(x+dx,y+dy);
+                        H.add(2*i+0, 2*j+0, phase*t);
+                        H.add(2*i+1, 2*j+1, phase*t);
+                    };
+                    int dx = nn1_dx[nn];
+                    int dy = nn1_dy[nn];
+                    add_hopping(dx, dy, t1);
+                    add_hopping(2*dx, 2*dy, t3);
                 }
             }
         }
@@ -211,9 +214,9 @@ public:
     }
 };
 
-std::unique_ptr<Lattice> Lattice::mk_square(int w, int h, double t1, double t2, double t3) {
+std::unique_ptr<Lattice> Lattice::mk_square(int w, int h, double t1, double t2, double t3, double phi_x) {
     assert(t2 == 0);
-    return std::make_unique<SquareLattice>(w, h, t1, t2, t3);
+    return std::make_unique<SquareLattice>(w, h, t1, t2, t3, phi_x);
 }
 
 

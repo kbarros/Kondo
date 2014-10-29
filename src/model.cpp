@@ -22,7 +22,6 @@ Model::Model(std::unique_ptr<Lattice> lattice, double J, vec3 B_zeeman):
 // sigma1     sigma2     sigma3
 //  0  1       0 -I       1  0
 //  1  0       I  0       0 -1
-static fkpm::cx_double I(0, 1);
 static Vec3<fkpm::cx_double> pauli[2][2] {
     {{0, 0, 1}, {1, -I, 0}},
     {{1, I, 0}, {0, 0, -1}}

@@ -13,7 +13,7 @@ std::unique_ptr<Lattice> mk_lattice(cpptoml::toml_group g) {
     if (type == "square") {
         return Lattice::mk_square(
             g.get_unwrap<int64_t>("lattice.w"), g.get_unwrap<int64_t>("lattice.h"), g.get_unwrap<double>("lattice.t1"),
-            g.get_unwrap<double>("lattice.t2", 0.0), g.get_unwrap<double>("lattice.t3", 0.0));
+            g.get_unwrap<double>("lattice.t2", 0.0), g.get_unwrap<double>("lattice.t3", 0.0), g.get_unwrap<double>("phi_x", 0.0));
     } else if (type == "triangular") {
         return Lattice::mk_triangular(
             g.get_unwrap<int64_t>("lattice.w"), g.get_unwrap<int64_t>("lattice.h"), g.get_unwrap<double>("lattice.t1"),

@@ -7,11 +7,12 @@ using namespace std::placeholders;
 void testKondo1() {
     int w = 6, h = 6;
     double t1 = -1, t2 = 0, t3 = -0.5;
+    double phi_x = 0;
     double J = 0.5;
     double kB_T = 0;
     double mu = 0.103;
-
-    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, {0,0,0});
+    vec3 B_zeeman(0, 0, 0);
+    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3, phi_x), J, B_zeeman);
     m.lattice->set_spins("ferro", m.spin);
     m.spin[0] = vec3(1, 1, 1).normalized();
     
@@ -68,18 +69,19 @@ void testKondo2() {
 }
 
 void testKondo3() {
-    RNG rng(0);
-    int w = 32;
+    RNG rng(1);
+    int w = 1024; // 32;
     int h = w;
-    double t1 = -1; // t2 = 0, t3 = 0;
+    double t1 = -1, t2 = 0, t3 = 0;
     double J = 0.5;
     vec3 B_zeeman(0, 0, 0);
     double kB_T = 0;
     double mu = 0;
-    int n_colors = 3;
+    int n_colors = 64;
     
 //    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, B_zeeman);
-    auto m = Model(Lattice::mk_kagome(w, h, t1), J, B_zeeman);
+//    auto m = Model(Lattice::mk_kagome(w, h, t1), J, B_zeeman);
+    auto m = Model(Lattice::mk_linear(w, t1, t2), J, B_zeeman);
     
 //    m.lattice->set_spins_random(rng, m.spin);
     m.lattice->set_spins("ferro", m.spin);
@@ -100,19 +102,33 @@ void testKondo3() {
     Vec<vec3>& f1 = m.dyn_stor[0];
     Vec<vec3>& f2 = m.dyn_stor[1];
     
-    auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
+//    auto calc1 = [&](Vec<vec3>& f) {
+//        engine->set_R_identity(m.H.n_rows);
+//        engine->stoch_orbital(f_c);
+//        auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
+//        m.set_forces(D, f);
+//    };
+    auto calc2 = [&](Vec<vec3>& f) {
+        engine->set_R_uncorrelated(m.H.n_rows, n_colors*2, rng);
+        engine->stoch_orbital(f_c);
+        auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
+        m.set_forces(D, f);
+    };
+    auto calc3 = [&](Vec<vec3>& f) {
+        engine->set_R_correlated(groups, rng);
+        engine->stoch_orbital(f_c);
+        auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
+        m.set_forces(D, f);
+    };
+    auto calc4 = [&](Vec<vec3>& f) {
+        engine->set_R_correlated(groups, rng);
+        arma::sp_cx_mat deriv = engine->autodiff(g_c);
+        auto D = [&](int i, int j) { return deriv(i, j); };
+        m.set_forces(D, f);
+    };
     
-//    engine->set_R_identity(m.H.n_rows);
-//    engine->set_R_uncorrelated(m.H.n_rows, n_colors*2, rng);
-    engine->set_R_correlated(groups, rng);
-    engine->stoch_orbital(f_c);
-    m.set_forces(D, f1);
-    
-//    engine->set_R_identity(m.H.n_rows);
-//    engine->set_R_uncorrelated(m.H.n_rows, n_colors*2, rng);
-    engine->set_R_correlated(groups, rng);
-    engine->stoch_orbital(f_c);
-    m.set_forces(D, f2);
+    calc4(f1);
+    calc4(f2);
     
     double acc = 0;
     for (int i = 0; i < m.n_sites; i++) {

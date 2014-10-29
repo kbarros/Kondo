@@ -28,13 +28,13 @@ Vec3<T> project_tangent(vec3 x, vec3 p) {
 }
 
 constexpr double Pi = 3.141592653589793238463;
-
+constexpr cx_double I(0, 1);
 
 class Lattice {
 public:
     static void set_spins_random(RNG& rng, Vec<vec3>& spin);
     static std::unique_ptr<Lattice> mk_linear(int w, double t1, double t2);
-    static std::unique_ptr<Lattice> mk_square(int w, int h, double t1, double t2, double t3);
+    static std::unique_ptr<Lattice> mk_square(int w, int h, double t1, double t2, double t3, double phi_x);
     static std::unique_ptr<Lattice> mk_triangular(int w, int h, double t1, double t2, double t3);
     static std::unique_ptr<Lattice> mk_kagome(int w, int h, double t1);
     

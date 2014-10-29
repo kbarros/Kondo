@@ -106,6 +106,9 @@ public:
         if (name == "ferro") {
             spin.assign(n_sites(), vec3{0, 0, 1});
         }
+        else if (name == "meron") {
+            spin.assign(n_sites(), vec3{0, 0, 1});
+        }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";
         }

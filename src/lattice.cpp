@@ -108,6 +108,59 @@ public:
         }
         else if (name == "meron") {
             spin.assign(n_sites(), vec3{0, 0, 1});
+            
+            double factor, q1[2], q2[2], q3[2], q4[2], q5[2];//k-points
+            factor = Pi/4.;
+            q1[0] = factor;
+            q1[1] = factor;
+            
+            q2[0] = factor;
+            q2[1] =-factor;
+            
+            q3[0] =    factor;
+            q3[1] =-3.*factor;
+            
+            q4[0] = 3.*factor;
+            q4[1] =   -factor;
+            
+            q5[0] = 3.*factor;
+            q5[1] =-3.*factor;
+            
+            for (int y = 0; y < h; y++) {
+                for (int x = 0; x < w; x++) {
+                    int i = x + y*w;
+                    
+                    
+                    spin[i][0]
+                    =
+                     0.042337*cos(q1[0]*x + q1[1]*y) + -0.279259*sin(q1[0]*x + q1[1]*y) +
+                    -0.065991*cos(q2[0]*x + q2[1]*y) +  0.222163*sin(q2[0]*x + q2[1]*y) +
+                    -0.006856*cos(q3[0]*x + q3[1]*y) +  0.012791*sin(q3[0]*x + q3[1]*y) +
+                     0.009325*cos(q4[0]*x + q4[1]*y) + -0.010813*sin(q4[0]*x + q4[1]*y) +
+                    -0.007072*cos(q5[0]*x + q5[1]*y) +  0.005165*sin(q5[0]*x + q5[1]*y);
+                    
+                    spin[i][1]
+                    =
+                     0.036650*cos(q1[0]*x + q1[1]*y) +  0.356878*sin(q1[0]*x + q1[1]*y) +
+                    -0.052121*cos(q2[0]*x + q2[1]*y) +  0.173066*sin(q2[0]*x + q2[1]*y) +
+                     0.010411*cos(q3[0]*x + q3[1]*y) + -0.013487*sin(q3[0]*x + q3[1]*y) +
+                    -0.008524*cos(q4[0]*x + q4[1]*y) +  0.015746*sin(q4[0]*x + q4[1]*y) +
+                    -0.004883*cos(q5[0]*x + q5[1]*y) +  0.004514*sin(q5[0]*x + q5[1]*y);
+
+                    spin[i][2]
+                    =
+                    0.448280*cos(q1[0]*x + q1[1]*y) + -0.001420*sin(q1[0]*x + q1[1]*y) +
+                    0.009444*cos(q2[0]*x + q2[1]*y) + -0.035105*sin(q2[0]*x + q2[1]*y) +
+                    0.017824*cos(q3[0]*x + q3[1]*y) +  0.013186*sin(q3[0]*x + q3[1]*y) +
+                    0.019415*cos(q4[0]*x + q4[1]*y) +  0.010644*sin(q4[0]*x + q4[1]*y) +
+                    0.001066*cos(q5[0]*x + q5[1]*y) + -0.000823*sin(q5[0]*x + q5[1]*y);
+
+
+                    spin[i] = spin[i].normalized();
+
+                    //spin[i] = vec3(+1, +1, +1).normalized();
+                }
+            }
         }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";

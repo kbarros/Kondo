@@ -1,4 +1,5 @@
 #include <iomanip>
+#include <cassert>
 #include "iostream_util.h"
 #include "fastkpm.h"
 
@@ -22,6 +23,32 @@ void testExpansionCoeffs() {
             -0.00536911, -0.000313801, 0.000758494, 0.0000425209 };
         std::cout << "mathematica c = " << c_exact << std::endl;
     }
+}
+
+void testMat() {
+    int n = 20;
+    SpMatCoo<double> H(n, n);
+    
+    RNG rng(0);
+    std::uniform_int_distribution<uint32_t> uniform(0,n-1);
+    for (int k = 1; k < 400; k++) {
+        int i = uniform(rng);
+        int j = uniform(rng);
+        H.add(i, j, k);
+    }
+    
+    arma::sp_mat Ha = H.to_arma().st();
+    SpMatCsr<double> Hc;
+    Hc.build(H);
+    
+    for (int p = 0; p < Ha.n_nonzero; p++) {
+        assert(Ha.row_indices[p] == Hc.col_idx[p]);
+    }
+    cout << "Column indices match.\n";
+    for (int j = 0; j <= Ha.n_cols; j++) {
+        assert(Ha.col_ptrs[j] == Hc.row_ptr[j]);
+    }
+    cout << "Row pointers match.\n";
 }
 
 template <typename T>
@@ -139,9 +166,9 @@ void testKPM2() {
 }
 
 int main(int argc,char **argv) {
+    testMat();
     testExpansionCoeffs();
     testKPM1<double>();
     testKPM2();
-    std::exit(1);
 }
 

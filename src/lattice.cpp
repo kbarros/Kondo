@@ -47,20 +47,20 @@ public:
         return(x%w+w)%w;
     }
     
-    void add_hoppings(fkpm::SpMatCoo<fkpm::cx_double>& H) {
+    void add_hoppings(fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
         for (int i = 0; i < w; i++) {
             static int nn1_sz = 2;
             static int nn1_dx[] { 1, -1 };
             for (int nn = 0; nn < nn1_sz; nn++) {
                 // nn1
                 int j = coord2idx(i + nn1_dx[nn]);
-                H.add(2*i+0, 2*j+0, t1);
-                H.add(2*i+1, 2*j+1, t1);
+                H_elems.add(2*i+0, 2*j+0, t1);
+                H_elems.add(2*i+1, 2*j+1, t1);
                 
                 // nn3, dx scaled by 2
                 j = coord2idx(i + 2*nn1_dx[nn]);
-                H.add(2*i+0, 2*j+0, t2);
-                H.add(2*i+1, 2*j+1, t2);
+                H_elems.add(2*i+0, 2*j+0, t2);
+                H_elems.add(2*i+1, 2*j+1, t2);
             }
         }
     }
@@ -166,7 +166,7 @@ public:
         return xp + yp*w;
     }
     
-    void add_hoppings(fkpm::SpMatCoo<fkpm::cx_double>& H) {
+    void add_hoppings(fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int i = coord2idx(x, y);
@@ -179,8 +179,8 @@ public:
                     auto add_hopping = [&](int dx, int dy, double t) {
                         cx_double phase = exp(I*(2*Pi*dx*phi_x/w));
                         int j = coord2idx(x+dx,y+dy);
-                        H.add(2*i+0, 2*j+0, phase*t);
-                        H.add(2*i+1, 2*j+1, phase*t);
+                        H_elems.add(2*i+0, 2*j+0, phase*t);
+                        H_elems.add(2*i+1, 2*j+1, phase*t);
                     };
                     int dx = nn1_dx[nn];
                     int dy = nn1_dy[nn];
@@ -270,7 +270,7 @@ public:
         }
     }
     
-    void add_hoppings(fkpm::SpMatCoo<fkpm::cx_double>& H) {
+    void add_hoppings(fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int i = coord2idx(x, y);
@@ -286,13 +286,13 @@ public:
                 for (int nn = 0; nn < nn1_sz; nn++) {
                     // nn1
                     int j = coord2idx(x + nn1_dx[nn], y + nn1_dy[nn]);
-                    H.add(2*i+0, 2*j+0, t1);
-                    H.add(2*i+1, 2*j+1, t1);
+                    H_elems.add(2*i+0, 2*j+0, t1);
+                    H_elems.add(2*i+1, 2*j+1, t1);
 
                     // nn3, dx and dy scaled by 2
                     j = coord2idx(x + 2*nn1_dx[nn], y + 2*nn1_dy[nn]);
-                    H.add(2*i+0, 2*j+0, t3);
-                    H.add(2*i+1, 2*j+1, t3);
+                    H_elems.add(2*i+0, 2*j+0, t3);
+                    H_elems.add(2*i+1, 2*j+1, t3);
                 }
             }
         }
@@ -462,15 +462,15 @@ public:
         std::abort();
     }
     
-    void add_hoppings(fkpm::SpMatCoo<fkpm::cx_double>& H) {
+    void add_hoppings(fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 for (int v = 0; v < 3; v++) {
                     int i = coord2idx(v, x, y);
                     for (int nn = 0; nn < 4; nn++) {
                         int j = neighbor(v, x, y, nn);
-                        H.add(2*i+0, 2*j+0, t1);
-                        H.add(2*i+1, 2*j+1, t1);
+                        H_elems.add(2*i+0, 2*j+0, t1);
+                        H_elems.add(2*i+1, 2*j+1, t1);
                     }
                 }
             }

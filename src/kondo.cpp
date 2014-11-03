@@ -150,13 +150,12 @@ int main(int argc, char *argv[]) {
             filling = mu_to_filling(gamma, es, kB_T, mu);
         }
         auto c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, kB_T, mu), es);
-        engine->stoch_orbital(c);
+        engine->stoch_matrix(c, m.D);
     };
     
     auto calc_force = [&](Vec<vec3> const& spin, Vec<vec3>& force) {
         build_kpm(spin, M, Mq, groups);
-        auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
-        m.set_forces(D, force);
+        m.set_forces(m.D, force);
     };
     
     // assumes build_kpm() has already been called

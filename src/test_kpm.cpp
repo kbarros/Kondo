@@ -27,25 +27,24 @@ void testExpansionCoeffs() {
 
 void testMat() {
     int n = 20;
-    SpMatCoo<double> H(n, n);
     
     RNG rng(0);
     std::uniform_int_distribution<uint32_t> uniform(0,n-1);
+    SpMatElems<double> elems;
     for (int k = 1; k < 400; k++) {
         int i = uniform(rng);
         int j = uniform(rng);
-        H.add(i, j, k);
+        elems.add(i, j, k);
     }
-    
+    SpMatCsr<double> H(n, n, elems);
     arma::sp_mat Ha = H.to_arma().st();
-    SpMatCsr<double> Hc(H);
     
     for (int p = 0; p < Ha.n_nonzero; p++) {
-        assert(Ha.row_indices[p] == Hc.col_idx[p]);
+        assert(Ha.row_indices[p] == H.col_idx[p]);
     }
     cout << "Column indices match.\n";
     for (int j = 0; j <= Ha.n_cols; j++) {
-        assert(Ha.col_ptrs[j] == Hc.row_ptr[j]);
+        assert(Ha.col_ptrs[j] == H.row_ptr[j]);
     }
     cout << "Row pointers match.\n";
 }
@@ -53,11 +52,12 @@ void testMat() {
 template <typename T>
 void testKPM1() {
     int n = 4;
-    SpMatCoo<T> H(n, n);
-    H.add(0, 0, 5.0);
-    H.add(1, 1, -5.0);
-    H.add(2, 2, 0);
-    H.add(3, 3, 0);
+    SpMatElems<T> elems;
+    elems.add(0, 0, 5.0);
+    elems.add(1, 1, -5.0);
+    elems.add(2, 2, 0);
+    elems.add(3, 3, 0);
+    SpMatCsr<T> H(n, n, elems);
     auto g = [](double x) { return x*x; };
     auto f = [](double x) { return 2*x; }; // dg/dx
     
@@ -97,14 +97,15 @@ void testKPM2() {
     std::normal_distribution<double> normal;
     
     // Build noisy tri-diagonal matrix
-    SpMatCoo<cx_double> H(n, n);
+    SpMatElems<cx_double> elems;
     for (int i = 0; i < n; i++) {
         auto x = 1.0 + noise * cx_double(normal(rng), normal(rng));
         int j = (i-1+n)%n;
-        H.add(i, i, 0);
-        H.add(i, j, x);
-        H.add(j, i, conj(x));
+        elems.add(i, i, 0);
+        elems.add(i, j, x);
+        elems.add(j, i, conj(x));
     }
+    SpMatCsr<cx_double> H(n, n, elems);
     auto H_dense = H.to_arma_dense();
     
     double kB_T = 0.0;

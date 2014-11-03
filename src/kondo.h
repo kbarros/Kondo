@@ -41,7 +41,7 @@ public:
     virtual int n_sites() = 0;
     virtual vec3 position(int i) = 0;
     virtual void set_spins(std::string const& name, Vec<vec3>& spin) = 0;
-    virtual void add_hoppings(SpMatCoo<cx_double>& H) = 0;
+    virtual void add_hoppings(SpMatElems<cx_double>& H_elems) = 0;
     virtual Vec<int> groups(int n_colors) = 0;
 };
 
@@ -52,7 +52,8 @@ public:
     std::unique_ptr<Lattice> lattice;
     double J;
     vec3 B_zeeman;
-    SpMatCoo<cx_double> H;
+    SpMatElems<cx_double> H_elems;
+    SpMatCsr<cx_double> H, D;
     
     Vec<vec3> spin;
     

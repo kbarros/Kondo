@@ -39,13 +39,12 @@ void testKondo1() {
     cout << "H: " << Ha(0, 0) << " " << Ha(1, 0) << "\n  [(-0.288675,0)  (-0.288675,-0.288675)]\n";
     cout << "   " << Ha(0, 1) << " " << Ha(1, 1) << "\n  [(-0.288675,0.288675) (0.288675,0)]\n\n";
     
-    auto D = engine->Hs;
-    engine->autodiff_matrix(g_c, D);
-    cout << "D: " << D(0, 0) << " " << D(1, 0) << "\n  [(0.481926,0) (0.0507966,0.0507966)\n";
-    cout << "   " << D(0, 1) << " " << D(1, 1) << "\n  [(0.0507966,-0.0507966) (0.450972,0)]\n\n";
+    engine->autodiff_matrix(g_c, m.D);
+    cout << "D: " << m.D(0, 0) << " " << m.D(1, 0) << "\n  [(0.481926,0) (0.0507966,0.0507966)\n";
+    cout << "   " << m.D(0, 1) << " " << m.D(1, 1) << "\n  [(0.0507966,-0.0507966) (0.450972,0)]\n\n";
     
     Vec<vec3>& force = m.dyn_stor[0];
-    m.set_forces(D, force);
+    m.set_forces(m.D, force);
     
     cout << std::setprecision(9);
     cout << "grand energy " <<  E1 << " " << E2 << "\n            [-1.98657216 -1.98657194]\n";
@@ -102,8 +101,6 @@ void testKondo3() {
     Vec<vec3>& f1 = m.dyn_stor[0];
     Vec<vec3>& f2 = m.dyn_stor[1];
     
-    auto D = engine->Hs;
-    
 //    auto calc1 = [&](Vec<vec3>& f) {
 //        engine->set_R_identity(m.H.n_rows);
 //        engine->stoch_orbital(f_c);
@@ -113,20 +110,20 @@ void testKondo3() {
     auto calc2 = [&](Vec<vec3>& f) {
         engine->set_R_uncorrelated(m.H.n_rows, n_colors*2, rng);
         engine->moments(M);
-        engine->stoch_matrix(f_c, D);
-        m.set_forces(D, f);
+        engine->stoch_matrix(f_c, m.D);
+        m.set_forces(m.D, f);
     };
     auto calc3 = [&](Vec<vec3>& f) {
         engine->set_R_correlated(groups, rng);
         engine->moments(M);
-        engine->stoch_matrix(f_c, D);
-        m.set_forces(D, f);
+        engine->stoch_matrix(f_c, m.D);
+        m.set_forces(m.D, f);
     };
     auto calc4 = [&](Vec<vec3>& f) {
         engine->set_R_correlated(groups, rng);
         engine->moments(M);
-        engine->autodiff_matrix(g_c, D);
-        m.set_forces(D, f);
+        engine->autodiff_matrix(g_c, m.D);
+        m.set_forces(m.D, f);
     };
     
     calc4(f1);

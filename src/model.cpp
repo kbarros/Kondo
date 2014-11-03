@@ -7,8 +7,6 @@
 Model::Model(std::unique_ptr<Lattice> lattice, double J, vec3 B_zeeman):
     n_sites(lattice->n_sites()), lattice(std::move(lattice)), J(J), B_zeeman(B_zeeman)
 {
-    H = fkpm::SpMatCoo<fkpm::cx_double>(2*n_sites, 2*n_sites);
-    
     spin.assign(n_sites, vec3{0, 0, 0});
     
     dyn_stor[0].assign(n_sites, vec3{0, 0, 0});
@@ -28,17 +26,20 @@ static Vec3<fkpm::cx_double> pauli[2][2] {
 };
 
 void Model::set_hamiltonian(Vec<vec3> const& spin) {
-    H.clear();
+    H_elems.clear();
     
-    lattice->add_hoppings(H);
+    lattice->add_hoppings(H_elems);
     
     for (int i = 0; i < n_sites; i++) {
         for (int s1 = 0; s1 < 2; s1++) {
             for (int s2 = 0; s2 < 2; s2++) {
-                H.add(2*i+s1, 2*i+s2, -J * pauli[s1][s2].dot(spin[i]));
+                H_elems.add(2*i+s1, 2*i+s2, -J * pauli[s1][s2].dot(spin[i]));
             }
         }
     }
+    H.build(2*n_sites, 2*n_sites, H_elems);
+    D = H;
+    D.zeros();
 }
 
 double Model::classical_potential() {

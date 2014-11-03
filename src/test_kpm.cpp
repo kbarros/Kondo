@@ -38,8 +38,7 @@ void testMat() {
     }
     
     arma::sp_mat Ha = H.to_arma().st();
-    SpMatCsr<double> Hc;
-    Hc.build(H);
+    SpMatCsr<double> Hc(H);
     
     for (int p = 0; p < Ha.n_nonzero; p++) {
         assert(Ha.row_indices[p] == Hc.col_idx[p]);
@@ -57,6 +56,8 @@ void testKPM1() {
     SpMatCoo<T> H(n, n);
     H.add(0, 0, 5.0);
     H.add(1, 1, -5.0);
+    H.add(2, 2, 0);
+    H.add(3, 3, 0);
     auto g = [](double x) { return x*x; };
     auto f = [](double x) { return 2*x; }; // dg/dx
     
@@ -80,17 +81,11 @@ void testKPM1() {
     double E2 = density_product(gamma, g, es);
     cout << "energy (v2) " << E2 << endl;
     
-    engine->stoch_orbital(g_c);
-    double E3 = std::real(arma::cdot(engine->R, engine->xi));
-    cout << "energy (v3) " << E3 << endl;
-    
-    engine->stoch_orbital(f_c);
-    double E4 = std::real(arma::cdot(engine->R, (H.to_arma()/2)*engine->xi)); // note: g(x) = (x/2) f(x)
-    cout << "energy (v4) " << E4 << " expected 40.9998\n";
-    
+    auto D = engine->Hs;
+    engine->autodiff_matrix(g_c, D);
     cout << "derivative <";
     for (int i = 0; i < 4; i++)
-        cout << engine->stoch_element(i, i) << " ";
+        cout << D(i, i) << " ";
     cout << "> expected <10, -10, 0, 0>\n";
 }
 
@@ -106,6 +101,7 @@ void testKPM2() {
     for (int i = 0; i < n; i++) {
         auto x = 1.0 + noise * cx_double(normal(rng), normal(rng));
         int j = (i-1+n)%n;
+        H.add(i, i, 0);
         H.add(i, j, x);
         H.add(j, i, conj(x));
     }
@@ -127,6 +123,7 @@ void testKPM2() {
     auto f_c = expansion_coefficients(M, Mq, f, es);
     auto engine = mk_engine_cx();
     engine->set_H(H, es);
+    auto D = engine->Hs;
     
     double E1 = exact_energy(H_dense, kB_T, mu);
     double eps = 1e-6;
@@ -138,22 +135,25 @@ void testKPM2() {
     
     engine->set_R_identity(n);
     double E2 = moment_product(g_c, engine->moments(M));
-    engine->stoch_orbital(f_c);
-    double dE_dH_2 = (engine->stoch_element(i, j) + engine->stoch_element(j, i)).real();
+    engine->stoch_matrix(f_c, D);
+    double dE_dH_2 = (D(i, j) + D(j, i)).real();
     
     engine->set_R_uncorrelated(n, s, rng);
     double E3 = moment_product(g_c, engine->moments(M));
-    engine->stoch_orbital(f_c);
-    auto dE_dH_3 = (engine->stoch_element(i, j) + engine->stoch_element(j, i)).real();
+    engine->stoch_matrix(f_c, D);
+    auto dE_dH_3 = (D(i, j) + D(j, i)).real();
     
     Vec<int> groups(n);
     for (int i = 0; i < n; i++)
         groups[i] = i%s;
     engine->set_R_correlated(groups, rng);
     double E4 = moment_product(g_c, engine->moments(M));
-    engine->stoch_orbital(f_c);
-    auto dE_dH_4 = (engine->stoch_element(i, j) + engine->stoch_element(j, i)).real();
+    engine->stoch_matrix(f_c, D);
+    auto dE_dH_4 = (D(i, j) + D(j, i)).real();
     
+    engine->autodiff_matrix(g_c, D);
+    auto dE_dH_5 = (D(i, j) + D(j, i)).real();
+
     cout << "Exact energy            " << E1 << endl;
     cout << "Det. KPM energy         " << E2 << endl;
     cout << "Stoch. energy (uncorr.) " << E3 << endl;
@@ -163,6 +163,7 @@ void testKPM2() {
     cout << "Det. KPM deriv.         " << dE_dH_2 << endl;
     cout << "Stoch. deriv. (uncorr.) " << dE_dH_3 << endl;
     cout << "Stoch. deriv. (corr.)   " << dE_dH_4 << endl;
+    cout << "Autodif. deriv. (corr.) " << dE_dH_5 << endl;
 }
 
 int main(int argc,char **argv) {

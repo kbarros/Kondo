@@ -27,7 +27,7 @@ static Vec3<fkpm::cx_double> pauli[2][2] {
     {{1, I, 0}, {0, 0, -1}}
 };
 
-fkpm::SpMatCoo<fkpm::cx_double>& Model::set_hamiltonian(Vec<vec3> const& spin) {
+void Model::set_hamiltonian(Vec<vec3> const& spin) {
     H.clear();
     
     lattice->add_hoppings(H);
@@ -39,8 +39,6 @@ fkpm::SpMatCoo<fkpm::cx_double>& Model::set_hamiltonian(Vec<vec3> const& spin) {
             }
         }
     }
-    
-    return H;
 }
 
 double Model::classical_potential() {
@@ -51,7 +49,7 @@ double Model::classical_potential() {
     return acc;
 }
 
-void Model::set_forces(std::function<fkpm::cx_double(int, int)> const& D, Vec<vec3>& force) {
+void Model::set_forces(SpMatCsr<cx_double> const& D, Vec<vec3>& force) {
     for (int k = 0; k < n_sites; k++) {
         Vec3<fkpm::cx_double> dE_dS(0, 0, 0);
         

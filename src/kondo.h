@@ -61,9 +61,9 @@ public:
     
     Model(std::unique_ptr<Lattice> lattice, double J, vec3 B_zeeman);
     
-    SpMatCoo<cx_double>& set_hamiltonian(Vec<vec3> const& spin);
+    void set_hamiltonian(Vec<vec3> const& spin);
     double classical_potential();
-    void set_forces(std::function<cx_double(int, int)> const& D, Vec<vec3>& force);
+    void set_forces(SpMatCsr<cx_double> const& D, Vec<vec3>& force);
 };
 
 

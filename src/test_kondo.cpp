@@ -38,9 +38,9 @@ void testKondo1() {
     auto Ha = m.H.to_arma();
     cout << "H: " << Ha(0, 0) << " " << Ha(1, 0) << "\n  [(-0.288675,0)  (-0.288675,-0.288675)]\n";
     cout << "   " << Ha(0, 1) << " " << Ha(1, 1) << "\n  [(-0.288675,0.288675) (0.288675,0)]\n\n";
-
-    engine->stoch_orbital(f_c);
-    auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
+    
+    auto D = engine->Hs;
+    engine->autodiff_matrix(g_c, D);
     cout << "D: " << D(0, 0) << " " << D(1, 0) << "\n  [(0.481926,0) (0.0507966,0.0507966)\n";
     cout << "   " << D(0, 1) << " " << D(1, 1) << "\n  [(0.0507966,-0.0507966) (0.450972,0)]\n\n";
     
@@ -77,7 +77,7 @@ void testKondo3() {
     vec3 B_zeeman(0, 0, 0);
     double kB_T = 0;
     double mu = 0;
-    int n_colors = 64;
+    int n_colors = 4;
     
 //    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, B_zeeman);
 //    auto m = Model(Lattice::mk_kagome(w, h, t1), J, B_zeeman);
@@ -102,6 +102,8 @@ void testKondo3() {
     Vec<vec3>& f1 = m.dyn_stor[0];
     Vec<vec3>& f2 = m.dyn_stor[1];
     
+    auto D = engine->Hs;
+    
 //    auto calc1 = [&](Vec<vec3>& f) {
 //        engine->set_R_identity(m.H.n_rows);
 //        engine->stoch_orbital(f_c);
@@ -110,20 +112,20 @@ void testKondo3() {
 //    };
     auto calc2 = [&](Vec<vec3>& f) {
         engine->set_R_uncorrelated(m.H.n_rows, n_colors*2, rng);
-        engine->stoch_orbital(f_c);
-        auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
+        engine->moments(M);
+        engine->stoch_matrix(f_c, D);
         m.set_forces(D, f);
     };
     auto calc3 = [&](Vec<vec3>& f) {
         engine->set_R_correlated(groups, rng);
-        engine->stoch_orbital(f_c);
-        auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
+        engine->moments(M);
+        engine->stoch_matrix(f_c, D);
         m.set_forces(D, f);
     };
     auto calc4 = [&](Vec<vec3>& f) {
         engine->set_R_correlated(groups, rng);
-        arma::sp_cx_mat deriv = engine->autodiff(g_c);
-        auto D = [&](int i, int j) { return deriv(i, j); };
+        engine->moments(M);
+        engine->autodiff_matrix(g_c, D);
         m.set_forces(D, f);
     };
     
@@ -141,8 +143,8 @@ void testKondo3() {
 }
 
 int main(int argc,char **argv) {
-//    testKondo1();
-//    testKondo2();
+    testKondo1();
+    testKondo2();
     testKondo3();
 }
 

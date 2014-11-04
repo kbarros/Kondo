@@ -64,7 +64,7 @@ void Model::set_forces(SpMatCsr<cx_double> const& D, Vec<vec3>& force) {
             }
         }
         
-        assert(imag(dE_dS).norm() < 1e-8);
+        assert(imag(dE_dS).norm() < 1e-6);
         force[k] = -real(dE_dS);
         
         force[k] += B_zeeman;

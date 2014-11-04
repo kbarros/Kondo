@@ -151,7 +151,9 @@ int main(int argc, char *argv[]) {
         } else {
             filling = mu_to_filling(gamma, es, kB_T, mu);
         }
-        auto c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, kB_T, mu), es);
+        // auto c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, kB_T, mu), es);
+        // engine->stoch_matrix(c, m.D);
+        auto c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, kB_T, mu), es);
         engine->autodiff_matrix(c, m.D);
     };
     

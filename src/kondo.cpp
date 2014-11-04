@@ -50,11 +50,13 @@ std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
 
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        cout << "Usage: " << argv[0] << " <base_dir>\n";
+    if (argc != 3) {
+        cout << "Usage: " << argv[0] << " <base_dir> <device #>\n";
         std::exit(EXIT_SUCCESS);
     }
     std::string base_dir(argv[1]);
+    int device_num = std::stoi(argv[2]);
+    
     auto input_name = base_dir + "/config.toml";
     std::ifstream input_file(input_name);
     if (!input_file.is_open()) {
@@ -106,7 +108,7 @@ int main(int argc, char *argv[]) {
     Vec<int> groups_prec = m.lattice->groups(g.get_unwrap<int64_t>("kpm.n_colors_precise"));
     
     // variables that will be updated in `build_kpm(spin)`
-    auto engine = mk_engine_cx();
+    auto engine = mk_engine_cuSPARSE<cx_double>(device_num);
     Vec<double> moments;
     Vec<double> gamma;
     
@@ -150,7 +152,7 @@ int main(int argc, char *argv[]) {
             filling = mu_to_filling(gamma, es, kB_T, mu);
         }
         auto c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, kB_T, mu), es);
-        engine->stoch_matrix(c, m.D);
+        engine->autodiff_matrix(c, m.D);
     };
     
     auto calc_force = [&](Vec<vec3> const& spin, Vec<vec3>& force) {
@@ -208,6 +210,6 @@ int main(int argc, char *argv[]) {
         }
         dynamics->step(calc_force, rng, m);
     }
-
+    
     return 0;
 }

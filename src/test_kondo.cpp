@@ -7,12 +7,10 @@ using namespace std::placeholders;
 void testKondo1() {
     int w = 6, h = 6;
     double t1 = -1, t2 = 0, t3 = -0.5;
-    double phi_x = 0;
     double J = 0.5;
     double kB_T = 0;
     double mu = 0.103;
-    vec3 B_zeeman(0, 0, 0);
-    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, B_zeeman);
+    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J);
     m.lattice->set_spins("ferro", m.spin);
     m.spin[0] = vec3(1, 1, 1).normalized();
     
@@ -73,14 +71,13 @@ void testKondo3() {
     int h = w;
     double t1 = -1, t2 = 0, t3 = 0;
     double J = 0.5;
-    vec3 B_zeeman(0, 0, 0);
     double kB_T = 0;
     double mu = 0;
     int n_colors = 4;
     
-//    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, B_zeeman);
-//    auto m = Model(Lattice::mk_kagome(w, h, t1), J, B_zeeman);
-    auto m = Model(Lattice::mk_linear(w, t1, t2), J, B_zeeman);
+//    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J);
+//    auto m = Model(Lattice::mk_kagome(w, h, t1), J);
+    auto m = Model(Lattice::mk_linear(w, t1, t2), J);
     
 //    m.lattice->set_spins_random(rng, m.spin);
     m.lattice->set_spins("ferro", m.spin);

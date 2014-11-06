@@ -176,8 +176,8 @@ public:
                 
                 for (int nn = 0; nn < nn1_sz; nn++) {
                     auto add_hopping = [&](int dx, int dy, double t) {
-                        double theta = 2*Pi*(dx*m.spin_orb_Bx/w + dy*m.spin_orb_By/h);
-                        theta *= (1 + m.spin_orb_growth*m.time) * cos(m.spin_orb_freq*m.time);
+                        double theta = 2*Pi*(dx*m.current.x/w + dy*m.current.y/h);
+                        theta *= (1 + m.current_growth*m.time) * cos(m.current_freq*m.time);
                         cx_double phase = exp(I*theta);
                         int j = coord2idx(x+dx,y+dy);
                         H_elems.add(2*i+0, 2*j+0, phase*t);

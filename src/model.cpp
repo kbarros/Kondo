@@ -5,9 +5,9 @@
 
 
 Model::Model(std::unique_ptr<Lattice> lattice, double J, vec3 B_zeeman,
-             double spin_orb_Bx, double spin_orb_By, double spin_orb_growth, double spin_orb_freq):
+             vec3 current, double current_growth, double current_freq):
     n_sites(lattice->n_sites()), lattice(std::move(lattice)), J(J), B_zeeman(B_zeeman),
-    spin_orb_Bx(spin_orb_Bx), spin_orb_By(spin_orb_By), spin_orb_growth(spin_orb_growth), spin_orb_freq(spin_orb_freq)
+    current(current), current_growth(current_growth), current_freq(current_freq)
 {
     spin.assign(n_sites, vec3{0, 0, 0});
     

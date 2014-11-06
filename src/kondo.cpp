@@ -29,9 +29,9 @@ std::unique_ptr<Lattice> mk_lattice(cpptoml::toml_group g) {
 Model mk_model(cpptoml::toml_group g) {
     return {
         mk_lattice(g), g.get_unwrap<double>("J"),
-        {g.get_unwrap<double>("B_zeeman", 0), 0, 0},
-        g.get_unwrap<double>("spin_orbit_Bx", 0.0), g.get_unwrap<double>("spin_orbit_By", 0.0),
-        g.get_unwrap<double>("spin_orbit_growth", 0.0), g.get_unwrap<double>("spin_orbit_freq", 0.0)
+        {g.get_unwrap<double>("zeeman_Bx", 0), g.get_unwrap<double>("zeeman_By", 0), g.get_unwrap<double>("zeeman_Bz", 0)},
+        {g.get_unwrap<double>("current_x", 0), g.get_unwrap<double>("current_y", 0), g.get_unwrap<double>("current_z", 0)},
+        g.get_unwrap<double>("current_growth", 0), g.get_unwrap<double>("current_freq", 0)
     };
 }
 

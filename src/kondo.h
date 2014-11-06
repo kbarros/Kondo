@@ -55,7 +55,7 @@ public:
     std::unique_ptr<Lattice> lattice;
     double J;
     vec3 B_zeeman;
-    double spin_orb_Bx, spin_orb_By, spin_orb_growth, spin_orb_freq; // spin-orbit coupling
+    vec3 current; double current_growth, current_freq;
     SpMatElems<cx_double> H_elems;
     SpMatCsr<cx_double> H, D;
     Vec<vec3> spin;
@@ -64,8 +64,8 @@ public:
     // used by Dynamics to store intermediate data between steps
     Vec<vec3> dyn_stor[4];
     
-    Model(std::unique_ptr<Lattice> lattice, double J, vec3 B_zeeman,
-          double spin_orb_Bx=0, double spin_orb_By=0, double spin_orb_growth=0, double spin_orb_freq=0);
+    Model(std::unique_ptr<Lattice> lattice, double J, vec3 B_zeeman={0,0,0},
+          vec3 current={0,0,0}, double current_growth=0, double current_freq=0);
     
     void set_hamiltonian(Vec<vec3> const& spin);
     double classical_potential();

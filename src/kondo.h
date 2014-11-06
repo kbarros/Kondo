@@ -59,7 +59,7 @@ public:
     SpMatElems<cx_double> H_elems;
     SpMatCsr<cx_double> H, D;
     Vec<vec3> spin;
-    double time;
+    double time = 0;
     
     // used by Dynamics to store intermediate data between steps
     Vec<vec3> dyn_stor[4];

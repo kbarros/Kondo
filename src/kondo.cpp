@@ -28,7 +28,7 @@ std::unique_ptr<Lattice> mk_lattice(cpptoml::toml_group g) {
 
 Model mk_model(cpptoml::toml_group g) {
     return {
-        mk_lattice(g), g.get_unwrap<double>("J"),
+        mk_lattice(g), g.get_unwrap<double>("J"), g.get_unwrap<double>("kB_T"),
         {g.get_unwrap<double>("zeeman_Bx", 0), g.get_unwrap<double>("zeeman_By", 0), g.get_unwrap<double>("zeeman_Bz", 0)},
         {g.get_unwrap<double>("current_x", 0), g.get_unwrap<double>("current_y", 0), g.get_unwrap<double>("current_z", 0)},
         g.get_unwrap<double>("current_growth", 0), g.get_unwrap<double>("current_freq", 0)
@@ -36,15 +36,14 @@ Model mk_model(cpptoml::toml_group g) {
 }
 
 std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
-    double kB_T = g.get_unwrap<double>("kB_T");
     double dt = g.get_unwrap<double>("dynamics.dt");
     auto type = g.get_unwrap<std::string>("dynamics.type");
     if (type == "overdamped") {
-        return Dynamics::mk_overdamped(kB_T, dt);
+        return Dynamics::mk_overdamped(dt);
     } else if (type == "gjf") {
-        return Dynamics::mk_gjf(g.get_unwrap<double>("dynamics.alpha"), kB_T, dt);
+        return Dynamics::mk_gjf(g.get_unwrap<double>("dynamics.alpha"), dt);
     } else if (type == "sll") {
-        return Dynamics::mk_sll(g.get_unwrap<double>("dynamics.alpha"), kB_T, dt);
+        return Dynamics::mk_sll(g.get_unwrap<double>("dynamics.alpha"), dt);
     }
     cerr << "Unsupported dynamics type `" << type << "`!\n";
     std::abort();
@@ -74,7 +73,6 @@ int main(int argc, char *argv[]) {
     cpptoml::toml_group g = p.parse();
     
     RNG rng(g.get_unwrap<int64_t>("seed"));
-    double kB_T = g.get_unwrap<double>("kB_T");
     bool overwrite_dump = g.get_unwrap<bool>("overwrite_dump");
     int steps_per_dump = g.get_unwrap<int64_t>("steps_per_dump");
     int max_steps = g.get_unwrap<int64_t>("max_steps");
@@ -151,13 +149,13 @@ int main(int argc, char *argv[]) {
         moments = engine->moments(M);
         gamma = moment_transform(moments, Mq);
         if (ensemble_type == "canonical") {
-            mu = filling_to_mu(gamma, es, /*kB_T*/0, filling, delta_filling);
+            mu = filling_to_mu(gamma, es, /*m.kB_T*/0, filling, delta_filling);
         } else {
-            filling = mu_to_filling(gamma, es, kB_T, mu);
+            filling = mu_to_filling(gamma, es, m.kB_T, mu);
         }
-        // auto c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, kB_T, mu), es);
+        // auto c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kB_T, mu), es);
         // engine->stoch_matrix(c, m.D);
-        auto c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, kB_T, mu), es);
+        auto c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kB_T, mu), es);
         engine->autodiff_matrix(c, m.D);
     };
     
@@ -171,9 +169,9 @@ int main(int argc, char *argv[]) {
         build_kpm(m.spin, M_prec, Mq_prec, groups_prec);
         double e = m.classical_potential();
         if (ensemble_type == "canonical") {
-            e += electronic_energy(gamma, es, kB_T, filling, mu) / m.n_sites;
+            e += electronic_energy(gamma, es, m.kB_T, filling, mu) / m.n_sites;
         } else {
-            e += electronic_grand_energy(gamma, es, kB_T, mu) / m.n_sites;
+            e += electronic_grand_energy(gamma, es, m.kB_T, mu) / m.n_sites;
         }
         if (!boost::filesystem::is_directory(base_dir+"/dump")) {
             boost::filesystem::create_directory(base_dir+"/dump");

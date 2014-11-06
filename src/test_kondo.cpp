@@ -10,7 +10,7 @@ void testKondo1() {
     double J = 0.5;
     double kB_T = 0;
     double mu = 0.103;
-    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J);
+    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, kB_T);
     m.lattice->set_spins("ferro", m.spin);
     m.spin[0] = vec3(1, 1, 1).normalized();
     
@@ -18,15 +18,15 @@ void testKondo1() {
     int n = m.H.n_rows;
     
     arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
-    double E1 = electronic_grand_energy(eigs, kB_T, mu) / m.n_sites;
+    double E1 = electronic_grand_energy(eigs, m.kB_T, mu) / m.n_sites;
     
     double extra = 0.1;
     double tolerance = 1e-2;
     auto es = energy_scale(m.H, extra, tolerance);
     int M = 2000;
     int Mq = 4*M;
-    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, kB_T, mu), es);
-    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, kB_T, mu), es);
+    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kB_T, mu), es);
+    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kB_T, mu), es);
     auto engine = mk_engine_cx();
     engine->set_H(m.H, es);
     engine->set_R_identity(n);
@@ -56,11 +56,11 @@ void testKondo2() {
     double kB_T = 0;
     double mu = -1.0;
     
-    auto m = Model(Lattice::mk_kagome(w, h, t1), J, {0,0,0});
+    auto m = Model(Lattice::mk_kagome(w, h, t1), J, kB_T);
     m.lattice->set_spins("ncp2", m.spin);
     m.set_hamiltonian(m.spin);
     arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
-    double e = electronic_grand_energy(eigs, kB_T, mu);
+    double e = electronic_grand_energy(eigs, m.kB_T, mu);
     
     cout << "ncp2 " << e/m.n_sites << "     [-1.04384301]\n";
 }
@@ -75,9 +75,9 @@ void testKondo3() {
     double mu = 0;
     int n_colors = 4;
     
-//    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J);
-//    auto m = Model(Lattice::mk_kagome(w, h, t1), J);
-    auto m = Model(Lattice::mk_linear(w, t1, t2), J);
+//    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, kB_T);
+//    auto m = Model(Lattice::mk_kagome(w, h, t1), J, kB_T);
+    auto m = Model(Lattice::mk_linear(w, t1, t2), J, kB_T);
     
 //    m.lattice->set_spins_random(rng, m.spin);
     m.lattice->set_spins("ferro", m.spin);
@@ -90,8 +90,8 @@ void testKondo3() {
     auto es = energy_scale(m.H, extra, tolerance);
     int M = 1000;
     int Mq = 4*M;
-    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, kB_T, mu), es);
-    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, kB_T, mu), es);
+    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kB_T, mu), es);
+    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kB_T, mu), es);
     auto engine = mk_engine_cx();
     engine->set_H(m.H, es);
     

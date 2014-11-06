@@ -3,14 +3,13 @@
 
 class Overdamped: public Dynamics {
 public:
-    double kB_T;
-    Overdamped(double kB_T, double dt): kB_T(kB_T) { this->dt = dt; }
+    Overdamped(double dt) { this->dt = dt; }
     
     void step(CalcForce const& calc_force, RNG& rng, Model& m) {
         Vec<vec3>& f = m.dyn_stor[0];
         calc_force(m.spin, f);
         for (int i = 0; i < m.n_sites; i++) {
-            vec3 beta = sqrt(dt*2*kB_T) * gaussian_vec3<double>(rng);
+            vec3 beta = sqrt(dt*2*m.kB_T) * gaussian_vec3<double>(rng);
             m.spin[i] += project_tangent<double>(m.spin[i], dt*f[i]+beta);
             m.spin[i] = m.spin[i].normalized();
         }
@@ -19,18 +18,18 @@ public:
         m.time = n_steps * dt;
     }
 };
-std::unique_ptr<Dynamics> Dynamics::mk_overdamped(double kB_T, double dt) {
-    return std::make_unique<Overdamped>(kB_T, dt);
+std::unique_ptr<Dynamics> Dynamics::mk_overdamped(double dt) {
+    return std::make_unique<Overdamped>(dt);
 }
 
 
 class GJF: public Dynamics {
 public:
-    double alpha, kB_T;
+    double alpha;
     double a, b;
     double mass = 1;
     
-    GJF(double alpha, double kB_T, double dt): alpha(alpha), kB_T(kB_T) {
+    GJF(double alpha, double dt): alpha(alpha) {
         this->dt = dt;
         double denom = 1 + alpha*dt/(2*mass);
         a = (1 - alpha*dt/(2*mass))/denom;
@@ -52,7 +51,7 @@ public:
         Vec<vec3>& beta = m.dyn_stor[3];
         
         for (int i = 0; i < m.n_sites; i++) {
-            beta[i] = sqrt(dt*2*alpha*kB_T) * gaussian_vec3<double>(rng);
+            beta[i] = sqrt(dt*2*alpha*m.kB_T) * gaussian_vec3<double>(rng);
             vec3 ds = b*dt*v[i] + (b*dt*dt/(2*mass))*f1[i] + (b*dt/(2*mass))*beta[i];
             s[i] += project_tangent<double>(s[i], ds);
             s[i] = s[i].normalized();
@@ -72,16 +71,16 @@ public:
         m.time = n_steps * dt;
     }
 };
-std::unique_ptr<Dynamics> Dynamics::mk_gjf(double alpha, double kB_T, double dt) {
-    return std::make_unique<GJF>(alpha, kB_T, dt);
+std::unique_ptr<Dynamics> Dynamics::mk_gjf(double alpha, double dt) {
+    return std::make_unique<GJF>(alpha, dt);
 }
 
 
 class SLL: public Dynamics {
 public:
-    double alpha, kB_T;
+    double alpha;
     
-    SLL(double alpha, double kB_T, double dt): alpha(alpha), kB_T(kB_T) { this->dt = dt; }
+    SLL(double alpha, double dt): alpha(alpha) { this->dt = dt; }
     
     void step(CalcForce const& calc_force, RNG& rng, Model& m) {
         Vec<vec3>& s    = m.spin;
@@ -90,7 +89,7 @@ public:
         Vec<vec3>& fp   = m.dyn_stor[2];
         Vec<vec3>& beta = m.dyn_stor[3];
         
-        double D = (alpha / (1 + alpha*alpha)) * kB_T;
+        double D = (alpha / (1 + alpha*alpha)) * m.kB_T;
         for (int i = 0; i < m.n_sites; i++) {
             beta[i] = sqrt(dt*2*D) * gaussian_vec3<double>(rng);
         }
@@ -121,8 +120,8 @@ public:
         m.time = n_steps * dt;
     }
 };
-std::unique_ptr<Dynamics> Dynamics::mk_sll(double alpha, double kB_T, double dt) {
-    return std::make_unique<SLL>(alpha, kB_T, dt);
+std::unique_ptr<Dynamics> Dynamics::mk_sll(double alpha, double dt) {
+    return std::make_unique<SLL>(alpha, dt);
 }
 
 

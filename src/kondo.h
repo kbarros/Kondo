@@ -53,7 +53,7 @@ class Model {
 public:
     int n_sites;
     std::unique_ptr<Lattice> lattice;
-    double J;
+    double J, kB_T;
     vec3 B_zeeman;
     vec3 current; double current_growth, current_freq;
     SpMatElems<cx_double> H_elems;
@@ -64,7 +64,7 @@ public:
     // used by Dynamics to store intermediate data between steps
     Vec<vec3> dyn_stor[4];
     
-    Model(std::unique_ptr<Lattice> lattice, double J, vec3 B_zeeman={0,0,0},
+    Model(std::unique_ptr<Lattice> lattice, double J, double kB_T, vec3 B_zeeman={0,0,0},
           vec3 current={0,0,0}, double current_growth=0, double current_freq=0);
     
     void set_hamiltonian(Vec<vec3> const& spin);
@@ -80,11 +80,11 @@ public:
     double dt;
     
     // Overdamped relaxation using Euler integration
-    static std::unique_ptr<Dynamics> mk_overdamped(double kB_T, double dt);
+    static std::unique_ptr<Dynamics> mk_overdamped(double dt);
     // Inertial Langevin dynamics using Grønbech-Jensen Farago, velocity explicit
-    static std::unique_ptr<Dynamics> mk_gjf(double alpha, double kB_T, double dt);
+    static std::unique_ptr<Dynamics> mk_gjf(double alpha, double dt);
     // Stochastic Landau Lifshitz using Heun-p
-    static std::unique_ptr<Dynamics> mk_sll(double alpha, double kB_T, double dt);
+    static std::unique_ptr<Dynamics> mk_sll(double alpha, double dt);
     
     virtual void init(CalcForce const& calc_force, RNG& rng, Model& m) {}
     virtual void step(CalcForce const& calc_force, RNG& rng, Model& m) = 0;

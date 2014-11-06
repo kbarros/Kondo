@@ -47,7 +47,7 @@ public:
         return(x%w+w)%w;
     }
     
-    void add_hoppings(fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
+    void add_hoppings(Model const& m, fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
         for (int i = 0; i < w; i++) {
             static int nn1_sz = 2;
             static int nn1_dx[] { 1, -1 };
@@ -88,10 +88,9 @@ class SquareLattice: public Lattice {
 public:
     int w, h;
     double t1, t2, t3;
-    double phi_x;
     
-    SquareLattice(int w, int h, double t1, double t2, double t3, double phi_x):
-    w(w), h(h), t1(t1), t2(t2), t3(t3), phi_x(phi_x)
+    SquareLattice(int w, int h, double t1, double t2, double t3):
+    w(w), h(h), t1(t1), t2(t2), t3(t3)
     { assert(t2==0 && "t2 not yet implemented for square lattice."); }
     
     int n_sites() { return w*h; }
@@ -166,7 +165,7 @@ public:
         return xp + yp*w;
     }
     
-    void add_hoppings(fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
+    void add_hoppings(Model const& m, fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int i = coord2idx(x, y);
@@ -177,7 +176,9 @@ public:
                 
                 for (int nn = 0; nn < nn1_sz; nn++) {
                     auto add_hopping = [&](int dx, int dy, double t) {
-                        cx_double phase = exp(I*(2*Pi*dx*phi_x/w));
+                        double theta = 2*Pi*(dx*m.spin_orb_Bx/w + dy*m.spin_orb_By/h);
+                        theta *= (1 + m.spin_orb_growth*m.time) * cos(m.spin_orb_freq*m.time);
+                        cx_double phase = exp(I*theta);
                         int j = coord2idx(x+dx,y+dy);
                         H_elems.add(2*i+0, 2*j+0, phase*t);
                         H_elems.add(2*i+1, 2*j+1, phase*t);
@@ -214,9 +215,9 @@ public:
     }
 };
 
-std::unique_ptr<Lattice> Lattice::mk_square(int w, int h, double t1, double t2, double t3, double phi_x) {
+std::unique_ptr<Lattice> Lattice::mk_square(int w, int h, double t1, double t2, double t3) {
     assert(t2 == 0);
-    return std::make_unique<SquareLattice>(w, h, t1, t2, t3, phi_x);
+    return std::make_unique<SquareLattice>(w, h, t1, t2, t3);
 }
 
 
@@ -270,7 +271,7 @@ public:
         }
     }
     
-    void add_hoppings(fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
+    void add_hoppings(Model const& m, fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int i = coord2idx(x, y);
@@ -462,7 +463,7 @@ public:
         std::abort();
     }
     
-    void add_hoppings(fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
+    void add_hoppings(Model const& m, fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 for (int v = 0; v < 3; v++) {

@@ -13,7 +13,7 @@ std::unique_ptr<Lattice> mk_lattice(cpptoml::toml_group g) {
     if (type == "square") {
         return Lattice::mk_square(
             g.get_unwrap<int64_t>("lattice.w"), g.get_unwrap<int64_t>("lattice.h"), g.get_unwrap<double>("lattice.t1"),
-            g.get_unwrap<double>("lattice.t2", 0.0), g.get_unwrap<double>("lattice.t3", 0.0), g.get_unwrap<double>("lattice.phi_x", 0.0));
+            g.get_unwrap<double>("lattice.t2", 0.0), g.get_unwrap<double>("lattice.t3", 0.0));
     } else if (type == "triangular") {
         return Lattice::mk_triangular(
             g.get_unwrap<int64_t>("lattice.w"), g.get_unwrap<int64_t>("lattice.h"), g.get_unwrap<double>("lattice.t1"),
@@ -27,8 +27,12 @@ std::unique_ptr<Lattice> mk_lattice(cpptoml::toml_group g) {
 }
 
 Model mk_model(cpptoml::toml_group g) {
-    double B_zeeman = g.get_unwrap<double>("B_zeeman", 0);
-    return {mk_lattice(g), g.get_unwrap<double>("J"), {B_zeeman, 0, 0}};
+    return {
+        mk_lattice(g), g.get_unwrap<double>("J"),
+        {g.get_unwrap<double>("B_zeeman", 0), 0, 0},
+        g.get_unwrap<double>("spin_orbit_Bx", 0.0), g.get_unwrap<double>("spin_orbit_By", 0.0),
+        g.get_unwrap<double>("spin_orbit_growth", 0.0), g.get_unwrap<double>("spin_orbit_freq", 0.0)
+    };
 }
 
 std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
@@ -163,7 +167,7 @@ int main(int argc, char *argv[]) {
     };
     
     // assumes build_kpm() has already been called
-    auto dump = [&](int step, double dt) {
+    auto dump = [&](int step) {
         build_kpm(m.spin, M_prec, Mq_prec, groups_prec);
         double e = m.classical_potential();
         if (ensemble_type == "canonical") {
@@ -181,9 +185,9 @@ int main(int argc, char *argv[]) {
             std::abort();
         }
         
-        cout << "Dumping file '" << fname.str() << "', time=" << step*dt << ", energy=" << e << ", n=" << filling << ", mu=" << mu << endl;
+        cout << "Dumping file '" << fname.str() << "', time=" << m.time << ", energy=" << e << ", n=" << filling << ", mu=" << mu << endl;
         std::ofstream dump_file(fname.str(), std::ios::trunc);
-        dump_file << "{\"time\":" << step*dt <<
+        dump_file << "{\"time\":" << m.time <<
             ",\"action\":" << e <<
             ",\"filling\":" << filling <<
             ",\"mu\":" << mu <<
@@ -205,10 +209,10 @@ int main(int argc, char *argv[]) {
     };
     
     auto dynamics = mk_dynamics(g);
-    dynamics->init_step(calc_force, rng, m);
-    for (int step = 0; step < max_steps; step++) {
-        if (step % steps_per_dump == 0) {
-            dump(step, dynamics->dt);
+    dynamics->init(calc_force, rng, m);
+    while (dynamics->n_steps < max_steps) {
+        if (dynamics->n_steps % steps_per_dump == 0) {
+            dump(dynamics->n_steps);
         }
         dynamics->step(calc_force, rng, m);
     }

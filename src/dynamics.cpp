@@ -14,6 +14,9 @@ public:
             m.spin[i] += project_tangent<double>(m.spin[i], dt*f[i]+beta);
             m.spin[i] = m.spin[i].normalized();
         }
+        
+        n_steps++;
+        m.time = n_steps * dt;
     }
 };
 std::unique_ptr<Dynamics> Dynamics::mk_overdamped(double kB_T, double dt) {
@@ -34,7 +37,7 @@ public:
         b = 1 / denom;
     }
     
-    void init_step(CalcForce const& calc_force, RNG& rng, Model& m) {
+    void init(CalcForce const& calc_force, RNG& rng, Model& m) {
         Vec<vec3>& v = m.dyn_stor[0];
         Vec<vec3>& f1 = m.dyn_stor[1];
         v.assign(m.n_sites, vec3(0,0,0));
@@ -64,6 +67,9 @@ public:
             // forces will be reused in the next timestep
             f1[i] = f2[i];
         }
+        
+        n_steps++;
+        m.time = n_steps * dt;
     }
 };
 std::unique_ptr<Dynamics> Dynamics::mk_gjf(double alpha, double kB_T, double dt) {
@@ -110,6 +116,9 @@ public:
         for (int i = 0; i < m.n_sites; i++) {
             s[i] = s[i].normalized();
         }
+        
+        n_steps++;
+        m.time = n_steps * dt;
     }
 };
 std::unique_ptr<Dynamics> Dynamics::mk_sll(double alpha, double kB_T, double dt) {

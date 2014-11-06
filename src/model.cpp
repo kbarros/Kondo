@@ -4,8 +4,10 @@
 #include <cassert>
 
 
-Model::Model(std::unique_ptr<Lattice> lattice, double J, vec3 B_zeeman):
-    n_sites(lattice->n_sites()), lattice(std::move(lattice)), J(J), B_zeeman(B_zeeman)
+Model::Model(std::unique_ptr<Lattice> lattice, double J, vec3 B_zeeman,
+             double spin_orb_Bx, double spin_orb_By, double spin_orb_growth, double spin_orb_freq):
+    n_sites(lattice->n_sites()), lattice(std::move(lattice)), J(J), B_zeeman(B_zeeman),
+    spin_orb_Bx(spin_orb_Bx), spin_orb_By(spin_orb_By), spin_orb_growth(spin_orb_growth), spin_orb_freq(spin_orb_freq)
 {
     spin.assign(n_sites, vec3{0, 0, 0});
     
@@ -28,7 +30,7 @@ static Vec3<fkpm::cx_double> pauli[2][2] {
 void Model::set_hamiltonian(Vec<vec3> const& spin) {
     H_elems.clear();
     
-    lattice->add_hoppings(H_elems);
+    lattice->add_hoppings(*this, H_elems);
     
     for (int i = 0; i < n_sites; i++) {
         for (int s1 = 0; s1 < 2; s1++) {

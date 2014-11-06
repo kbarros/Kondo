@@ -12,7 +12,7 @@ void testKondo1() {
     double kB_T = 0;
     double mu = 0.103;
     vec3 B_zeeman(0, 0, 0);
-    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3, phi_x), J, B_zeeman);
+    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, B_zeeman);
     m.lattice->set_spins("ferro", m.spin);
     m.spin[0] = vec3(1, 1, 1).normalized();
     

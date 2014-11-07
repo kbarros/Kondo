@@ -539,7 +539,19 @@ class toml_group : public toml_base
     T get_unwrap(const std::string& key, T default_value) const
     {
         auto v = get_as<T>(key);
-        return v ? *v : default_value;
+        if (v) {
+            return *v;
+        }
+        else {
+            try {
+                if (get(key)) {
+                    std::cerr << "Key '" << key << "' does not have expected type of '" << toml_type_name<T>() << "' in TOML group:\n{\n" << *this << "}" << std::endl;
+                    std::exit(1);
+                }
+            }
+            catch (const std::out_of_range&) {}
+            return default_value;
+        }
     }
     
     /**

@@ -27,9 +27,6 @@ Vec3<T> project_tangent(vec3 x, vec3 p) {
     return p - x * (p.dot(x) / x.norm2());
 }
 
-constexpr double Pi = 3.141592653589793238463;
-constexpr cx_double I(0, 1);
-
 
 class Model;
 

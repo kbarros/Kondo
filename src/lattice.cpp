@@ -107,7 +107,7 @@ public:
             spin.assign(n_sites(), vec3{0, 0, 1});
         }
         else if (name == "meron") {
-            // TODO : implement Cristian's ansatzs
+            // TODO : implement Cristian's ansatz
             spin.assign(n_sites(), vec3{0, 0, 1});
             
             double factor, q1[2], q2[2], q3[2], q4[2], q5[2];//k-points

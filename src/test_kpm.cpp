@@ -74,8 +74,10 @@ void testKPM1() {
     auto f_c = expansion_coefficients(M, Mq, f, es);
     
     auto mu = engine->moments(M);
+    
     double E1 = moment_product(g_c, mu);
-    cout << "energy (v1) " << E1 << " expected 50.0004 for M=1000\n";
+    std::cout << std::setprecision(12);
+    cout << "energy (v1) " << E1 << " expected 50.000432961 for M=1000\n";
     
     auto gamma = moment_transform(mu, Mq);
     double E2 = density_product(gamma, g, es);
@@ -83,10 +85,12 @@ void testKPM1() {
     
     auto D = engine->Hs;
     engine->autodiff_matrix(g_c, D);
+
     cout << "derivative <";
     for (int i = 0; i < 4; i++)
         cout << D(i, i) << " ";
-    cout << "> expected <10, -10, 0, 0>\n";
+    cout << ">\n";
+    cout << "expected   <9.99980319956 -9.99980319958 8.42069190159e-14 8.42069190159e-14 >\n";
 }
 
 void testKPM2() {
@@ -129,6 +133,7 @@ void testKPM2() {
     double E1 = exact_energy(H_dense, kB_T, mu);
     double eps = 1e-6;
     int i=0, j=1;
+    
     arma::sp_cx_mat dH(n, n);
     dH(i, j) = eps;
     dH(j, i) = eps;
@@ -137,12 +142,12 @@ void testKPM2() {
     engine->set_R_identity(n);
     double E2 = moment_product(g_c, engine->moments(M));
     engine->stoch_matrix(f_c, D);
-    double dE_dH_2 = (D(i, j) + D(j, i)).real();
+    auto dE_dH_2 = D(i, j) + D(j, i);
     
     engine->set_R_uncorrelated(n, s, rng);
     double E3 = moment_product(g_c, engine->moments(M));
-    engine->stoch_matrix(f_c, D);
-    auto dE_dH_3 = (D(i, j) + D(j, i)).real();
+    engine->autodiff_matrix(g_c, D);
+    auto dE_dH_3 = D(i, j) + D(j, i);
     
     Vec<int> groups(n);
     for (int i = 0; i < n; i++)
@@ -150,11 +155,13 @@ void testKPM2() {
     engine->set_R_correlated(groups, rng);
     double E4 = moment_product(g_c, engine->moments(M));
     engine->stoch_matrix(f_c, D);
-    auto dE_dH_4 = (D(i, j) + D(j, i)).real();
+    auto dE_dH_4 = (D(i, j) + D(j, i));
     
+    engine->moments(M);
     engine->autodiff_matrix(g_c, D);
-    auto dE_dH_5 = (D(i, j) + D(j, i)).real();
-
+    auto dE_dH_5 = (D(i, j) + D(j, i));
+    
+    cout << std::setprecision(15);
     cout << "Exact energy            " << E1 << endl;
     cout << "Det. KPM energy         " << E2 << endl;
     cout << "Stoch. energy (uncorr.) " << E3 << endl;
@@ -167,10 +174,72 @@ void testKPM2() {
     cout << "Autodif. deriv. (corr.) " << dE_dH_5 << endl;
 }
 
+void testKPM3() {
+    int n = 100;
+    double noise = 0.2;
+    RNG rng(0);
+    std::normal_distribution<double> normal;
+    
+    // Build noisy tri-diagonal matrix
+    SpMatElems<cx_double> elems;
+    for (int i = 0; i < n; i++) {
+        auto x = 1.0 + noise * cx_double(normal(rng), normal(rng));
+        int j = (i-1+n)%n;
+        elems.add(i, i, 0);
+        elems.add(i, j, x);
+        elems.add(j, i, conj(x));
+    }
+    SpMatCsr<cx_double> H(n, n, elems);
+    
+    double mu = 0.2;
+    using std::placeholders::_1;
+    auto g = std::bind(fermi_energy, _1, 0, mu);
+    auto f = std::bind(fermi_density, _1, 0, mu);
+    
+    double extra = 0.1;
+    double tolerance = 1e-2;
+    auto es = energy_scale(H, extra, tolerance);
+    int M = 500;
+    int Mq = 4*M;
+    auto g_c = expansion_coefficients(M, Mq, g, es);
+    auto f_c = expansion_coefficients(M, Mq, f, es);
+    auto engine = mk_engine_cx();
+    engine->set_R_uncorrelated(n, 1, rng);
+    
+    double eps = 1e-5;
+    int i=0, j=1;
+    
+    auto finite_diff = [&](cx_double eps) {
+        auto Hp = H;
+        Hp(i, j) += eps;
+        Hp(j, i) += conj(eps);
+        engine->set_H(Hp, es);
+        double Ep = moment_product(g_c, engine->moments(M));
+        auto Hm = H;
+        Hm(i, j) -= eps;
+        Hm(j, i) -= conj(eps);
+        engine->set_H(Hm, es);
+        double Em = moment_product(g_c, engine->moments(M));
+        return 0.5 * (Ep - Em) / (2.0*eps);
+    };
+    
+    cx_double dE_dH = finite_diff(eps) - finite_diff(eps*cx_double(0, 1));
+    
+    engine->set_H(H, es);
+    auto D1 = engine->Hs;
+    engine->moments(M);
+    engine->autodiff_matrix(g_c, D1);
+    
+    std::cout << std::setprecision(10);
+    cout << dE_dH << endl;
+    cout << D1(i, j) << endl;
+}
+
 int main(int argc,char **argv) {
-    testMat();
-    testExpansionCoeffs();
-    testKPM1<double>();
+    // testMat();
+    // testExpansionCoeffs();
+    testKPM1<cx_double>();
     testKPM2();
+    testKPM3();
 }
 

@@ -118,7 +118,7 @@ public:
             q2[0] = factor;
             q2[1] =-factor;
             
-            q3[0] =    factor;
+/*            q3[0] =    factor;
             q3[1] =-3.*factor;
             
             q4[0] = 3.*factor;
@@ -126,7 +126,7 @@ public:
             
             q5[0] = 3.*factor;
             q5[1] =-3.*factor;
-            
+*/            
             for (int y = 0; y < h; y++) {
                 for (int x = 0; x < w; x++) {
                     int i = x + y*w;

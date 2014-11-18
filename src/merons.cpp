@@ -37,8 +37,7 @@ int main(int argc,char **argv) {
         auto gamma = moment_transform(moments, Mq);
         
         for (double mu = min_mu; mu < max_mu; mu += d_mu) {
-            auto g = std::bind(fermi_energy, std::placeholders::_1, kT, mu);
-            double Phi = density_product(gamma, g, es) / m.lattice->n_sites();
+            double Phi = electronic_grand_energy(gamma, es, kT, mu) / m.n_sites;
             cout << m.J << " " << mu << " " << Phi;
             
             bool print_exact = false;

@@ -66,6 +66,9 @@ void Model::set_forces(SpMatCsr<cx_double> const& D, Vec<vec3>& force) {
             }
         }
         
+        // add extra term that couples to current J
+        
+        
         assert(imag(dE_dS).norm() < 1e-5);
         force[k] = -real(dE_dS);
         

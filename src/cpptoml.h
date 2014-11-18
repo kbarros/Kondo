@@ -48,11 +48,11 @@ namespace cpptoml
  * Added by Kipton Barros, Oct 4, 2014.
  */
 template <typename T> std::string toml_type_name();
-template <> std::string toml_type_name<int64_t>()     { return "int64_t"; }
-template <> std::string toml_type_name<double>()      { return "double"; }
-template <> std::string toml_type_name<bool>()        { return "bool"; }
-template <> std::string toml_type_name<std::string>() { return "std::string"; }
-template <> std::string toml_type_name<std::tm>()     { return "std::tm"; }
+template <> inline std::string toml_type_name<int64_t>()     { return "int64_t"; }
+template <> inline std::string toml_type_name<double>()      { return "double"; }
+template <> inline std::string toml_type_name<bool>()        { return "bool"; }
+template <> inline std::string toml_type_name<std::string>() { return "std::string"; }
+template <> inline std::string toml_type_name<std::tm>()     { return "std::tm"; }
 
     
 template <class T>

@@ -12,6 +12,7 @@ void testKondo1() {
     double mu = 0.103;
     auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, kB_T);
     m.lattice->set_spins("ferro", nullptr, m.spin);
+    //m.lattice->set_spins("meron", nullptr, m.spin);
     m.spin[0] = vec3(1, 1, 1).normalized();
     
     m.set_hamiltonian(m.spin);

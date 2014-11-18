@@ -109,49 +109,34 @@ public:
         else if (name == "meron") {
             // TODO : implement Cristian's ansatz
             spin.assign(n_sites(), vec3{0, 0, 1});
+
+            double Q_meron = params -> get_unwrap<double>("Q_meron");
+            double a_meron =  params->get_unwrap<double>("a_meron");
+            double b_meron = sqrt(1.-a_meron*a_meron);
             
-            double factor, q1[2], q2[2], q3[2], q4[2], q5[2];//k-points
-            factor = Pi/4.;
+            double factor, q1[2], q2[2];//k-points
+            double q1_phase, q2_phase;
+            factor = Pi*Q_meron;
             q1[0] = factor;
             q1[1] = factor;
             
             q2[0] = factor;
             q2[1] =-factor;
             
-/*            q3[0] =    factor;
-            q3[1] =-3.*factor;
-            
-            q4[0] = 3.*factor;
-            q4[1] =   -factor;
-            
-            q5[0] = 3.*factor;
-            q5[1] =-3.*factor;
-*/            
             for (int y = 0; y < h; y++) {
                 for (int x = 0; x < w; x++) {
                     int i = x + y*w;
-                    spin[i].x =
-                     0.042337*cos(q1[0]*x + q1[1]*y) + -0.279259*sin(q1[0]*x + q1[1]*y) +
-                    -0.065991*cos(q2[0]*x + q2[1]*y) +  0.222163*sin(q2[0]*x + q2[1]*y) +
-                    -0.006856*cos(q3[0]*x + q3[1]*y) +  0.012791*sin(q3[0]*x + q3[1]*y) +
-                     0.009325*cos(q4[0]*x + q4[1]*y) + -0.010813*sin(q4[0]*x + q4[1]*y) +
-                    -0.007072*cos(q5[0]*x + q5[1]*y) +  0.005165*sin(q5[0]*x + q5[1]*y);
+            
+                    q1_phase = q1[0]*x + q1[0]*y;
+                    q2_phase = q2[0]*x + q2[0]*y;
                     
-                    spin[i].y =
-                     0.036650*cos(q1[0]*x + q1[1]*y) +  0.356878*sin(q1[0]*x + q1[1]*y) +
-                    -0.052121*cos(q2[0]*x + q2[1]*y) +  0.173066*sin(q2[0]*x + q2[1]*y) +
-                     0.010411*cos(q3[0]*x + q3[1]*y) + -0.013487*sin(q3[0]*x + q3[1]*y) +
-                    -0.008524*cos(q4[0]*x + q4[1]*y) +  0.015746*sin(q4[0]*x + q4[1]*y) +
-                    -0.004883*cos(q5[0]*x + q5[1]*y) +  0.004514*sin(q5[0]*x + q5[1]*y);
+                    spin[i].x =sqrt(a_meron*a_meron + b_meron*b_meron*cos(q2_phase)*cos(q2_phase))*cos(q1_phase);
+                    spin[i].y =sqrt(a_meron*a_meron + b_meron*b_meron*cos(q2_phase)*cos(q2_phase))*sin(q1_phase);
+                    spin[i].z =b_meron*sin(q2_phase);
 
-                    spin[i].z =
-                    0.448280*cos(q1[0]*x + q1[1]*y) + -0.001420*sin(q1[0]*x + q1[1]*y) +
-                    0.009444*cos(q2[0]*x + q2[1]*y) + -0.035105*sin(q2[0]*x + q2[1]*y) +
-                    0.017824*cos(q3[0]*x + q3[1]*y) +  0.013186*sin(q3[0]*x + q3[1]*y) +
-                    0.019415*cos(q4[0]*x + q4[1]*y) +  0.010644*sin(q4[0]*x + q4[1]*y) +
-                    0.001066*cos(q5[0]*x + q5[1]*y) + -0.000823*sin(q5[0]*x + q5[1]*y);
-
-                    spin[i] = spin[i].normalized();
+                    //spin[i] = spin[i].normalized();
+                    printf("%3d, %3d, %10lf, %10lf, %10lf, %10lf\n", x, y, spin[i].x, spin[i].y, spin[i].z,
+                           spin[i].x*spin[i].x + spin[i].y*spin[i].y + spin[i].z*spin[i].z);
                 }
             }
         }

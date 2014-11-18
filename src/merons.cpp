@@ -7,7 +7,7 @@ int main(int argc,char **argv) {
     int w = 8;
     double t1 = -1, t2 = 0, t3 = 0;
     double kT = 0;
-    int n_colors = 16;
+    int n_colors = 64;
     int M = 1000;
     int Mq = 4*M;
     EnergyScale es{-10, 10};
@@ -37,10 +37,18 @@ int main(int argc,char **argv) {
         auto gamma = moment_transform(moments, Mq);
         
         for (double mu = min_mu; mu < max_mu; mu += d_mu) {
-            auto g = std::bind(fermi_energy, std::placeholders::_1, kT, mu);
-            double Phi = density_product(gamma, g, es) / m.lattice->n_sites();
-            //cout << m.J << " " << mu << " " << Phi << endl;
+            double Phi = electronic_grand_energy(gamma, es, kT, mu) / m.n_sites;
             printf("%10lf, %10lf, %10lf\n", m.J, mu, Phi);
+            
+            bool print_exact = false;
+            if (print_exact) {
+                arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
+                double Phi_exact = electronic_grand_energy(eigs, kT, mu) / m.n_sites;
+                cout << "   [" << Phi_exact << "]\n";
+            }
+            else {
+                cout << endl;
+            }
         }
     }
 }

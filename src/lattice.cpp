@@ -34,7 +34,7 @@ public:
         return {double(i), 0, 0};
     }
     
-    void set_spins(std::string const& name, Vec<vec3>& spin) {
+    void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites(), vec3{0, 0, 1});
         }
@@ -102,7 +102,7 @@ public:
         return {x, y, 0};
     }
     
-    void set_spins(std::string const& name, Vec<vec3>& spin) {
+    void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites(), vec3{0, 0, 1});
         }
@@ -250,7 +250,7 @@ public:
         return xp + yp*w;
     }
     
-    void set_spins(std::string const& name, Vec<vec3>& spin) {
+    void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites(), vec3{0, 0, 1});
         } else if (name == "allout") {
@@ -387,7 +387,7 @@ public:
         }
     }
     
-    void set_spins(std::string const& name, Vec<vec3>& spin) {
+    void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites(), vec3{0, 0, 1});
         } else if (name == "ncp1") {

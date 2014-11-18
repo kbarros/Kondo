@@ -1,5 +1,4 @@
 #include "kondo.h"
-#include "cpptoml.h"
 #include "iostream_util.h"
 
 #include <sstream>
@@ -88,11 +87,11 @@ int main(int argc, char *argv[]) {
     }
     
     Model m = mk_model(g);
-    auto init_spins = g.get_unwrap<std::string>("init_spins");
-    if (init_spins == "random") {
+    auto init_spins_type = g.get_unwrap<std::string>("init_spins.type");
+    if (init_spins_type == "random") {
         Lattice::set_spins_random(rng, m.spin);
     } else {
-        m.lattice->set_spins(init_spins, m.spin);
+        m.lattice->set_spins(init_spins_type, g.get_group("init_spins"), m.spin);
     }
     
     m.set_hamiltonian(m.spin);

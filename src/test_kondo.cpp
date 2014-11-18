@@ -11,7 +11,7 @@ void testKondo1() {
     double kB_T = 0;
     double mu = 0.103;
     auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, kB_T);
-    m.lattice->set_spins("ferro", m.spin);
+    m.lattice->set_spins("ferro", nullptr, m.spin);
     m.spin[0] = vec3(1, 1, 1).normalized();
     
     m.set_hamiltonian(m.spin);
@@ -57,7 +57,7 @@ void testKondo2() {
     double mu = -1.0;
     
     auto m = Model(Lattice::mk_kagome(w, h, t1), J, kB_T);
-    m.lattice->set_spins("ncp2", m.spin);
+    m.lattice->set_spins("ncp2", nullptr, m.spin);
     m.set_hamiltonian(m.spin);
     arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
     double e = electronic_grand_energy(eigs, m.kB_T, mu);
@@ -80,7 +80,7 @@ void testKondo3() {
     auto m = Model(Lattice::mk_linear(w, t1, t2), J, kB_T);
     
 //    m.lattice->set_spins_random(rng, m.spin);
-    m.lattice->set_spins("ferro", m.spin);
+    m.lattice->set_spins("ferro", nullptr, m.spin);
     m.set_hamiltonian(m.spin);
     
     Vec<int> groups = m.lattice->groups(n_colors);

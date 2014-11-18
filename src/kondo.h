@@ -3,6 +3,8 @@
 
 #include "fastkpm.h"
 #include "vec3.h"
+#include "cpptoml.h"
+
 
 using namespace fkpm;
 
@@ -40,7 +42,7 @@ public:
     
     virtual int n_sites() = 0;
     virtual vec3 position(int i) = 0;
-    virtual void set_spins(std::string const& name, Vec<vec3>& spin) = 0;
+    virtual void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) = 0;
     virtual void add_hoppings(Model const& model, SpMatElems<cx_double>& H_elems) = 0;
     virtual Vec<int> groups(int n_colors) = 0;
 };

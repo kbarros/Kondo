@@ -107,38 +107,7 @@ public:
             spin.assign(n_sites(), vec3{0, 0, 1});
         }
         else if (name == "meron") {
-            // TODO : implement Cristian's ansatz
-            spin.assign(n_sites(), vec3{0, 0, 1});
-
-            double Q_meron = params -> get_unwrap<double>("Q_meron");
-            double a_meron =  params->get_unwrap<double>("a_meron");
-            double b_meron = sqrt(1.-a_meron*a_meron);
-            
-            double factor, q1[2], q2[2];//k-points
-            double q1_phase, q2_phase;
-            factor = Pi*Q_meron;
-            q1[0] = factor;
-            q1[1] = factor;
-            
-            q2[0] = factor;
-            q2[1] =-factor;
-            
-            for (int y = 0; y < h; y++) {
-                for (int x = 0; x < w; x++) {
-                    int i = x + y*w;
-            
-                    q1_phase = q1[0]*x + q1[0]*y;
-                    q2_phase = q2[0]*x + q2[0]*y;
-                    
-                    spin[i].x =sqrt(a_meron*a_meron + b_meron*b_meron*cos(q2_phase)*cos(q2_phase))*cos(q1_phase);
-                    spin[i].y =sqrt(a_meron*a_meron + b_meron*b_meron*cos(q2_phase)*cos(q2_phase))*sin(q1_phase);
-                    spin[i].z =b_meron*sin(q2_phase);
-
-                    //spin[i] = spin[i].normalized();
-                    printf("%3d, %3d, %10lf, %10lf, %10lf, %10lf\n", x, y, spin[i].x, spin[i].y, spin[i].z,
-                           spin[i].x*spin[i].x + spin[i].y*spin[i].y + spin[i].z*spin[i].z);
-                }
-            }
+            set_spins_meron(params->get_unwrap<double>("a"), params->get_unwrap<int64_t>("q"), spin);
         }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";
@@ -146,13 +115,32 @@ public:
     }
     
     void set_spins_meron(double a, int q, Vec<vec3>& spin) {
+        assert(w % h == 0); // need periodicity in both dimensions
+        double b = sqrt(1.-a*a);
+        
+        double factor, q1[2], q2[2];//k-points
+        double q1_phase, q2_phase;
+        factor = 2.*Pi*q/h;
+        q1[0] = factor;
+        q1[1] = factor;
+        
+        q2[0] = factor;
+        q2[1] =-factor;
+        
         for (int y = 0; y < h; y++) {
-            double theta = a + (2*Pi*q)*y / h;
-            double sx = cos(theta);
-            double sy = sin(theta);
             for (int x = 0; x < w; x++) {
                 int i = x + y*w;
-                spin[i] = {sx, sy, 0};
+                
+                q1_phase = q1[0]*x + q1[0]*y;
+                q2_phase = q2[0]*x + q2[0]*y;
+                
+                spin[i].x =sqrt(a*a + b*b*cos(q2_phase)*cos(q2_phase))*cos(q1_phase);
+                spin[i].y =sqrt(a*a + b*b*cos(q2_phase)*cos(q2_phase))*sin(q1_phase);
+                spin[i].z =b*sin(q2_phase);
+                
+                //spin[i] = spin[i].normalized();
+//                printf("%3d, %3d, %10lf, %10lf, %10lf, %10lf\n", x, y, spin[i].x, spin[i].y, spin[i].z,
+//                       spin[i].x*spin[i].x + spin[i].y*spin[i].y + spin[i].z*spin[i].z);
             }
         }
     }

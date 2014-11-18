@@ -5,7 +5,6 @@
 int main(int argc,char **argv) {
     RNG rng(0);
     int w = 16;
-    int h = w;
     double t1 = -1, t2 = 0, t3 = 0;
     double kT = 0;
     int n_colors = 4;
@@ -21,7 +20,7 @@ int main(int argc,char **argv) {
     double max_mu = +5 + 1e-4;
     double d_mu = 2; // 0.5;
     
-    auto m = Model(SquareLattice::mk(w, h, t1, t2, t3), min_J, kT);
+    auto m = Model(SquareLattice::mk(w, w, t1, t2, t3), min_J, kT);
     
     auto engine = mk_engine_cx();
     engine->set_R_correlated(m.lattice->groups(n_colors), rng);

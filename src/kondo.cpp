@@ -10,15 +10,15 @@ using namespace std::placeholders;
 std::unique_ptr<Lattice> mk_lattice(cpptoml::toml_group g) {
     auto type = g.get_unwrap<std::string>("lattice.type");
     if (type == "square") {
-        return Lattice::mk_square(
+        return SquareLattice::mk(
             g.get_unwrap<int64_t>("lattice.w"), g.get_unwrap<int64_t>("lattice.h"), g.get_unwrap<double>("lattice.t1"),
             g.get_unwrap<double>("lattice.t2", 0.0), g.get_unwrap<double>("lattice.t3", 0.0));
     } else if (type == "triangular") {
-        return Lattice::mk_triangular(
+        return TriangularLattice::mk(
             g.get_unwrap<int64_t>("lattice.w"), g.get_unwrap<int64_t>("lattice.h"), g.get_unwrap<double>("lattice.t1"),
             g.get_unwrap<double>("lattice.t2", 0.0), g.get_unwrap<double>("lattice.t3", 0.0));
     } else if (type == "kagome") {
-        return Lattice::mk_kagome(
+        return KagomeLattice::mk(
             g.get_unwrap<int64_t>("lattice.w"), g.get_unwrap<int64_t>("lattice.h"), g.get_unwrap<double>("lattice.t1"));
     }
     cerr << "Unsupported lattice type `" << type << "`!\n";

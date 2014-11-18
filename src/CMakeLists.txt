@@ -1,10 +1,13 @@
-set(KONDO_SRC model.cpp lattice.cpp dynamics.cpp)
+add_library(kondo_base OBJECT model.cpp lattice.cpp dynamics.cpp)
 
-add_executable(test_kpm test_kpm.cpp)
+add_executable(test_kpm test_kpm.cpp $<TARGET_OBJECTS:kondo_base>)
 target_link_libraries(test_kpm ${LIBS})
 
-add_executable(kondo ${KONDO_SRC} kondo.cpp)
+add_executable(test_kondo test_kondo.cpp $<TARGET_OBJECTS:kondo_base>)
+target_link_libraries(test_kondo ${LIBS})
+
+add_executable(kondo kondo.cpp $<TARGET_OBJECTS:kondo_base>)
 target_link_libraries(kondo ${LIBS})
 
-add_executable(test_kondo ${KONDO_SRC} test_kondo.cpp)
-target_link_libraries(test_kondo ${LIBS})
+add_executable(merons merons.cpp $<TARGET_OBJECTS:kondo_base>)
+target_link_libraries(merons ${LIBS})

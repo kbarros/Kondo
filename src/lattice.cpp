@@ -19,12 +19,12 @@ void Lattice::set_spins_random(RNG &rng, Vec<vec3> &spin) {
     }
 }
 
-class LinearLattice: public Lattice {
+class LinearLatticeImpl: public LinearLattice {
 public:
     int w;
     double t1, t2;
     
-    LinearLattice(int w, double t1, double t2):
+    LinearLatticeImpl(int w, double t1, double t2):
     w(w), t1(t1), t2(t2)
     { }
     
@@ -79,17 +79,17 @@ public:
     }
 };
 
-std::unique_ptr<Lattice> Lattice::mk_linear(int w, double t1, double t2) {
-    return std::make_unique<LinearLattice>(w, t1, t2);
+std::unique_ptr<LinearLattice> LinearLattice::mk(int w, double t1, double t2) {
+    return std::make_unique<LinearLatticeImpl>(w, t1, t2);
 }
 
 
-class SquareLattice: public Lattice {
+class SquareLatticeImpl: public SquareLattice {
 public:
     int w, h;
     double t1, t2, t3;
     
-    SquareLattice(int w, int h, double t1, double t2, double t3):
+    SquareLatticeImpl(int w, int h, double t1, double t2, double t3):
     w(w), h(h), t1(t1), t2(t2), t3(t3)
     { assert(t2==0 && "t2 not yet implemented for square lattice."); }
     
@@ -142,6 +142,18 @@ public:
         }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";
+        }
+    }
+    
+    void set_spins_meron(double a, int q, Vec<vec3>& spin) {
+        for (int y = 0; y < h; y++) {
+            double theta = a + (2*Pi*q)*y / h;
+            double sx = cos(theta);
+            double sy = sin(theta);
+            for (int x = 0; x < w; x++) {
+                int i = x + y*w;
+                spin[i] = {sx, sy, 0};
+            }
         }
     }
     
@@ -201,19 +213,19 @@ public:
     }
 };
 
-std::unique_ptr<Lattice> Lattice::mk_square(int w, int h, double t1, double t2, double t3) {
+std::unique_ptr<SquareLattice> SquareLattice::mk(int w, int h, double t1, double t2, double t3) {
     assert(t2 == 0);
-    return std::make_unique<SquareLattice>(w, h, t1, t2, t3);
+    return std::make_unique<SquareLatticeImpl>(w, h, t1, t2, t3);
 }
 
 
 
-class TriangularLattice: public Lattice {
+class TriangularLatticeImpl: public TriangularLattice {
 public:
     int w, h;
     double t1, t2, t3;
     
-    TriangularLattice(int w, int h, double t1, double t2, double t3):
+    TriangularLatticeImpl(int w, int h, double t1, double t2, double t3):
     w(w), h(h), t1(t1), t2(t2), t3(t3)
     { assert(t2==0 && "t2 not yet implemented for triangular lattice."); }
     
@@ -308,18 +320,18 @@ public:
     }
 };
 
-std::unique_ptr<Lattice> Lattice::mk_triangular(int w, int h, double t1, double t2, double t3) {
+std::unique_ptr<TriangularLattice> TriangularLattice::mk(int w, int h, double t1, double t2, double t3) {
     assert(t2 == 0);
-    return std::make_unique<TriangularLattice>(w, h, t1, t2, t3);
+    return std::make_unique<TriangularLatticeImpl>(w, h, t1, t2, t3);
 }
 
 
-class KagomeLattice: public Lattice {
+class KagomeLatticeImpl: public KagomeLattice {
 public:
     int w, h;
     double t1;
     
-    KagomeLattice(int w, int h, double t1):
+    KagomeLatticeImpl(int w, int h, double t1):
     w(w), h(h), t1(t1)
     {}
     
@@ -494,6 +506,6 @@ public:
     }
 };
 
-std::unique_ptr<Lattice> Lattice::mk_kagome(int w, int h, double t1) {
-    return std::make_unique<KagomeLattice>(w, h, t1);
+std::unique_ptr<KagomeLattice> KagomeLattice::mk(int w, int h, double t1) {
+    return std::make_unique<KagomeLatticeImpl>(w, h, t1);
 }

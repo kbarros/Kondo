@@ -10,7 +10,7 @@ void testKondo1() {
     double J = 0.5;
     double kB_T = 0;
     double mu = 0.103;
-    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, kB_T);
+    auto m = Model(SquareLattice::mk(w, h, t1, t2, t3), J, kB_T);
     m.lattice->set_spins("ferro", nullptr, m.spin);
     m.spin[0] = vec3(1, 1, 1).normalized();
     
@@ -56,7 +56,7 @@ void testKondo2() {
     double kB_T = 0;
     double mu = -1.0;
     
-    auto m = Model(Lattice::mk_kagome(w, h, t1), J, kB_T);
+    auto m = Model(KagomeLattice::mk(w, h, t1), J, kB_T);
     m.lattice->set_spins("ncp2", nullptr, m.spin);
     m.set_hamiltonian(m.spin);
     arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
@@ -75,9 +75,9 @@ void testKondo3() {
     double mu = 0;
     int n_colors = 4;
     
-//    auto m = Model(Lattice::mk_square(w, h, t1, t2, t3), J, kB_T);
-//    auto m = Model(Lattice::mk_kagome(w, h, t1), J, kB_T);
-    auto m = Model(Lattice::mk_linear(w, t1, t2), J, kB_T);
+//    auto m = Model(SquareLattice::mk(w, h, t1, t2, t3), J, kB_T);
+//    auto m = Model(KagomeLattice::mk(w, h, t1), J, kB_T);
+    auto m = Model(LinearLattice::mk(w, t1, t2), J, kB_T);
     
 //    m.lattice->set_spins_random(rng, m.spin);
     m.lattice->set_spins("ferro", nullptr, m.spin);

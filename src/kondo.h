@@ -35,16 +35,28 @@ class Model;
 class Lattice {
 public:
     static void set_spins_random(RNG& rng, Vec<vec3>& spin);
-    static std::unique_ptr<Lattice> mk_linear(int w, double t1, double t2);
-    static std::unique_ptr<Lattice> mk_square(int w, int h, double t1, double t2, double t3);
-    static std::unique_ptr<Lattice> mk_triangular(int w, int h, double t1, double t2, double t3);
-    static std::unique_ptr<Lattice> mk_kagome(int w, int h, double t1);
-    
     virtual int n_sites() = 0;
     virtual vec3 position(int i) = 0;
     virtual void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) = 0;
     virtual void add_hoppings(Model const& model, SpMatElems<cx_double>& H_elems) = 0;
     virtual Vec<int> groups(int n_colors) = 0;
+};
+class LinearLattice: public Lattice {
+public:
+    static std::unique_ptr<LinearLattice> mk(int w, double t1, double t2);
+};
+class SquareLattice: public Lattice {
+public:
+    static std::unique_ptr<SquareLattice> mk(int w, int h, double t1, double t2, double t3);
+    virtual void set_spins_meron(double a, int q, Vec<vec3>& spin) = 0;
+};
+class TriangularLattice: public Lattice {
+public:
+    static std::unique_ptr<TriangularLattice> mk(int w, int h, double t1, double t2, double t3);
+};
+class KagomeLattice: public Lattice {
+public:
+    static std::unique_ptr<KagomeLattice> mk(int w, int h, double t1);
 };
 
 

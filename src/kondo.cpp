@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
         moments = engine->moments(M);
         gamma = moment_transform(moments, Mq);
         if (ensemble_type == "canonical") {
-            mu = filling_to_mu(gamma, es, /*m.kB_T*/0, filling, delta_filling);
+            mu = filling_to_mu(gamma, es, m.kB_T, filling, delta_filling);
         } else {
             filling = mu_to_filling(gamma, es, m.kB_T, mu);
         }

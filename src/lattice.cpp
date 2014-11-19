@@ -116,10 +116,15 @@ public:
     
     void set_spins_meron(double a, int q, Vec<vec3>& spin) {
         assert(w % h == 0); // need periodicity in both dimensions
-        double b = sqrt(1.-a*a);
-        
+        double b = sqrt(1.0-(a*a));
         double factor, q1[2], q2[2];//k-points
         double q1_phase, q2_phase;
+        
+         if ((1.0-(a*a))<1e-4){// in case (1-a*a) = -0.000 at a = 1
+            b = 0.0;
+            a = 1.;
+        }
+        
         factor = 2.*Pi*q/h;
         q1[0] = factor;
         q1[1] = factor;
@@ -127,20 +132,27 @@ public:
         q2[0] = factor;
         q2[1] =-factor;
         
+        printf("meron params: %10lf, %10lf, %10lf, %10lf\n", factor, a, b, 1.0-(a*a));
+        
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int i = x + y*w;
                 
-                q1_phase = q1[0]*x + q1[0]*y;
-                q2_phase = q2[0]*x + q2[0]*y;
+                q1_phase = q1[0]*x + q1[1]*y;
+                q2_phase = q2[0]*x + q2[1]*y;
                 
                 spin[i].x =sqrt(a*a + b*b*cos(q2_phase)*cos(q2_phase))*cos(q1_phase);
                 spin[i].y =sqrt(a*a + b*b*cos(q2_phase)*cos(q2_phase))*sin(q1_phase);
                 spin[i].z =b*sin(q2_phase);
                 
                 //spin[i] = spin[i].normalized();
-//                printf("%3d, %3d, %10lf, %10lf, %10lf, %10lf\n", x, y, spin[i].x, spin[i].y, spin[i].z,
-//                       spin[i].x*spin[i].x + spin[i].y*spin[i].y + spin[i].z*spin[i].z);
+            }
+        }
+        for (int x = 0; x < w; x++) {
+            for (int y = 0; y < h; y++) {
+                //int i = x + y*w;
+                //printf("%3d, %3d, %10lf, %10lf, %10lf, %10lf\n", x, y, spin[i].x, spin[i].y, spin[i].z,
+                //spin[i].x*spin[i].x + spin[i].y*spin[i].y + spin[i].z*spin[i].z);
             }
         }
     }

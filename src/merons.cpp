@@ -16,11 +16,12 @@ int main(int argc,char **argv) {
     time1 = clock();
     
     RNG rng(0);
-    int w = 32;
+    int w = 8;
     double t1 = -1, t2 = 0, t3 = 0.5;
     double kT =  0;
-    int n_colors = 16*16;
+    int n_colors = 8*8;
     Vec<int> Ms {500, 1000, 2000, 4000, 8000};
+    //Vec<int> Ms {500, 1000, 2000, 4000};
     EnergyScale es{-9, 9};
 
     
@@ -28,12 +29,12 @@ int main(int argc,char **argv) {
     double max_J = 0.1 + 1e-4;
     double d_J = 0.1; // 0.1;
     
-    double min_mu = -2.45;//-2.6;
-    double max_mu = -2.45  +1e-4;//-2.3 + 1e-4;
+    double min_mu = -2.50;//-2.6;
+    double max_mu = -2.30  +1e-4;//-2.3 + 1e-4;
     double d_mu = 0.05; // 0.5;
 
-    double min_a = 0.8;
-    double max_a = 0.8 + 1e-4;//1.0 + 1e-4;
+    double min_a = 0.0;
+    double max_a = 1.0 + 1e-4;//1.0 + 1e-4;
     double d_a   = 0.05;
     double meron_a;
     int meron_Q;
@@ -41,15 +42,17 @@ int main(int argc,char **argv) {
     FILE *fp1;
     char filename1[100];
     //sprintf(filename1, "merons_variational_test_%dx%dsites_%03dclr_%05d_2.txt", w, w, n_colors, M);
-    sprintf(filename1, "merons_variational_error_check_%dx%dsites_%03dclr_%05d_2.txt", w, w, n_colors, Ms.back());
+    //sprintf(filename1, "merons_variational_error_check_%dx%dsites_%03dclr_%05d_2.txt", w, w, n_colors, Ms.back());
+    sprintf(filename1, "merons_variational_error_check_%dx%dsites_%03dclr_Ms%05d_2.txt", w, w, n_colors, Ms.back());
     fp1 = fopen(filename1, "w");
+    printf("filename:%s\n", filename1);
     double filling;
     auto m = Model(SquareLattice::mk(w, w, t1, t2, t3), min_J, kT);
     
     auto engine = mk_engine_cx();
     auto groups = m.lattice->groups(n_colors);
     cout << std::setprecision(9);
-    cout << "# J, mu, Phi(, ED_Phi)\n";
+    cout << "# J, meron_a, meron_Q, mu, Phi, filling, M(, ED_Phi)\n";
 
     
     for (m.J = min_J; m.J < max_J; m.J += d_J) {
@@ -94,6 +97,9 @@ int main(int argc,char **argv) {
                 }
             }
             fprintf(fp1, "\n");
+            time2 = clock();
+            printf("#time=%10lf sec, %10lf min, %10lf H\n",(double)(time2 -time1)/CLOCKS_PER_SEC,(double)(time2 -time1)/CLOCKS_PER_SEC/60,(double)(time2 -time1)/CLOCKS_PER_SEC/3600);
+
 
         }
         fprintf(fp1, "\n");

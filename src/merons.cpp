@@ -3,6 +3,14 @@
 #include "time.h"
 
 
+Vec<double> slice(Vec<double> src, int begin, int end) {
+    Vec<double> ret(end-begin);
+    for (int i = begin; i < end; i++) {
+        ret[i-begin] = src[i];
+    }
+    return ret;
+}
+
 int main(int argc,char **argv) {
     clock_t time1, time2;
     time1 = clock();
@@ -10,10 +18,9 @@ int main(int argc,char **argv) {
     RNG rng(0);
     int w = 32;
     double t1 = -1, t2 = 0, t3 = 0.5;
-    double kT = 0;
+    double kT =  0;
     int n_colors = 16*16;
-    int M = 4000;
-    int Mq = 4*M;
+    Vec<int> Ms {500, 1000, 2000, 4000, 8000};
     EnergyScale es{-9, 9};
 
     
@@ -34,7 +41,7 @@ int main(int argc,char **argv) {
     FILE *fp1;
     char filename1[100];
     //sprintf(filename1, "merons_variational_test_%dx%dsites_%03dclr_%05d_2.txt", w, w, n_colors, M);
-    sprintf(filename1, "merons_variational_error_check_%dx%dsites_%03dclr_%05d_2.txt", w, w, n_colors, M);
+    sprintf(filename1, "merons_variational_error_check_%dx%dsites_%03dclr_%05d_2.txt", w, w, n_colors, Ms.back());
     fp1 = fopen(filename1, "w");
     double filling;
     auto m = Model(SquareLattice::mk(w, w, t1, t2, t3), min_J, kT);
@@ -49,25 +56,29 @@ int main(int argc,char **argv) {
         for (meron_a = min_a; meron_a < max_a; meron_a += d_a) {
             //for (meron_Q=0; meron_Q<w; meron_Q++) {
             meron_Q = w/8;
-                engine->set_R_correlated(groups, rng);
+            engine->set_R_correlated(groups, rng);
 
-                dynamic_cast<SquareLattice *>(m.lattice.get())->set_spins_meron(meron_a, meron_Q, m.spin);
-                m.set_hamiltonian(m.spin);
-                engine->set_H(m.H, es);
-                
-                auto moments = engine->moments(M);
-                auto gamma = moment_transform(moments, Mq);
-                
+            dynamic_cast<SquareLattice *>(m.lattice.get())->set_spins_meron(meron_a, meron_Q, m.spin);
+            m.set_hamiltonian(m.spin);
+            engine->set_H(m.H, es);
+            
+            auto allMoments = engine->moments(Ms.back());
+            
+            for (int M : Ms) {
+                auto moments = slice(allMoments, 0, M);
+                auto gamma = moment_transform(moments, 4*M);
+            
+            
                 for (double mu = min_mu; mu < max_mu; mu += d_mu) {
                     double Phi = electronic_grand_energy(gamma, es, kT, mu) / m.n_sites;
                     filling = mu_to_filling(gamma, es, m.kB_T, mu);
                     
-                    printf("%10lf, %10lf, %5d, %10lf, %10lf, %10lf, ", m.J, meron_a, meron_Q, mu, Phi, filling);
-                    fprintf(fp1, "%10lf, %10lf, %5d, %10lf, %10lf, %10lf, ", m.J, meron_a, meron_Q, mu, Phi, filling);
+                    printf("%10lf, %10lf, %5d, %10lf, %10lf, %10lf, %d, ", m.J, meron_a, meron_Q, mu, Phi, filling, M);
+                    fprintf(fp1, "%10lf, %10lf, %5d, %10lf, %10lf, %10lf, %d, ", m.J, meron_a, meron_Q, mu, Phi, filling, M);
                     fflush(fp1);
                     
-                    //bool print_exact = true;
-                    bool print_exact = false;
+                    bool print_exact = true;
+                    //bool print_exact = false;
                     if (print_exact) {
                         arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
                         double Phi_exact = electronic_grand_energy(eigs, kT, mu) / m.n_sites;
@@ -80,7 +91,7 @@ int main(int argc,char **argv) {
                         cout << endl;
                         fprintf(fp1, "\n");
                     }
-                //}
+                }
             }
             fprintf(fp1, "\n");
 

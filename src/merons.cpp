@@ -8,11 +8,11 @@ int main(int argc,char **argv) {
     time1 = clock();
     
     RNG rng(0);
-    int w = 16;
+    int w = 32;
     double t1 = -1, t2 = 0, t3 = 0.5;
     double kT = 0;
-    int n_colors = 64;
-    int M = 4000, int_M;
+    int n_colors = 16*16;
+    int M = 4000;
     int Mq = 4*M;
     EnergyScale es{-9, 9};
 
@@ -43,11 +43,12 @@ int main(int argc,char **argv) {
     auto groups = m.lattice->groups(n_colors);
     cout << std::setprecision(9);
     cout << "# J, mu, Phi(, ED_Phi)\n";
+
     
     for (m.J = min_J; m.J < max_J; m.J += d_J) {
         for (meron_a = min_a; meron_a < max_a; meron_a += d_a) {
-            for (meron_Q=0; meron_Q<w; meron_Q++) {
-                
+            //for (meron_Q=0; meron_Q<w; meron_Q++) {
+            meron_Q = w/8;
                 engine->set_R_correlated(groups, rng);
 
                 dynamic_cast<SquareLattice *>(m.lattice.get())->set_spins_meron(meron_a, meron_Q, m.spin);
@@ -65,8 +66,8 @@ int main(int argc,char **argv) {
                     fprintf(fp1, "%10lf, %10lf, %5d, %10lf, %10lf, %10lf, ", m.J, meron_a, meron_Q, mu, Phi, filling);
                     fflush(fp1);
                     
-                    bool print_exact = true;
-                    //bool print_exact = false;
+                    //bool print_exact = true;
+                    bool print_exact = false;
                     if (print_exact) {
                         arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
                         double Phi_exact = electronic_grand_energy(eigs, kT, mu) / m.n_sites;
@@ -79,7 +80,7 @@ int main(int argc,char **argv) {
                         cout << endl;
                         fprintf(fp1, "\n");
                     }
-                }
+                //}
             }
             fprintf(fp1, "\n");
 
@@ -88,6 +89,7 @@ int main(int argc,char **argv) {
         
     }
     time2 = clock();
-    printf("time=%10lf sec, %10lf min, %10lf H\n",(double)(time2 -time1)/CLOCKS_PER_SEC,(double)(time2 -time1)/CLOCKS_PER_SEC/60,(double)(time2 -time1)/CLOCKS_PER_SEC/3600);
+    printf("#time=%10lf sec, %10lf min, %10lf H\n",(double)(time2 -time1)/CLOCKS_PER_SEC,(double)(time2 -time1)/CLOCKS_PER_SEC/60,(double)(time2 -time1)/CLOCKS_PER_SEC/3600);
+    fprintf(fp1, "#time=%10lf sec, %10lf min, %10lf H\n",(double)(time2 -time1)/CLOCKS_PER_SEC,(double)(time2 -time1)/CLOCKS_PER_SEC/60,(double)(time2 -time1)/CLOCKS_PER_SEC/3600);
 
 }

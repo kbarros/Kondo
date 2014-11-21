@@ -49,7 +49,7 @@ int main(int argc,char **argv) {
     double filling;
     auto m = Model(SquareLattice::mk(w, w, t1, t2, t3), min_J, kT);
     
-    auto engine = mk_engine_cx();
+    auto engine = mk_engine<cx_double>();
     auto groups = m.lattice->groups(n_colors);
     cout << std::setprecision(9);
     cout << "# J, meron_a, meron_Q, mu, Phi, filling, M(, ED_Phi)\n";

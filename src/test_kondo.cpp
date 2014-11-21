@@ -28,7 +28,7 @@ void testKondo1() {
     int Mq = 4*M;
     auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kB_T, mu), es);
     auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kB_T, mu), es);
-    auto engine = mk_engine_cx();
+    auto engine = mk_engine<cx_double>();
     engine->set_H(m.H, es);
     engine->set_R_identity(n);
     
@@ -93,7 +93,7 @@ void testKondo3() {
     int Mq = 4*M;
     auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kB_T, mu), es);
     auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kB_T, mu), es);
-    auto engine = mk_engine_cx();
+    auto engine = mk_engine<cx_double>();
     engine->set_H(m.H, es);
     
     Vec<vec3>& f1 = m.dyn_stor[0];

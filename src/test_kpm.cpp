@@ -83,7 +83,7 @@ void testKPM1() {
     double E2 = density_product(gamma, g, es);
     cout << "energy (v2) " << E2 << endl;
     
-    auto D = engine->Hs;
+    auto D = H;
     engine->autodiff_matrix(g_c, D);
 
     cout << "derivative <";
@@ -126,9 +126,9 @@ void testKPM2() {
     int Mq = 4*M;
     auto g_c = expansion_coefficients(M, Mq, g, es);
     auto f_c = expansion_coefficients(M, Mq, f, es);
-    auto engine = mk_engine_cx();
+    auto engine = mk_engine<cx_double>();
     engine->set_H(H, es);
-    auto D = engine->Hs;
+    auto D = H;
     
     double E1 = exact_energy(H_dense, kB_T, mu);
     double eps = 1e-6;
@@ -203,7 +203,7 @@ void testKPM3() {
     int Mq = 4*M;
     auto g_c = expansion_coefficients(M, Mq, g, es);
     auto f_c = expansion_coefficients(M, Mq, f, es);
-    auto engine = mk_engine_cx();
+    auto engine = mk_engine<cx_double>();
     engine->set_R_uncorrelated(n, 1, rng);
     
     double eps = 1e-5;
@@ -226,7 +226,7 @@ void testKPM3() {
     cx_double dE_dH = finite_diff(eps) - finite_diff(eps*cx_double(0, 1));
     
     engine->set_H(H, es);
-    auto D1 = engine->Hs;
+    auto D1 = H;
     engine->moments(M);
     engine->autodiff_matrix(g_c, D1);
     

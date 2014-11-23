@@ -2,6 +2,7 @@
 #include "iostream_util.h"
 #include "time.h"
 
+using namespace fkpm;
 
 Vec<double> slice(Vec<double> src, int begin, int end) {
     Vec<double> ret(end-begin);
@@ -49,7 +50,7 @@ int main(int argc,char **argv) {
     double filling;
     auto m = Model(SquareLattice::mk(w, w, t1, t2, t3), min_J, kT);
     
-    auto engine = mk_engine<cx_double>();
+    auto engine = mk_engine<cx_flt>();
     auto groups = m.lattice->groups(n_colors);
     cout << std::setprecision(9);
     cout << "# J, meron_a, meron_Q, mu, Phi, filling, M(, ED_Phi)\n";
@@ -83,7 +84,7 @@ int main(int argc,char **argv) {
                     bool print_exact = true;
                     //bool print_exact = false;
                     if (print_exact) {
-                        arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
+                        arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
                         double Phi_exact = electronic_grand_energy(eigs, kT, mu) / m.n_sites;
                         //cout << "   [" << Phi_exact << "]\n";
                         cout << Phi_exact << endl;

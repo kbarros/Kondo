@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     cpptoml::parser p{input_file};
     cpptoml::toml_group g = p.parse();
     
-    RNG rng(g.get_unwrap<int64_t>("seed"));
+    fkpm::RNG rng(g.get_unwrap<int64_t>("seed"));
     bool overwrite_dump = g.get_unwrap<bool>("overwrite_dump");
     int steps_per_dump = g.get_unwrap<int64_t>("steps_per_dump");
     int max_steps = g.get_unwrap<int64_t>("max_steps");
@@ -96,7 +96,7 @@ int main(int argc, char *argv[]) {
     
     m.set_hamiltonian(m.spin);
     
-    EnergyScale es{g.get_unwrap<double>("kpm.energy_scale_lo"), g.get_unwrap<double>("kpm.energy_scale_hi")};
+    fkpm::EnergyScale es{g.get_unwrap<double>("kpm.energy_scale_lo"), g.get_unwrap<double>("kpm.energy_scale_hi")};
     // double extra = 0.1;
     // double tolerance = 1e-2;
     // auto es = energy_scale(m.H, extra, tolerance);
@@ -109,7 +109,7 @@ int main(int argc, char *argv[]) {
     Vec<int> groups_prec = m.lattice->groups(g.get_unwrap<int64_t>("kpm.n_colors_precise"));
     
     // variables that will be updated in `build_kpm(spin)`
-    auto engine = mk_engine_cuSPARSE<cx_double>(device_num);
+    auto engine = fkpm::mk_engine_cuSPARSE<cx_flt>(device_num);
     Vec<double> moments;
     Vec<double> gamma;
     
@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
         engine->set_H(m.H, es);
         engine->set_R_correlated(groups, rng);
         moments = engine->moments(M);
-        gamma = moment_transform(moments, Mq);
+        gamma = fkpm::moment_transform(moments, Mq);
         if (ensemble_type == "canonical") {
             mu = filling_to_mu(gamma, es, m.kB_T, filling, delta_filling);
         } else {
@@ -154,7 +154,7 @@ int main(int argc, char *argv[]) {
         }
         // auto c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kB_T, mu), es);
         // engine->stoch_matrix(c, m.D);
-        auto c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kB_T, mu), es);
+        auto c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m.kB_T, mu), es);
         engine->autodiff_matrix(c, m.D);
     };
     

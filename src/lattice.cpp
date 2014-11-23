@@ -13,7 +13,7 @@ static Vec<int> colors_to_groups(Vec<int> const& colors, int n_orbs) {
 }
 
 
-void Lattice::set_spins_random(RNG &rng, Vec<vec3> &spin) {
+void Lattice::set_spins_random(fkpm::RNG &rng, Vec<vec3> &spin) {
     for (int i = 0; i < spin.size(); i++) {
         spin[i] = gaussian_vec3<double>(rng).normalized();
     }
@@ -47,7 +47,7 @@ public:
         return(x%w+w)%w;
     }
     
-    void add_hoppings(Model const& m, fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
+    void add_hoppings(Model const& m, fkpm::SpMatElems<cx_flt>& H_elems) {
         for (int i = 0; i < w; i++) {
             static int nn1_sz = 2;
             static int nn1_dx[] { 1, -1 };
@@ -163,7 +163,7 @@ public:
         return xp + yp*w;
     }
     
-    void add_hoppings(Model const& m, fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
+    void add_hoppings(Model const& m, fkpm::SpMatElems<cx_flt>& H_elems) {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int i = coord2idx(x, y);
@@ -174,12 +174,12 @@ public:
                 
                 for (int nn = 0; nn < nn1_sz; nn++) {
                     auto add_hopping = [&](int dx, int dy, double t) {
-                        double theta = 2*Pi*(dx*m.current.x/w + dy*m.current.y/h);
+                        flt theta = 2*Pi*(dx*m.current.x/w + dy*m.current.y/h);
                         theta *= (1 + m.current_growth*m.time) * cos(m.current_freq*m.time);
-                        cx_double phase = exp(I*theta);
+                        cx_flt phase = exp(I*theta);
                         int j = coord2idx(x+dx,y+dy);
-                        H_elems.add(2*i+0, 2*j+0, phase*t);
-                        H_elems.add(2*i+1, 2*j+1, phase*t);
+                        H_elems.add(2*i+0, 2*j+0, phase*flt(t));
+                        H_elems.add(2*i+1, 2*j+1, phase*flt(t));
                     };
                     int dx = nn1_dx[nn];
                     int dy = nn1_dy[nn];
@@ -269,7 +269,7 @@ public:
         }
     }
     
-    void add_hoppings(Model const& m, fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
+    void add_hoppings(Model const& m, fkpm::SpMatElems<cx_flt>& H_elems) {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int i = coord2idx(x, y);
@@ -461,7 +461,7 @@ public:
         std::abort();
     }
     
-    void add_hoppings(Model const& m, fkpm::SpMatElems<fkpm::cx_double>& H_elems) {
+    void add_hoppings(Model const& m, fkpm::SpMatElems<cx_flt>& H_elems) {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 for (int v = 0; v < 3; v++) {

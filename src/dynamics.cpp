@@ -1,11 +1,18 @@
 #include "kondo.h"
 
 
+// project vector p onto plane that is normal to x
+template<typename T>
+Vec3<T> project_tangent(vec3 x, vec3 p) {
+    return p - x * (p.dot(x) / x.norm2());
+}
+
+
 class Overdamped: public Dynamics {
 public:
     Overdamped(double dt) { this->dt = dt; }
     
-    void step(CalcForce const& calc_force, RNG& rng, Model& m) {
+    void step(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) {
         Vec<vec3>& f = m.dyn_stor[0];
         calc_force(m.spin, f);
         for (int i = 0; i < m.n_sites; i++) {
@@ -36,14 +43,14 @@ public:
         b = 1 / denom;
     }
     
-    void init(CalcForce const& calc_force, RNG& rng, Model& m) {
+    void init(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) {
         Vec<vec3>& v = m.dyn_stor[0];
         Vec<vec3>& f1 = m.dyn_stor[1];
         v.assign(m.n_sites, vec3(0,0,0));
         calc_force(m.spin, f1);
     }
     
-    void step(CalcForce const& calc_force, RNG& rng, Model& m) {
+    void step(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) {
         Vec<vec3>& s = m.spin;
         Vec<vec3>& v = m.dyn_stor[0];
         Vec<vec3>& f1 = m.dyn_stor[1];
@@ -82,7 +89,7 @@ public:
     
     SLL(double alpha, double dt): alpha(alpha) { this->dt = dt; }
     
-    void step(CalcForce const& calc_force, RNG& rng, Model& m) {
+    void step(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) {
         Vec<vec3>& s    = m.spin;
         Vec<vec3>& sp   = m.dyn_stor[0];
         Vec<vec3>& f    = m.dyn_stor[1];

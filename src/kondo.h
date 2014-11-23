@@ -6,7 +6,13 @@
 #include "cpptoml.h"
 
 
-using namespace fkpm;
+typedef float flt;
+// typedef double flt;
+typedef std::complex<flt> cx_flt;
+
+using fkpm::Vec;
+using fkpm::Pi;
+constexpr cx_flt I(0, 1);
 
 
 // C++14 feature missing in C++11
@@ -18,15 +24,9 @@ namespace std {
 }
 
 template<typename T>
-Vec3<T> gaussian_vec3(RNG& rng) {
+Vec3<T> gaussian_vec3(fkpm::RNG& rng) {
     static std::normal_distribution<T> dist;
     return { dist(rng), dist(rng), dist(rng) };
-}
-
-// project vector p onto plane that is normal to x
-template<typename T>
-Vec3<T> project_tangent(vec3 x, vec3 p) {
-    return p - x * (p.dot(x) / x.norm2());
 }
 
 
@@ -34,11 +34,11 @@ class Model;
 
 class Lattice {
 public:
-    static void set_spins_random(RNG& rng, Vec<vec3>& spin);
+    static void set_spins_random(fkpm::RNG& rng, Vec<vec3>& spin);
     virtual int n_sites() = 0;
     virtual vec3 position(int i) = 0;
     virtual void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) = 0;
-    virtual void add_hoppings(Model const& model, SpMatElems<cx_double>& H_elems) = 0;
+    virtual void add_hoppings(Model const& model, fkpm::SpMatElems<cx_flt>& H_elems) = 0;
     virtual Vec<int> groups(int n_colors) = 0;
 };
 class LinearLattice: public Lattice {
@@ -67,8 +67,8 @@ public:
     double J, kB_T;
     vec3 B_zeeman;
     vec3 current; double current_growth, current_freq;
-    SpMatElems<cx_double> H_elems;
-    SpMatCsr<cx_double> H, D;
+    fkpm::SpMatElems<cx_flt> H_elems;
+    fkpm::SpMatCsr<cx_flt> H, D;
     Vec<vec3> spin;
     double time = 0;
     
@@ -80,7 +80,7 @@ public:
     
     void set_hamiltonian(Vec<vec3> const& spin);
     double classical_potential();
-    void set_forces(SpMatCsr<cx_double> const& D, Vec<vec3>& force);
+    void set_forces(fkpm::SpMatCsr<cx_flt> const& D, Vec<vec3>& force);
 };
 
 
@@ -97,8 +97,8 @@ public:
     // Stochastic Landau Lifshitz using Heun-p
     static std::unique_ptr<Dynamics> mk_sll(double alpha, double dt);
     
-    virtual void init(CalcForce const& calc_force, RNG& rng, Model& m) {}
-    virtual void step(CalcForce const& calc_force, RNG& rng, Model& m) = 0;
+    virtual void init(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) {}
+    virtual void step(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) = 0;
 };
 
 

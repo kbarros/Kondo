@@ -22,7 +22,7 @@ Model::Model(std::unique_ptr<Lattice> lattice, double J, double kB_T, vec3 B_zee
 // sigma1     sigma2     sigma3
 //  0  1       0 -I       1  0
 //  1  0       I  0       0 -1
-static Vec3<fkpm::cx_double> pauli[2][2] {
+static Vec3<cx_flt> pauli[2][2] {
     {{0, 0, 1}, {1, -I, 0}},
     {{1, I, 0}, {0, 0, -1}}
 };
@@ -35,7 +35,7 @@ void Model::set_hamiltonian(Vec<vec3> const& spin) {
     for (int i = 0; i < n_sites; i++) {
         for (int s1 = 0; s1 < 2; s1++) {
             for (int s2 = 0; s2 < 2; s2++) {
-                H_elems.add(2*i+s1, 2*i+s2, -J * pauli[s1][s2].dot(spin[i]));
+                H_elems.add(2*i+s1, 2*i+s2, -flt(J) * pauli[s1][s2].dot(spin[i]));
             }
         }
     }
@@ -52,9 +52,9 @@ double Model::classical_potential() {
     return acc;
 }
 
-void Model::set_forces(SpMatCsr<cx_double> const& D, Vec<vec3>& force) {
+void Model::set_forces(fkpm::SpMatCsr<cx_flt> const& D, Vec<vec3>& force) {
     for (int k = 0; k < n_sites; k++) {
-        Vec3<fkpm::cx_double> dE_dS(0, 0, 0);
+        Vec3<cx_flt> dE_dS(0, 0, 0);
         
         // Apply chain rule: dE/dS = dH_ij/dS D_ji
         // where D_ij = dE/dH_ji is the density matrix

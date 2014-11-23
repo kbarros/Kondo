@@ -18,7 +18,7 @@ void testKondo1() {
     m.set_hamiltonian(m.spin);
     int n = m.H.n_rows;
     
-    arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
+    arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
     double E1 = electronic_grand_energy(eigs, m.kB_T, mu) / m.n_sites;
     
     double extra = 0.1;
@@ -28,7 +28,7 @@ void testKondo1() {
     int Mq = 4*M;
     auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kB_T, mu), es);
     auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kB_T, mu), es);
-    auto engine = mk_engine<cx_double>();
+    auto engine = mk_engine<cx_flt>();
     engine->set_H(m.H, es);
     engine->set_R_identity(n);
     
@@ -60,7 +60,7 @@ void testKondo2() {
     auto m = Model(KagomeLattice::mk(w, h, t1), J, kB_T);
     m.lattice->set_spins("ncp2", nullptr, m.spin);
     m.set_hamiltonian(m.spin);
-    arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
+    arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
     double e = electronic_grand_energy(eigs, m.kB_T, mu);
     
     cout << "ncp2 " << e/m.n_sites << "     [-1.04384301]\n";
@@ -93,7 +93,7 @@ void testKondo3() {
     int Mq = 4*M;
     auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kB_T, mu), es);
     auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kB_T, mu), es);
-    auto engine = mk_engine<cx_double>();
+    auto engine = mk_engine<cx_flt>();
     engine->set_H(m.H, es);
     
     Vec<vec3>& f1 = m.dyn_stor[0];
@@ -102,7 +102,7 @@ void testKondo3() {
 //    auto calc1 = [&](Vec<vec3>& f) {
 //        engine->set_R_identity(m.H.n_rows);
 //        engine->stoch_orbital(f_c);
-//        auto D = std::bind(&Engine<cx_double>::stoch_element, engine, _1, _2);
+//        auto D = std::bind(&Engine<cx_flt>::stoch_element, engine, _1, _2);
 //        m.set_forces(D, f);
 //    };
     auto calc2 = [&](Vec<vec3>& f) {

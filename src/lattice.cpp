@@ -54,13 +54,15 @@ public:
             for (int nn = 0; nn < nn1_sz; nn++) {
                 // nn1
                 int j = coord2idx(i + nn1_dx[nn]);
-                H_elems.add(2*i+0, 2*j+0, t1);
-                H_elems.add(2*i+1, 2*j+1, t1);
+                cx_flt v1 = t1;
+                H_elems.add(2*i+0, 2*j+0, &v1);
+                H_elems.add(2*i+1, 2*j+1, &v1);
                 
                 // nn3, dx scaled by 2
                 j = coord2idx(i + 2*nn1_dx[nn]);
-                H_elems.add(2*i+0, 2*j+0, t2);
-                H_elems.add(2*i+1, 2*j+1, t2);
+                cx_flt v2 = t2;
+                H_elems.add(2*i+0, 2*j+0, &v2);
+                H_elems.add(2*i+1, 2*j+1, &v2);
             }
         }
     }
@@ -176,10 +178,10 @@ public:
                     auto add_hopping = [&](int dx, int dy, double t) {
                         flt theta = 2*Pi*(dx*m.current.x/w + dy*m.current.y/h);
                         theta *= (1 + m.current_growth*m.time) * cos(m.current_freq*m.time);
-                        cx_flt phase = exp(I*theta);
+                        cx_flt v = exp(I*theta)*flt(t);
                         int j = coord2idx(x+dx,y+dy);
-                        H_elems.add(2*i+0, 2*j+0, phase*flt(t));
-                        H_elems.add(2*i+1, 2*j+1, phase*flt(t));
+                        H_elems.add(2*i+0, 2*j+0, &v);
+                        H_elems.add(2*i+1, 2*j+1, &v);
                     };
                     int dx = nn1_dx[nn];
                     int dy = nn1_dy[nn];
@@ -285,13 +287,15 @@ public:
                 for (int nn = 0; nn < nn1_sz; nn++) {
                     // nn1
                     int j = coord2idx(x + nn1_dx[nn], y + nn1_dy[nn]);
-                    H_elems.add(2*i+0, 2*j+0, t1);
-                    H_elems.add(2*i+1, 2*j+1, t1);
+                    cx_flt v1 = t1;
+                    H_elems.add(2*i+0, 2*j+0, &v1);
+                    H_elems.add(2*i+1, 2*j+1, &v1);
 
                     // nn3, dx and dy scaled by 2
                     j = coord2idx(x + 2*nn1_dx[nn], y + 2*nn1_dy[nn]);
-                    H_elems.add(2*i+0, 2*j+0, t3);
-                    H_elems.add(2*i+1, 2*j+1, t3);
+                    cx_flt v3 = t3;
+                    H_elems.add(2*i+0, 2*j+0, &v3);
+                    H_elems.add(2*i+1, 2*j+1, &v3);
                 }
             }
         }
@@ -468,8 +472,9 @@ public:
                     int i = coord2idx(v, x, y);
                     for (int nn = 0; nn < 4; nn++) {
                         int j = neighbor(v, x, y, nn);
-                        H_elems.add(2*i+0, 2*j+0, t1);
-                        H_elems.add(2*i+1, 2*j+1, t1);
+                        cx_flt v1 = t1;
+                        H_elems.add(2*i+0, 2*j+0, &v1);
+                        H_elems.add(2*i+1, 2*j+1, &v1);
                     }
                 }
             }

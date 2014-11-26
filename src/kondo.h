@@ -68,7 +68,7 @@ public:
     vec3 B_zeeman;
     vec3 current; double current_growth, current_freq;
     fkpm::SpMatElems<cx_flt> H_elems;
-    fkpm::SpMatCsr<cx_flt> H, D;
+    fkpm::SpMatBsr<cx_flt> H, D;
     Vec<vec3> spin;
     double time = 0;
     
@@ -80,7 +80,7 @@ public:
     
     void set_hamiltonian(Vec<vec3> const& spin);
     double classical_potential();
-    void set_forces(fkpm::SpMatCsr<cx_flt> const& D, Vec<vec3>& force);
+    void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3>& force);
 };
 
 

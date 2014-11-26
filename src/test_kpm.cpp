@@ -32,13 +32,14 @@ void testMat() {
     
     fkpm::RNG rng(0);
     std::uniform_int_distribution<uint32_t> uniform(0,n-1);
-    fkpm::SpMatElems<double> elems;
+    fkpm::SpMatElems<double> elems(n, n, 1);
     for (int k = 1; k < 400; k++) {
         int i = uniform(rng);
         int j = uniform(rng);
-        elems.add(i, j, k);
+        double v = k;
+        elems.add(i, j, &v);
     }
-    fkpm::SpMatCsr<double> H(n, n, elems);
+    fkpm::SpMatBsr<double> H(elems);
     arma::sp_mat Ha = H.to_arma().st();
     
     for (int p = 0; p < Ha.n_nonzero; p++) {
@@ -54,12 +55,13 @@ void testMat() {
 template <typename T>
 void testKPM1() {
     int n = 4;
-    fkpm::SpMatElems<T> elems;
-    elems.add(0, 0, 5.0);
-    elems.add(1, 1, -5.0);
-    elems.add(2, 2, 0);
-    elems.add(3, 3, 0);
-    fkpm::SpMatCsr<T> H(n, n, elems);
+    fkpm::SpMatElems<T> elems(4, 4, 1);
+    Vec<T> v {5, -5, 0, 0};
+    elems.add(0, 0, &v[0]);
+    elems.add(1, 1, &v[1]);
+    elems.add(2, 2, &v[2]);
+    elems.add(3, 3, &v[3]);
+    fkpm::SpMatBsr<T> H(elems);
     auto g = [](double x) { return x*x; };
     auto f = [](double x) { return 2*x; }; // dg/dx
     
@@ -90,7 +92,7 @@ void testKPM1() {
 
     cout << "derivative <";
     for (int i = 0; i < 4; i++)
-        cout << D(i, i) << " ";
+        cout << *D(i, i) << " ";
     cout << ">\n";
     cout << "expected   <9.99980319956 -9.99980319958 8.42069190159e-14 8.42069190159e-14 >\n";
 }
@@ -103,15 +105,16 @@ void testKPM2() {
     std::normal_distribution<double> normal;
     
     // Build noisy tri-diagonal matrix
-    fkpm::SpMatElems<cx_double> elems;
+    fkpm::SpMatElems<cx_double> elems(n, n, 1);
     for (int i = 0; i < n; i++) {
         auto x = 1.0 + noise * cx_double(normal(rng), normal(rng));
         int j = (i-1+n)%n;
-        elems.add(i, i, 0);
-        elems.add(i, j, x);
-        elems.add(j, i, conj(x));
+        cx_double v1 = 0, v2 = x, v3 = conj(x);
+        elems.add(i, i, &v1);
+        elems.add(i, j, &v2);
+        elems.add(j, i, &v3);
     }
-    fkpm::SpMatCsr<cx_double> H(n, n, elems);
+    fkpm::SpMatBsr<cx_double> H(elems);
     auto H_dense = H.to_arma_dense();
     
     double kB_T = 0.0;
@@ -144,12 +147,12 @@ void testKPM2() {
     engine->set_R_identity(n);
     double E2 = fkpm::moment_product(g_c, engine->moments(M));
     engine->stoch_matrix(f_c, D);
-    auto dE_dH_2 = D(i, j) + D(j, i);
+    auto dE_dH_2 = *D(i, j) + *D(j, i);
     
     engine->set_R_uncorrelated(n, s, rng);
     double E3 = fkpm::moment_product(g_c, engine->moments(M));
     engine->autodiff_matrix(g_c, D);
-    auto dE_dH_3 = D(i, j) + D(j, i);
+    auto dE_dH_3 = *D(i, j) + *D(j, i);
     
     Vec<int> groups(n);
     for (int i = 0; i < n; i++)
@@ -157,11 +160,11 @@ void testKPM2() {
     engine->set_R_correlated(groups, rng);
     double E4 = fkpm::moment_product(g_c, engine->moments(M));
     engine->stoch_matrix(f_c, D);
-    auto dE_dH_4 = (D(i, j) + D(j, i));
+    auto dE_dH_4 = (*D(i, j) + *D(j, i));
     
     engine->moments(M);
     engine->autodiff_matrix(g_c, D);
-    auto dE_dH_5 = (D(i, j) + D(j, i));
+    auto dE_dH_5 = (*D(i, j) + *D(j, i));
     
     cout << std::setprecision(15);
     cout << "Exact energy            " << E1 << endl;
@@ -183,15 +186,16 @@ void testKPM3() {
     std::normal_distribution<double> normal;
     
     // Build noisy tri-diagonal matrix
-    fkpm::SpMatElems<cx_double> elems;
+    fkpm::SpMatElems<cx_double> elems(n, n, 1);
     for (int i = 0; i < n; i++) {
         auto x = 1.0 + noise * cx_double(normal(rng), normal(rng));
         int j = (i-1+n)%n;
-        elems.add(i, i, 0);
-        elems.add(i, j, x);
-        elems.add(j, i, conj(x));
+        cx_double v1 = 0, v2 = x, v3 = conj(x);
+        elems.add(i, i, &v1);
+        elems.add(i, j, &v2);
+        elems.add(j, i, &v3);
     }
-    fkpm::SpMatCsr<cx_double> H(n, n, elems);
+    fkpm::SpMatBsr<cx_double> H(elems);
     
     double mu = 0.2;
     using std::placeholders::_1;
@@ -213,13 +217,13 @@ void testKPM3() {
     
     auto finite_diff = [&](cx_double eps) {
         auto Hp = H;
-        Hp(i, j) += eps;
-        Hp(j, i) += conj(eps);
+        *Hp(i, j) += eps;
+        *Hp(j, i) += conj(eps);
         engine->set_H(Hp, es);
         double Ep = fkpm::moment_product(g_c, engine->moments(M));
         auto Hm = H;
-        Hm(i, j) -= eps;
-        Hm(j, i) -= conj(eps);
+        *Hm(i, j) -= eps;
+        *Hm(j, i) -= conj(eps);
         engine->set_H(Hm, es);
         double Em = fkpm::moment_product(g_c, engine->moments(M));
         return 0.5 * (Ep - Em) / (2.0*eps);
@@ -233,16 +237,16 @@ void testKPM3() {
     engine->autodiff_matrix(g_c, D1);
     
     std::cout << std::setprecision(10);
-    cout << dE_dH << " (valid at double precision)\n";
-    cout << D1(i, j) << endl;
+    cout << dE_dH << endl;
+    cout << *D1(i, j) << endl;
 }
 
 int main(int argc, char **argv) {
-    // testMat();
     // testExpansionCoeffs();
+    testMat();
     testKPM1<cx_float>();
     testKPM1<cx_double>();
-//    testKPM2();
-//    testKPM3();
+    testKPM2();
+    testKPM3();
 }
 

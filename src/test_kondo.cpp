@@ -50,24 +50,52 @@ void testKondo1() {
 }
 
 void testKondo2() {
-    int w = 6, h = 6;
+    int w = 8, h = 8;
     double t1 = -1;
     double J = 0.1;
     double kB_T = 0;
-    double mu = -1.0;
+    double mu = -1.98397;
+    EnergyScale es{-10, 10};
+    int M = 1000;
+    int Mq = 4*M;
     
     auto m = Model(KagomeLattice::mk(w, h, t1), J, kB_T);
-    m.lattice->set_spins("ncp2", nullptr, m.spin);
+    m.lattice->set_spins("ncp1", nullptr, m.spin);
     m.set_hamiltonian(m.spin);
-    arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
-    double e = electronic_grand_energy(eigs, m.kB_T, mu);
+    auto engine = mk_engine<cx_flt>();
+    engine->set_H(m.H, es);
     
-    cout << "ncp2 " << e/m.n_sites << "     [-1.04384301]\n";
+    cout << "calculating exact eigenvalues... " << std::flush;
+    arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
+    cout << "done.\n";
+    
+    cout << "calculating kpm moments... " << std::flush;
+    RNG rng(0);
+    int n_colors = 3*(w/2)*(h/2);
+    Vec<int> groups = m.lattice->groups(n_colors);
+    engine->set_R_correlated(groups, rng);
+    auto moments = engine->moments(M);
+    auto gamma = moment_transform(moments, Mq);
+    cout << "done.\n";
+    
+    double e1 = electronic_grand_energy(eigs, m.kB_T, mu) / m.n_sites;
+    double e2 = electronic_grand_energy(gamma, es, m.kB_T, mu) / m.n_sites;
+    cout << "ncp1, grand energy, mu = " << mu << "\n";
+    cout << "exact=" << e1 << "\n";
+    cout << "kpm  =" << e2 << "\n";
+    
+    double filling = 0.25;
+    double e3 = electronic_energy(eigs, m.kB_T, filling) / m.n_sites;
+    mu = filling_to_mu(gamma, es, m.kB_T, filling, 0);
+    double e4 = electronic_energy(gamma, es, m.kB_T, filling, mu) / m.n_sites;
+    cout << "ncp1, canonical energy, n=1/4\n";
+    cout << "exact=" << e3 << "\n";
+    cout << "kpm=" << e4 << "\n";
 }
 
 void testKondo3() {
     RNG rng(1);
-    int w = 1024; // 32;
+    int w = 2048; // 32;
     int h = w;
     double t1 = -1, t2 = 0, t3 = 0;
     double J = 0.5;

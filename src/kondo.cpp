@@ -141,10 +141,10 @@ int main(int argc, char *argv[]) {
 })";
     json_file.close();
     
-    auto build_kpm = [&](Vec<vec3> const& spin, int M, int Mq, Vec<int> const& groups) {
+    // assumes random vectors R have been set appropriately
+    auto build_kpm = [&](Vec<vec3> const& spin, int M, int Mq) {
         m.set_hamiltonian(spin);
         engine->set_H(m.H, es);
-        engine->set_R_correlated(groups, rng);
         moments = engine->moments(M);
         gamma = fkpm::moment_transform(moments, Mq);
         if (ensemble_type == "canonical") {
@@ -152,20 +152,13 @@ int main(int argc, char *argv[]) {
         } else {
             filling = mu_to_filling(gamma, es, m.kB_T, mu);
         }
-        // auto c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kB_T, mu), es);
-        // engine->stoch_matrix(c, m.D);
         auto c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m.kB_T, mu), es);
         engine->autodiff_matrix(c, m.D);
     };
     
-    auto calc_force = [&](Vec<vec3> const& spin, Vec<vec3>& force) {
-        build_kpm(spin, M, Mq, groups);
-        m.set_forces(m.D, force);
-    };
-    
-    // assumes build_kpm() has already been called
     auto dump = [&](int step) {
-        build_kpm(m.spin, M_prec, Mq_prec, groups_prec);
+        engine->set_R_correlated(groups_prec, rng);
+        build_kpm(m.spin, M_prec, Mq_prec);
         double e = m.classical_potential();
         if (ensemble_type == "canonical") {
             e += electronic_energy(gamma, es, m.kB_T, filling, mu) / m.n_sites;
@@ -204,13 +197,20 @@ int main(int argc, char *argv[]) {
         dump_file << "]}";
         dump_file.close();
     };
+
+    auto calc_force = [&](Vec<vec3> const& spin, Vec<vec3>& force) {
+        build_kpm(spin, M, Mq);
+        m.set_forces(m.D, force);
+    };
     
     auto dynamics = mk_dynamics(g);
+    engine->set_R_correlated(groups, rng);
     dynamics->init(calc_force, rng, m);
     while (dynamics->n_steps < max_steps) {
         if (dynamics->n_steps % steps_per_dump == 0) {
             dump(dynamics->n_steps);
         }
+        engine->set_R_correlated(groups, rng);
         dynamics->step(calc_force, rng, m);
     }
     

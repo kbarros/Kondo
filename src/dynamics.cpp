@@ -2,8 +2,7 @@
 
 
 // project vector p onto plane that is normal to x
-template<typename T>
-Vec3<T> project_tangent(vec3 x, vec3 p) {
+vec3 project_tangent(vec3 x, vec3 p) {
     return p - x * (p.dot(x) / x.norm2());
 }
 
@@ -17,7 +16,7 @@ public:
         calc_force(m.spin, f);
         for (int i = 0; i < m.n_sites; i++) {
             vec3 beta = sqrt(dt*2*m.kB_T) * gaussian_vec3<double>(rng);
-            m.spin[i] += project_tangent<double>(m.spin[i], dt*f[i]+beta);
+            m.spin[i] += project_tangent(m.spin[i], dt*f[i]+beta);
             m.spin[i] = m.spin[i].normalized();
         }
         
@@ -60,15 +59,15 @@ public:
         for (int i = 0; i < m.n_sites; i++) {
             beta[i] = sqrt(dt*2*alpha*m.kB_T) * gaussian_vec3<double>(rng);
             vec3 ds = b*dt*v[i] + (b*dt*dt/(2*mass))*f1[i] + (b*dt/(2*mass))*beta[i];
-            s[i] += project_tangent<double>(s[i], ds);
+            s[i] += project_tangent(s[i], ds);
             s[i] = s[i].normalized();
         }
         
-        calc_force(m.spin, f2);
+        calc_force(s, f2);
         
         for (int i = 0; i < m.n_sites; i++) {
             v[i] = a*v[i] + (dt/(2*mass))*(a*f1[i] + f2[i]) + (b/mass)*beta[i];
-            v[i] = project_tangent<double>(s[i], v[i]);
+            v[i] = project_tangent(s[i], v[i]);
             
             // forces will be reused in the next timestep
             f1[i] = f2[i];

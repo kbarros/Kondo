@@ -392,6 +392,7 @@ public:
         if (name == "ferro") {
             spin.assign(n_sites(), vec3{0, 0, 1});
         } else if (name == "ncp1") {
+            // Chiral phase, 3/12, 7/12 fillings
             // Orthogonal sublattice vectors
             //        v0          v1          v2
             // b_i
@@ -401,8 +402,7 @@ public:
                 { {0, 0,  0}, { 0, 0, 0}, {0, -1, 0} }
             }, spin);
         } else if (name == "ncp2") {
-            // Zero chirality on triangles
-            // 5/12 filling
+            // Zero chirality on triangles, 5/12 filling
             set_spins_3q({
                 { {-1, 0,  0}, {0,  0, 0}, {1, 0, 0} },
                 { { 0, 0,  0}, {0, -1, 0}, {0, 1, 0} },

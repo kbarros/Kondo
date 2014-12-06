@@ -91,33 +91,33 @@ public:
     void step(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) {
         Vec<vec3>& s    = m.spin;
         Vec<vec3>& sp   = m.dyn_stor[0];
-        Vec<vec3>& f    = m.dyn_stor[1];
-        Vec<vec3>& fp   = m.dyn_stor[2];
-        Vec<vec3>& beta = m.dyn_stor[3];
+        Vec<vec3>& spp  = m.dyn_stor[1];
+        Vec<vec3>& f    = m.dyn_stor[2];
+        Vec<vec3>& fp   = m.dyn_stor[3];
+        Vec<vec3>& beta = m.dyn_stor[4];
         
         double D = (alpha / (1 + alpha*alpha)) * m.kB_T;
         for (int i = 0; i < m.n_sites; i++) {
             beta[i] = sqrt(dt*2*D) * gaussian_vec3<double>(rng);
         }
         
-        // one euler step accumulated into s
-        auto accum_euler = [&](Vec<vec3> const& f, double scale, Vec<vec3>& s) {
+        // one euler step starting from s (with force f), accumulated into sp
+        auto accum_euler = [&](Vec<vec3> const& s, Vec<vec3> const& f, double scale, Vec<vec3>& sp) {
             for (int i = 0; i < m.n_sites; i++) {
                 vec3 a     = - f[i]    - alpha*s[i].cross(f[i]);
                 vec3 sigma = - beta[i] - alpha*s[i].cross(beta[i]);
-                vec3 ds    = s[i].cross(a*dt + sigma);
-                s[i] += scale * ds;
+                sp[i] += scale * s[i].cross(a*dt + sigma);
             }
         };
         
         calc_force(s, f);
         sp = s;
-        accum_euler(f, 1.0, sp);
+        accum_euler(s, f, 1.0, sp);
         calc_force(sp, fp);
-        sp = s;
-        accum_euler(f,  0.5, sp);
-        accum_euler(fp, 0.5, sp);
-        s = sp;
+        spp = s;
+        accum_euler(s, f,  0.5, spp);
+        accum_euler(sp, fp, 0.5, spp);
+        s = spp;
         for (int i = 0; i < m.n_sites; i++) {
             s[i] = s[i].normalized();
         }

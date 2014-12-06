@@ -73,7 +73,7 @@ public:
     double time = 0;
     
     // used by Dynamics to store intermediate data between steps
-    Vec<vec3> dyn_stor[4];
+    Vec<vec3> dyn_stor[5];
     
     Model(std::unique_ptr<Lattice> lattice, double J, double kB_T, vec3 B_zeeman={0,0,0},
           vec3 current={0,0,0}, double current_growth=0, double current_freq=0);

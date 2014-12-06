@@ -16,6 +16,7 @@ Model::Model(std::unique_ptr<Lattice> lattice, double J, double kB_T, vec3 B_zee
     dyn_stor[1].assign(n_sites, vec3{0, 0, 0});
     dyn_stor[2].assign(n_sites, vec3{0, 0, 0});
     dyn_stor[3].assign(n_sites, vec3{0, 0, 0});
+    dyn_stor[4].assign(n_sites, vec3{0, 0, 0});
 }
 
 

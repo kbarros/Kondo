@@ -9,8 +9,8 @@ using fkpm::cx_double;
 
 
 template <typename T>
-double exact_energy(arma::Mat<T> const& H, double kB_T, double mu) {
-    return fkpm::electronic_grand_energy(arma::real(arma::eig_gen(H)), kB_T, mu);
+double exact_energy(arma::Mat<T> const& H, double kT, double mu) {
+    return fkpm::electronic_grand_energy(arma::real(arma::eig_gen(H)), kT, mu);
 }
 
 void testExpansionCoeffs() {
@@ -117,12 +117,12 @@ void testKPM2() {
     fkpm::SpMatBsr<cx_double> H(elems);
     auto H_dense = H.to_arma_dense();
     
-    double kB_T = 0.0;
+    double kT = 0.0;
     double mu = 0.2;
     
     using std::placeholders::_1;
-    auto g = std::bind(fkpm::fermi_energy, _1, kB_T, mu);
-    auto f = std::bind(fkpm::fermi_density, _1, kB_T, mu);
+    auto g = std::bind(fkpm::fermi_energy, _1, kT, mu);
+    auto f = std::bind(fkpm::fermi_density, _1, kT, mu);
     
     double extra = 0.1;
     double tolerance = 1e-2;
@@ -135,14 +135,14 @@ void testKPM2() {
     engine->set_H(H, es);
     auto D = H;
     
-    double E1 = exact_energy(H_dense, kB_T, mu);
+    double E1 = exact_energy(H_dense, kT, mu);
     double eps = 1e-6;
     int i=0, j=1;
     
     arma::sp_cx_mat dH(n, n);
     dH(i, j) = eps;
     dH(j, i) = eps;
-    double dE_dH_1 = (exact_energy(H_dense+dH, kB_T, mu)-exact_energy(H_dense-dH, kB_T, mu)) / (2*eps);
+    double dE_dH_1 = (exact_energy(H_dense+dH, kT, mu)-exact_energy(H_dense-dH, kT, mu)) / (2*eps);
     
     engine->set_R_identity(n);
     double E2 = fkpm::moment_product(g_c, engine->moments(M));

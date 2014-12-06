@@ -8,9 +8,9 @@ void testKondo1() {
     int w = 6, h = 6;
     double t1 = -1, t2 = 0, t3 = -0.5;
     double J = 0.5;
-    double kB_T = 0;
+    double kT = 0;
     double mu = 0.103;
-    auto m = Model(SquareLattice::mk(w, h, t1, t2, t3), J, kB_T);
+    auto m = Model(SquareLattice::mk(w, h, t1, t2, t3), J, kT);
     m.lattice->set_spins("ferro", nullptr, m.spin);
     //m.lattice->set_spins("meron", nullptr, m.spin);
     m.spin[0] = vec3(1, 1, 1).normalized();
@@ -19,15 +19,15 @@ void testKondo1() {
     int n = m.H.n_rows;
     
     arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
-    double E1 = electronic_grand_energy(eigs, m.kB_T, mu) / m.n_sites;
+    double E1 = electronic_grand_energy(eigs, m.kT, mu) / m.n_sites;
     
     double extra = 0.1;
     double tolerance = 1e-2;
     auto es = energy_scale(m.H, extra, tolerance);
     int M = 2000;
     int Mq = 4*M;
-    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kB_T, mu), es);
-    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kB_T, mu), es);
+    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kT, mu), es);
+    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kT, mu), es);
     auto engine = mk_engine<cx_flt>();
     engine->set_H(m.H, es);
     engine->set_R_identity(n);
@@ -53,13 +53,13 @@ void testKondo2() {
     int w = 8, h = 8;
     double t1 = -1;
     double J = 0.1;
-    double kB_T = 0;
+    double kT = 0;
     double mu = -1.98397;
     EnergyScale es{-10, 10};
     int M = 1000;
     int Mq = 4*M;
     
-    auto m = Model(KagomeLattice::mk(w, h, t1), J, kB_T);
+    auto m = Model(KagomeLattice::mk(w, h, t1), J, kT);
     m.lattice->set_spins("ncp1", nullptr, m.spin);
     m.set_hamiltonian(m.spin);
     auto engine = mk_engine<cx_flt>();
@@ -78,16 +78,16 @@ void testKondo2() {
     auto gamma = moment_transform(moments, Mq);
     cout << "done.\n";
     
-    double e1 = electronic_grand_energy(eigs, m.kB_T, mu) / m.n_sites;
-    double e2 = electronic_grand_energy(gamma, es, m.kB_T, mu) / m.n_sites;
+    double e1 = electronic_grand_energy(eigs, m.kT, mu) / m.n_sites;
+    double e2 = electronic_grand_energy(gamma, es, m.kT, mu) / m.n_sites;
     cout << "ncp1, grand energy, mu = " << mu << "\n";
     cout << "exact=" << e1 << "\n";
     cout << "kpm  =" << e2 << "\n";
     
     double filling = 0.25;
-    double e3 = electronic_energy(eigs, m.kB_T, filling) / m.n_sites;
-    mu = filling_to_mu(gamma, es, m.kB_T, filling, 0);
-    double e4 = electronic_energy(gamma, es, m.kB_T, filling, mu) / m.n_sites;
+    double e3 = electronic_energy(eigs, m.kT, filling) / m.n_sites;
+    mu = filling_to_mu(gamma, es, m.kT, filling, 0);
+    double e4 = electronic_energy(gamma, es, m.kT, filling, mu) / m.n_sites;
     cout << "ncp1, canonical energy, n=1/4\n";
     cout << "exact=" << e3 << "\n";
     cout << "kpm=" << e4 << "\n";
@@ -99,13 +99,13 @@ void testKondo3() {
     int h = w;
     double t1 = -1, t2 = 0, t3 = 0;
     double J = 0.5;
-    double kB_T = 0;
+    double kT = 0;
     double mu = 0;
     int n_colors = 4;
     
-//    auto m = Model(SquareLattice::mk(w, h, t1, t2, t3), J, kB_T);
-//    auto m = Model(KagomeLattice::mk(w, h, t1), J, kB_T);
-    auto m = Model(LinearLattice::mk(w, t1, t2), J, kB_T);
+//    auto m = Model(SquareLattice::mk(w, h, t1, t2, t3), J, kT);
+//    auto m = Model(KagomeLattice::mk(w, h, t1), J, kT);
+    auto m = Model(LinearLattice::mk(w, t1, t2), J, kT);
     
 //    m.lattice->set_spins_random(rng, m.spin);
     m.lattice->set_spins("ferro", nullptr, m.spin);
@@ -118,8 +118,8 @@ void testKondo3() {
     auto es = energy_scale(m.H, extra, tolerance);
     int M = 1000;
     int Mq = 4*M;
-    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kB_T, mu), es);
-    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kB_T, mu), es);
+    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kT, mu), es);
+    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kT, mu), es);
     auto engine = mk_engine<cx_flt>();
     engine->set_H(m.H, es);
     

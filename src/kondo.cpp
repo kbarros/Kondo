@@ -27,8 +27,8 @@ std::unique_ptr<Lattice> mk_lattice(cpptoml::toml_group g) {
 
 Model mk_model(cpptoml::toml_group g) {
     return {
-        mk_lattice(g), g.get_unwrap<double>("J"), g.get_unwrap<double>("kB_T"),
-        {g.get_unwrap<double>("zeeman_Bx", 0), g.get_unwrap<double>("zeeman_By", 0), g.get_unwrap<double>("zeeman_Bz", 0)},
+        mk_lattice(g), g.get_unwrap<double>("J"), g.get_unwrap<double>("kT"),
+        {g.get_unwrap<double>("Bx_zeeman", 0), g.get_unwrap<double>("By_zeeman", 0), g.get_unwrap<double>("Bz_zeeman", 0)},
         {g.get_unwrap<double>("current_x", 0), g.get_unwrap<double>("current_y", 0), g.get_unwrap<double>("current_z", 0)},
         g.get_unwrap<double>("current_growth", 0), g.get_unwrap<double>("current_freq", 0)
     };
@@ -148,11 +148,11 @@ int main(int argc, char *argv[]) {
         moments = engine->moments(M);
         gamma = fkpm::moment_transform(moments, Mq);
         if (ensemble_type == "canonical") {
-            mu = filling_to_mu(gamma, es, m.kB_T, filling, delta_filling);
+            mu = filling_to_mu(gamma, es, m.kT, filling, delta_filling);
         } else {
-            filling = mu_to_filling(gamma, es, m.kB_T, mu);
+            filling = mu_to_filling(gamma, es, m.kT, mu);
         }
-        auto c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m.kB_T, mu), es);
+        auto c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m.kT, mu), es);
         engine->autodiff_matrix(c, m.D);
     };
     
@@ -161,9 +161,9 @@ int main(int argc, char *argv[]) {
         build_kpm(m.spin, M_prec, Mq_prec);
         double e = m.classical_potential();
         if (ensemble_type == "canonical") {
-            e += electronic_energy(gamma, es, m.kB_T, filling, mu) / m.n_sites;
+            e += electronic_energy(gamma, es, m.kT, filling, mu) / m.n_sites;
         } else {
-            e += electronic_grand_energy(gamma, es, m.kB_T, mu) / m.n_sites;
+            e += electronic_grand_energy(gamma, es, m.kT, mu) / m.n_sites;
         }
         if (!boost::filesystem::is_directory(base_dir+"/dump")) {
             boost::filesystem::create_directory(base_dir+"/dump");
@@ -206,12 +206,14 @@ int main(int argc, char *argv[]) {
     auto dynamics = mk_dynamics(g);
     engine->set_R_correlated(groups, rng);
     dynamics->init(calc_force, rng, m);
+    
+    dump(dynamics->n_steps);
     while (dynamics->n_steps < max_steps) {
+        engine->set_R_correlated(groups, rng);
+        dynamics->step(calc_force, rng, m);
         if (dynamics->n_steps % steps_per_dump == 0) {
             dump(dynamics->n_steps);
         }
-        engine->set_R_correlated(groups, rng);
-        dynamics->step(calc_force, rng, m);
     }
     
     return 0;

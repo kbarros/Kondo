@@ -56,7 +56,7 @@ int main(int argc,char **argv) {
                 
                 for (double mu = min_mu; mu < max_mu; mu += d_mu) {
                     double Phi = electronic_grand_energy(gamma, es, kT, mu) / m.n_sites;
-                    filling = mu_to_filling(gamma, es, m.kB_T, mu);
+                    filling = mu_to_filling(gamma, es, m.kT, mu);
                     
                     printf("%10lf, %10lf, %10lf, %10lf, ", m.J, mu, Phi);
                     

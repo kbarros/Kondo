@@ -4,9 +4,9 @@
 #include <cassert>
 
 
-Model::Model(std::unique_ptr<Lattice> lattice, double J, double kB_T, vec3 B_zeeman,
+Model::Model(std::unique_ptr<Lattice> lattice, double J, double kT, vec3 B_zeeman,
              vec3 current, double current_growth, double current_freq):
-    n_sites(lattice->n_sites()), lattice(std::move(lattice)), J(J), kB_T(kB_T), B_zeeman(B_zeeman),
+    n_sites(lattice->n_sites()), lattice(std::move(lattice)), J(J), kT(kT), B_zeeman(B_zeeman),
     current(current), current_growth(current_growth), current_freq(current_freq),
     H_elems(2*n_sites, 2*n_sites, 1)
 {

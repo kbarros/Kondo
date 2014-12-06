@@ -64,7 +64,7 @@ class Model {
 public:
     int n_sites;
     std::unique_ptr<Lattice> lattice;
-    double J, kB_T;
+    double J, kT;
     vec3 B_zeeman;
     vec3 current; double current_growth, current_freq;
     fkpm::SpMatElems<cx_flt> H_elems;
@@ -75,7 +75,7 @@ public:
     // used by Dynamics to store intermediate data between steps
     Vec<vec3> dyn_stor[5];
     
-    Model(std::unique_ptr<Lattice> lattice, double J, double kB_T, vec3 B_zeeman={0,0,0},
+    Model(std::unique_ptr<Lattice> lattice, double J, double kT, vec3 B_zeeman={0,0,0},
           vec3 current={0,0,0}, double current_growth=0, double current_freq=0);
     
     void set_hamiltonian(Vec<vec3> const& spin);

@@ -19,15 +19,15 @@ void testKondo1() {
     int n = m.H.n_rows;
     
     arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
-    double E1 = electronic_grand_energy(eigs, m.kT, mu) / m.n_sites;
+    double E1 = electronic_grand_energy(eigs, m.kT(), mu) / m.n_sites;
     
     double extra = 0.1;
     double tolerance = 1e-2;
     auto es = energy_scale(m.H, extra, tolerance);
     int M = 2000;
     int Mq = 4*M;
-    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kT, mu), es);
-    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kT, mu), es);
+    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kT(), mu), es);
+    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kT(), mu), es);
     auto engine = mk_engine<cx_flt>();
     engine->set_H(m.H, es);
     engine->set_R_identity(n);
@@ -78,16 +78,16 @@ void testKondo2() {
     auto gamma = moment_transform(moments, Mq);
     cout << "done.\n";
     
-    double e1 = electronic_grand_energy(eigs, m.kT, mu) / m.n_sites;
-    double e2 = electronic_grand_energy(gamma, es, m.kT, mu) / m.n_sites;
+    double e1 = electronic_grand_energy(eigs, m.kT(), mu) / m.n_sites;
+    double e2 = electronic_grand_energy(gamma, es, m.kT(), mu) / m.n_sites;
     cout << "ncp1, grand energy, mu = " << mu << "\n";
     cout << "exact=" << e1 << "\n";
     cout << "kpm  =" << e2 << "\n";
     
     double filling = 0.25;
-    double e3 = electronic_energy(eigs, m.kT, filling) / m.n_sites;
-    mu = filling_to_mu(gamma, es, m.kT, filling, 0);
-    double e4 = electronic_energy(gamma, es, m.kT, filling, mu) / m.n_sites;
+    double e3 = electronic_energy(eigs, m.kT(), filling) / m.n_sites;
+    mu = filling_to_mu(gamma, es, m.kT(), filling, 0);
+    double e4 = electronic_energy(gamma, es, m.kT(), filling, mu) / m.n_sites;
     cout << "ncp1, canonical energy, n=1/4\n";
     cout << "exact=" << e3 << "\n";
     cout << "kpm=" << e4 << "\n";
@@ -118,8 +118,8 @@ void testKondo3() {
     auto es = energy_scale(m.H, extra, tolerance);
     int M = 1000;
     int Mq = 4*M;
-    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kT, mu), es);
-    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kT, mu), es);
+    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m.kT(), mu), es);
+    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m.kT(), mu), es);
     auto engine = mk_engine<cx_flt>();
     engine->set_H(m.H, es);
     

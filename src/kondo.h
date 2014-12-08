@@ -99,6 +99,7 @@ public:
     
     virtual void init(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) {}
     virtual void step(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) = 0;
+    virtual double pseudo_kinetic_energy(Model const& m) { return 0; }
 };
 
 

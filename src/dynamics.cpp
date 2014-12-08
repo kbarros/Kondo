@@ -76,6 +76,15 @@ public:
         n_steps++;
         m.time = n_steps * dt;
     }
+    
+    double pseudo_kinetic_energy(Model const& m) {
+        Vec<vec3> const& v = m.dyn_stor[0];
+        double acc = 0;
+        for (int i = 0; i < m.n_sites; i++) {
+            acc += 0.5 * mass * v[i].norm2();
+        }
+        return acc;
+    }
 };
 std::unique_ptr<Dynamics> Dynamics::mk_gjf(double alpha, double dt) {
     return std::make_unique<GJF>(alpha, dt);

@@ -87,6 +87,8 @@ int main(int argc, char *argv[]) {
     }
     
     Model m = mk_model(g);
+    auto dynamics = mk_dynamics(g);
+    
     auto init_spins_type = g.get_unwrap<std::string>("init_spins.type");
     if (init_spins_type == "random") {
         Lattice::set_spins_random(rng, m.spin);
@@ -159,7 +161,7 @@ int main(int argc, char *argv[]) {
     auto dump = [&](int step) {
         engine->set_R_correlated(groups_prec, rng);
         build_kpm(m.spin, M_prec, Mq_prec);
-        double e = m.classical_potential();
+        double e = m.classical_potential() + dynamics->pseudo_kinetic_energy(m);
         if (ensemble_type == "canonical") {
             e += electronic_energy(gamma, es, m.kT, filling, mu) / m.n_sites;
         } else {
@@ -203,7 +205,6 @@ int main(int argc, char *argv[]) {
         m.set_forces(m.D, force);
     };
     
-    auto dynamics = mk_dynamics(g);
     engine->set_R_correlated(groups, rng);
     dynamics->init(calc_force, rng, m);
     

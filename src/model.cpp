@@ -4,10 +4,10 @@
 #include <cassert>
 
 
-Model::Model(std::unique_ptr<Lattice> lattice, double J, double kT, vec3 B_zeeman,
-             vec3 current, double current_growth, double current_freq):
-    n_sites(lattice->n_sites()), lattice(std::move(lattice)), J(J), kT(kT), B_zeeman(B_zeeman),
-    current(current), current_growth(current_growth), current_freq(current_freq),
+Model::Model(std::unique_ptr<Lattice> lattice, double J, double kT_init, double kT_decay_rate,
+             vec3 B_zeeman, vec3 current, double current_growth, double current_freq)
+:   n_sites(lattice->n_sites()), lattice(std::move(lattice)), J(J), kT_init(kT_init), kT_decay_rate(kT_decay_rate),
+    B_zeeman(B_zeeman), current(current), current_growth(current_growth), current_freq(current_freq),
     H_elems(2*n_sites, 2*n_sites, 1)
 {
     spin.assign(n_sites, vec3{0, 0, 0});
@@ -19,6 +19,9 @@ Model::Model(std::unique_ptr<Lattice> lattice, double J, double kT, vec3 B_zeema
     dyn_stor[4].assign(n_sites, vec3{0, 0, 0});
 }
 
+double Model::kT() {
+    return kT_init * exp(- time*kT_decay_rate);
+}
 
 // {s1, s2} components of pauli matrix vector,
 // sigma1     sigma2     sigma3

@@ -27,7 +27,7 @@ std::unique_ptr<Lattice> mk_lattice(cpptoml::toml_group g) {
 
 Model mk_model(cpptoml::toml_group g) {
     return {
-        mk_lattice(g), g.get_unwrap<double>("J"), g.get_unwrap<double>("kT"),
+        mk_lattice(g), g.get_unwrap<double>("J"), g.get_unwrap<double>("kT"), g.get_unwrap<double>("kT_decay", 0),
         {g.get_unwrap<double>("Bx_zeeman", 0), g.get_unwrap<double>("By_zeeman", 0), g.get_unwrap<double>("Bz_zeeman", 0)},
         {g.get_unwrap<double>("current_x", 0), g.get_unwrap<double>("current_y", 0), g.get_unwrap<double>("current_z", 0)},
         g.get_unwrap<double>("current_growth", 0), g.get_unwrap<double>("current_freq", 0)
@@ -114,6 +114,7 @@ int main(int argc, char *argv[]) {
     auto engine = fkpm::mk_engine_cuSPARSE<cx_flt>(device_num);
     Vec<double> moments;
     Vec<double> gamma;
+    double energy;
     
     // Write json file for visualization
     std::ofstream json_file(base_dir + "/cfg.json");
@@ -149,24 +150,23 @@ int main(int argc, char *argv[]) {
         engine->set_H(m.H, es);
         moments = engine->moments(M);
         gamma = fkpm::moment_transform(moments, Mq);
+        energy = m.classical_potential() + dynamics->pseudo_kinetic_energy(m);
         if (ensemble_type == "canonical") {
-            mu = filling_to_mu(gamma, es, m.kT, filling, delta_filling);
+            mu = filling_to_mu(gamma, es, m.kT(), filling, delta_filling);
+            energy += electronic_energy(gamma, es, m.kT(), filling, mu);
         } else {
-            filling = mu_to_filling(gamma, es, m.kT, mu);
+            filling = mu_to_filling(gamma, es, m.kT(), mu);
+            energy += electronic_grand_energy(gamma, es, m.kT(), mu);
         }
-        auto c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m.kT, mu), es);
+        auto c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m.kT(), mu), es);
         engine->autodiff_matrix(c, m.D);
     };
     
     auto dump = [&](int step) {
         engine->set_R_correlated(groups_prec, rng);
         build_kpm(m.spin, M_prec, Mq_prec);
-        double e = m.classical_potential() + dynamics->pseudo_kinetic_energy(m);
-        if (ensemble_type == "canonical") {
-            e += electronic_energy(gamma, es, m.kT, filling, mu) / m.n_sites;
-        } else {
-            e += electronic_grand_energy(gamma, es, m.kT, mu) / m.n_sites;
-        }
+        double e = energy / m.n_sites;
+        
         if (!boost::filesystem::is_directory(base_dir+"/dump")) {
             boost::filesystem::create_directory(base_dir+"/dump");
         }
@@ -176,7 +176,6 @@ int main(int argc, char *argv[]) {
             cerr << "Refuse to overwrite file '" << fname.str() << "'!\n";
             std::abort();
         }
-        
         cout << "Dumping file '" << fname.str() << "', time=" << m.time << ", energy=" << e << ", n=" << filling << ", mu=" << mu << endl;
         std::ofstream dump_file(fname.str(), std::ios::trunc);
         dump_file << "{\"time\":" << m.time <<

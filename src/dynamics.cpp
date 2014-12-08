@@ -15,7 +15,7 @@ public:
         Vec<vec3>& f = m.dyn_stor[0];
         calc_force(m.spin, f);
         for (int i = 0; i < m.n_sites; i++) {
-            vec3 beta = sqrt(dt*2*m.kT) * gaussian_vec3<double>(rng);
+            vec3 beta = sqrt(dt*2*m.kT()) * gaussian_vec3<double>(rng);
             m.spin[i] += project_tangent(m.spin[i], dt*f[i]+beta);
             m.spin[i] = m.spin[i].normalized();
         }
@@ -57,7 +57,7 @@ public:
         Vec<vec3>& beta = m.dyn_stor[3];
         
         for (int i = 0; i < m.n_sites; i++) {
-            beta[i] = sqrt(dt*2*alpha*m.kT) * gaussian_vec3<double>(rng);
+            beta[i] = sqrt(dt*2*alpha*m.kT()) * gaussian_vec3<double>(rng);
             vec3 ds = b*dt*v[i] + (b*dt*dt/(2*mass))*f1[i] + (b*dt/(2*mass))*beta[i];
             s[i] += project_tangent(s[i], ds);
             s[i] = s[i].normalized();
@@ -105,7 +105,7 @@ public:
         Vec<vec3>& fp   = m.dyn_stor[3];
         Vec<vec3>& beta = m.dyn_stor[4];
         
-        double D = (alpha / (1 + alpha*alpha)) * m.kT;
+        double D = (alpha / (1 + alpha*alpha)) * m.kT();
         for (int i = 0; i < m.n_sites; i++) {
             beta[i] = sqrt(dt*2*D) * gaussian_vec3<double>(rng);
         }

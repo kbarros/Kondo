@@ -64,7 +64,7 @@ class Model {
 public:
     int n_sites;
     std::unique_ptr<Lattice> lattice;
-    double J, kT;
+    double J, kT_init, kT_decay_rate;
     vec3 B_zeeman;
     vec3 current; double current_growth, current_freq;
     fkpm::SpMatElems<cx_flt> H_elems;
@@ -75,9 +75,10 @@ public:
     // used by Dynamics to store intermediate data between steps
     Vec<vec3> dyn_stor[5];
     
-    Model(std::unique_ptr<Lattice> lattice, double J, double kT, vec3 B_zeeman={0,0,0},
-          vec3 current={0,0,0}, double current_growth=0, double current_freq=0);
+    Model(std::unique_ptr<Lattice> lattice, double J, double kT_init, double kT_decay_rate=0,
+          vec3 B_zeeman={0,0,0}, vec3 current={0,0,0}, double current_growth=0, double current_freq=0);
     
+    double kT();
     void set_hamiltonian(Vec<vec3> const& spin);
     double classical_potential();
     void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3>& force);
@@ -93,6 +94,7 @@ public:
     // Overdamped relaxation using Euler integration
     static std::unique_ptr<Dynamics> mk_overdamped(double dt);
     // Inertial Langevin dynamics using Grønbech-Jensen Farago, velocity explicit
+    // NOTE: This integrator is only O(dt) accurate due to poor constraint implementation
     static std::unique_ptr<Dynamics> mk_gjf(double alpha, double dt);
     // Stochastic Landau Lifshitz using Heun-p
     static std::unique_ptr<Dynamics> mk_sll(double alpha, double dt);

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(kondo)
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 
 # -- COMPILE OPTIONS -------------------------------------------
@@ -13,6 +14,7 @@ set(WITH_MPI no CACHE BOOL "Build with MPI support")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 add_definitions(-D_GLIBCXX_DEBUG=1) # libstdc++
 add_definitions(-D_LIBCPP_DEBUG2=1) # libc++
+
 
 # -- C++11 -------------------------------------------
 

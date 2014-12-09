@@ -69,8 +69,8 @@ int main(int argc,char **argv) {
     double d_a   = 0.1;
     double meron_a;
 
-    int min_Q = Q1;
-    int max_Q = Q2;
+    __attribute__((unused))
+    int min_Q = Q1, max_Q = Q2;
     int meron_Q;
     
     FILE *fp1;

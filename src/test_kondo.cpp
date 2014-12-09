@@ -95,8 +95,9 @@ void testKondo2() {
 
 void testKondo3() {
     RNG rng(1);
-    int w = 2048; // 32;
-    int h = w;
+    __attribute__((unused))
+    int w = 2048, h = w;
+    __attribute__((unused))
     double t1 = -1, t2 = 0, t3 = 0;
     double J = 0.5;
     double kT = 0;
@@ -132,18 +133,21 @@ void testKondo3() {
 //        auto D = std::bind(&Engine<cx_flt>::stoch_element, engine, _1, _2);
 //        m.set_forces(D, f);
 //    };
+    __attribute__((unused))
     auto calc2 = [&](Vec<vec3>& f) {
         engine->set_R_uncorrelated(m.H.n_rows, n_colors*2, rng);
         engine->moments(M);
         engine->stoch_matrix(f_c, m.D);
         m.set_forces(m.D, f);
     };
+    __attribute__((unused))
     auto calc3 = [&](Vec<vec3>& f) {
         engine->set_R_correlated(groups, rng);
         engine->moments(M);
         engine->stoch_matrix(f_c, m.D);
         m.set_forces(m.D, f);
     };
+    __attribute__((unused))
     auto calc4 = [&](Vec<vec3>& f) {
         engine->set_R_correlated(groups, rng);
         engine->moments(M);

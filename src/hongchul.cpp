@@ -241,12 +241,32 @@ void testKPM3() {
     cout << *D1(i, j) << endl;
 }
 
+#include <boost/algorithm/string.hpp>
+
+
+void test_readfile(int argc, char **argv) {
+//    std::string filename = argv[1];
+    std::string filename = "/Users/kbarros/Desktop/params.txt";
+    std::ifstream f_params(filename);
+    std::string line;
+    while (std::getline(f_params, line)) {
+        std::vector<std::string> strs;
+        boost::split(strs, line, boost::is_any_of("\t\n "));
+        for (int i = 0; i < strs.size(); i++) {
+            double x = std::stof(strs[i]);
+            std::cout << x << std::endl;
+        }
+    }
+}
+
 int main(int argc, char **argv) {
     // testExpansionCoeffs();
-    testMat();
-    testKPM1<cx_float>();
-    testKPM1<cx_double>();
-    testKPM2();
-    testKPM3();
+//    testMat();
+//    testKPM1<cx_float>();
+//    testKPM1<cx_double>();
+//    testKPM2();
+//    testKPM3();
+    
+    test_readfile(argc, argv);
 }
 

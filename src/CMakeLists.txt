@@ -11,3 +11,7 @@ target_link_libraries(kondo ${LIBS})
 
 add_executable(merons merons.cpp $<TARGET_OBJECTS:kondo_base>)
 target_link_libraries(merons ${LIBS})
+
+add_executable(hongchul hongchul.cpp $<TARGET_OBJECTS:kondo_base>)
+target_link_libraries(hongchul ${LIBS})
+

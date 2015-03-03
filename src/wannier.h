@@ -5,11 +5,11 @@
 #include "vec3.h"
 #include "cpptoml.h"
 
-
 typedef float flt;
 // typedef double flt;
 typedef std::complex<flt> cx_flt;
 
+using fkpm::Vec;
 using fkpm::Vec;
 using fkpm::Pi;
 constexpr cx_flt I(0, 1);
@@ -30,19 +30,31 @@ Vec3<T> gaussian_vec3(fkpm::RNG& rng) {
 }
 
 
-class Wannier;
-
+class BlockMatrix {
+public:
+    int n_orbitals;
+    int dx, dy, dz;
+    Vec<cx_flt> elems;
+    
+    BlockMatrix(int n_orbitals);
+};
 
 class Wannier {
 public:
-    int n_kpts;
     int n_orbitals;
-//    vec3 hopping_vector[n_kpts];
+    int L;
+    flt J;
+    
+    Vec<vec3> spins;
+    Vec<BlockMatrix> blocks;
+    
     fkpm::SpMatElems<cx_flt> H_elems;
+    fkpm::SpMatBsr<cx_flt> H, D;
     
-    // used by Dynamics to store intermediate data between steps
-    
- //   Wannier(int n_kpts,int n_orbitals, double J,vec3 hopping_vectors[n_kpts]);
+    Wannier(int n_orbitals, int L, flt J, Vec<BlockMatrix> blocks);
+
+    int coord_to_idx(int x, int y, int z);
+    void idx_to_coord(int i, int &x, int &y, int &z);
     
     //void set_hamiltonian(Vec<vec3> const& spin);
 };

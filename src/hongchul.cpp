@@ -2,7 +2,7 @@
 #include <cassert>
 #include "iostream_util.h"
 #include "fastkpm.h"
-
+#include "wannier.h"
 using fkpm::Vec;
 using fkpm::cx_float;
 using fkpm::cx_double;
@@ -246,17 +246,64 @@ void testKPM3() {
 
 void test_readfile(int argc, char **argv) {
 //    std::string filename = argv[1];
-    std::string filename = "/Users/kbarros/Desktop/params.txt";
+    std::string filename = "/Users/chhcl/Code/DATA/SrVO3.dat";
     std::ifstream f_params(filename);
     std::string line;
+  
+    //Head line
+    std::getline(f_params, line);
+    
+    
+    std::vector<std::string> strs;
+    
+    //number of orbitals
+    std::getline(f_params, line);
+    boost::trim_if(line, boost::is_any_of("\t\n "));// remove the white spaces
+    boost::split(strs, line, boost::is_any_of("\t\n "), boost::token_compress_on);
+    std::cout << strs.size() << std::endl;
+    int num_orbitals=std::stof(strs[0]);
+   
+    
+    //number of k-points
+    std::getline(f_params, line);
+    boost::trim_if(line, boost::is_any_of("\t\n "));
+    boost::split(strs, line, boost::is_any_of("\t\n "), boost::token_compress_on);
+    std::cout << strs.size() << std::endl;
+    int num_kpts=std::stof(strs[0]);
+    
+    int weight_kpts[num_kpts];
+    int kpts_i=0;
+    
+    int temp_kpts=0;
+    
     while (std::getline(f_params, line)) {
-        std::vector<std::string> strs;
-        boost::split(strs, line, boost::is_any_of("\t\n "));
-        for (int i = 0; i < strs.size(); i++) {
-            double x = std::stof(strs[i]);
-            std::cout << x << std::endl;
+       // std::vector<std::string> strs;
+        boost::trim_if(line, boost::is_any_of("\t\n "));
+        boost::split(strs, line, boost::is_any_of("\t\n "), boost::token_compress_on);
+        std::cout << "size="<<strs.size() << std::endl;
+        
+        if (temp_kpts<num_kpts){
+            // store the kpoint-weiht informations
+            temp_kpts+=strs.size();
+            for (int i = 0; i < strs.size(); i++) {
+                double x = std::stof(strs[i]);
+                std::cout << x << std::endl;
+                weight_kpts[kpts_i++]=x; //consider error
+            }
+        }
+        else{
+            //store the Hopping parameters
+            for (int i = 0; i < strs.size(); i++) {
+                double x = std::stof(strs[i]);
+                std::cout << x << std::endl;
+            }
         }
     }
+    std::cout<<"num_orbitals="<<num_orbitals<<endl;
+    std::cout<<"num_kpts="<<num_kpts<<endl;
+    std::cout<<"temp_kpts="<<temp_kpts<<endl;
+    std::cout<<"kpts_i="<<kpts_i<<endl;
+
 }
 
 int main(int argc, char **argv) {

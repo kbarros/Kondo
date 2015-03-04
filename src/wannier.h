@@ -41,7 +41,7 @@ public:
 
 class Wannier {
 public:
-    int n_orbitals;
+    int n_orbitals, n_sites;
     int L;
     flt J;
     

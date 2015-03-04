@@ -60,32 +60,32 @@ Vec<BlockMatrix> test_readfile(std::string filename) {
     boost::split(strs, line, boost::is_any_of("\t\n "), boost::token_compress_on);
     int n_orbitals=std::stof(strs[0]);
     
-    //number of k-points
+    //number of r-points
     std::getline(f_params, line);
     boost::trim_if(line, boost::is_any_of("\t\n "));
     boost::split(strs, line, boost::is_any_of("\t\n "), boost::token_compress_on);
-    int n_kpts=std::stof(strs[0]);
+    int n_rpts=std::stof(strs[0]);
     
-    int weight_kpts[n_kpts];
-    int kpts_cnt = 0;
+    int weight_rpts[n_rpts];
+    int rpts_cnt = 0;
     
-    while (kpts_cnt < n_kpts && std::getline(f_params, line)) {
+    while (rpts_cnt < n_rpts && std::getline(f_params, line)) {
         // std::vector<std::string> strs;
         boost::trim_if(line, boost::is_any_of("\t\n "));
         boost::split(strs, line, boost::is_any_of("\t\n "), boost::token_compress_on);
         
-        // store the kpoint-weight informations
+        // store the r-point-weight informations
         for (int i = 0; i < strs.size(); i++) {
             flt x = std::stof(strs[i]);
 //            std::cout << " " << x;
-            weight_kpts[kpts_cnt++]=x; //consider error
+            weight_rpts[rpts_cnt++]=x; //consider error
         }
     }
     std::cout << std::endl;
     
     Vec<BlockMatrix> blocks;
     
-    for (int kpt_idx = 0; kpt_idx < n_kpts; kpt_idx++) {
+    for (int kpt_idx = 0; kpt_idx < n_rpts; kpt_idx++) {
         BlockMatrix b(n_orbitals);
         
         for (int orb_idx = 0; orb_idx < n_orbitals*n_orbitals; orb_idx++) {
@@ -96,7 +96,7 @@ Vec<BlockMatrix> test_readfile(std::string filename) {
             b.dz = std::stof(strs[0]);
             b.dy = std::stof(strs[1]);
             b.dx = std::stof(strs[2]);
-            b.elems[orb_idx] = cx_flt(std::stof(strs[5]), std::stof(strs[6])) / (flt)weight_kpts[kpt_idx];
+            b.elems[orb_idx] = cx_flt(std::stof(strs[5]), std::stof(strs[6])) / (flt)weight_rpts[kpt_idx];
         }
         
         if (sqrt(b.dx*b.dx + b.dy*b.dy + b.dz*b.dz) < 1.1) {
@@ -109,8 +109,8 @@ Vec<BlockMatrix> test_readfile(std::string filename) {
 //    }
     
 //    std::cout << "Number of orbitals: " << n_orbitals << std::endl;
-//    std::cout << "Number of k-points " << n_kpts << std::endl;
-    assert(n_kpts == kpts_cnt);
+//    std::cout << "Number of r-points " << n_rpts << std::endl;
+    assert(n_rpts == rpts_cnt);
     
     return blocks;
 }

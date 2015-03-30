@@ -5,9 +5,9 @@
 
 
 Model::Model(std::unique_ptr<Lattice> lattice, double J, double kT_init, double kT_decay_rate,
-             vec3 B_zeeman, vec3 current, double current_growth, double current_freq)
+             vec3 B_zeeman, vec3 current, double current_growth, double current_freq, double easy_z)
 :   n_sites(lattice->n_sites()), lattice(std::move(lattice)), J(J), kT_init(kT_init), kT_decay_rate(kT_decay_rate),
-    B_zeeman(B_zeeman), current(current), current_growth(current_growth), current_freq(current_freq),
+    B_zeeman(B_zeeman), current(current), current_growth(current_growth), current_freq(current_freq), easy_z(easy_z),
     H_elems(2*n_sites, 2*n_sites, 1)
 {
     spin.assign(n_sites, vec3{0, 0, 0});
@@ -54,6 +54,7 @@ double Model::classical_potential() {
     double acc = 0;
     for (int i = 0; i < n_sites; i++) {
         acc += -B_zeeman.dot(spin[i]);
+        acc += -easy_z*spin[i].z*spin[i].z;
     }
     return acc;
 }
@@ -72,12 +73,10 @@ void Model::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3>& force) {
             }
         }
         
-        // add extra term that couples to current J
-        
-        
         assert(imag(dE_dS).norm() < 1e-5);
         force[k] = -real(dE_dS);
         
         force[k] += B_zeeman;
+        force[k].z += easy_z*spin[k].z;
     }
 }

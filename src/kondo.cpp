@@ -30,7 +30,7 @@ Model mk_model(cpptoml::toml_group g) {
         mk_lattice(g), g.get_unwrap<double>("J"), g.get_unwrap<double>("kT"), g.get_unwrap<double>("kT_decay", 0),
         {g.get_unwrap<double>("Bx_zeeman", 0), g.get_unwrap<double>("By_zeeman", 0), g.get_unwrap<double>("Bz_zeeman", 0)},
         {g.get_unwrap<double>("current_x", 0), g.get_unwrap<double>("current_y", 0), g.get_unwrap<double>("current_z", 0)},
-        g.get_unwrap<double>("current_growth", 0), g.get_unwrap<double>("current_freq", 0)
+        g.get_unwrap<double>("current_growth", 0), g.get_unwrap<double>("current_freq", 0), g.get_unwrap<double>("easy_z", 0)
     };
 }
 

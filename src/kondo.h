@@ -67,6 +67,7 @@ public:
     double J, kT_init, kT_decay_rate;
     vec3 B_zeeman;
     vec3 current; double current_growth, current_freq;
+    double easy_z;
     fkpm::SpMatElems<cx_flt> H_elems;
     fkpm::SpMatBsr<cx_flt> H, D;
     Vec<vec3> spin;
@@ -76,7 +77,8 @@ public:
     Vec<vec3> dyn_stor[5];
     
     Model(std::unique_ptr<Lattice> lattice, double J, double kT_init, double kT_decay_rate=0,
-          vec3 B_zeeman={0,0,0}, vec3 current={0,0,0}, double current_growth=0, double current_freq=0);
+          vec3 B_zeeman={0,0,0}, vec3 current={0,0,0}, double current_growth=0, double current_freq=0,
+          double easy_z=0);
     
     double kT();
     void set_hamiltonian(Vec<vec3> const& spin);

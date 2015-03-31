@@ -93,7 +93,7 @@ public:
     
     SquareLatticeImpl(int w, int h, double t1, double t2, double t3):
     w(w), h(h), t1(t1), t2(t2), t3(t3)
-    { assert(t2==0 && "t2 not yet implemented for square lattice."); }
+    {}
     
     int n_sites() { return w*h; }
     
@@ -226,7 +226,6 @@ public:
 };
 
 std::unique_ptr<SquareLattice> SquareLattice::mk(int w, int h, double t1, double t2, double t3) {
-    assert(t2 == 0);
     return std::make_unique<SquareLatticeImpl>(w, h, t1, t2, t3);
 }
 

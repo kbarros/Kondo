@@ -169,24 +169,34 @@ public:
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int i = coord2idx(x, y);
-                
-                static int nn1_sz = 4;
-                static int nn1_dx[] { 1, 0, -1, 0 };
-                static int nn1_dy[] { 0, 1, 0, -1 };
-                
-                for (int nn = 0; nn < nn1_sz; nn++) {
-                    auto add_hopping = [&](int dx, int dy, double t) {
+                auto add_hopping = [&](int dx, int dy, double t) {
+                    if (t != 0.0) {
                         flt theta = 2*Pi*(dx*m.current.x/w + dy*m.current.y/h);
                         theta *= (1 + m.current_growth*m.time) * cos(m.current_freq*m.time);
                         cx_flt v = exp(I*theta)*flt(t);
                         int j = coord2idx(x+dx,y+dy);
                         H_elems.add(2*i+0, 2*j+0, &v);
                         H_elems.add(2*i+1, 2*j+1, &v);
-                    };
+                    }
+                };
+                
+                static int nn1_sz = 4;
+                static int nn1_dx[] { 1, 0, -1, 0 };
+                static int nn1_dy[] { 0, 1, 0, -1 };
+                for (int nn = 0; nn < nn1_sz; nn++) {
                     int dx = nn1_dx[nn];
                     int dy = nn1_dy[nn];
                     add_hopping(dx, dy, t1);
                     add_hopping(2*dx, 2*dy, t3);
+                }
+                
+                static int nn2_sz = 4;
+                static int nn2_dx[] { 1, -1, -1,  1 };
+                static int nn2_dy[] { 1,  1, -1, -1 };
+                for (int nn = 0; nn < nn2_sz; nn++) {
+                    int dx = nn2_dx[nn];
+                    int dy = nn2_dy[nn];
+                    add_hopping(dx, dy, t2);
                 }
             }
         }

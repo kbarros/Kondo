@@ -84,8 +84,8 @@ public:
     
     double kT();
     void set_hamiltonian(Vec<vec3> const& spin);
-    double classical_potential();
-    void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3>& force);
+    double classical_potential(Vec<vec3> const& spin);
+    void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
 };
 
 

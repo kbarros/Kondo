@@ -150,7 +150,7 @@ int main(int argc, char *argv[]) {
         engine->set_H(m.H, es);
         moments = engine->moments(M);
         gamma = fkpm::moment_transform(moments, Mq);
-        energy = m.classical_potential() + dynamics->pseudo_kinetic_energy(m);
+        energy = m.classical_potential(m.spin) + dynamics->pseudo_kinetic_energy(m);
         if (ensemble_type == "canonical") {
             mu = filling_to_mu(gamma, es, m.kT(), filling, delta_filling);
             energy += electronic_energy(gamma, es, m.kT(), filling, mu);
@@ -198,10 +198,10 @@ int main(int argc, char *argv[]) {
         dump_file << "]}";
         dump_file.close();
     };
-
+    
     auto calc_force = [&](Vec<vec3> const& spin, Vec<vec3>& force) {
         build_kpm(spin, M, Mq);
-        m.set_forces(m.D, force);
+        m.set_forces(m.D, spin, force);
     };
     
     engine->set_R_correlated(groups, rng);

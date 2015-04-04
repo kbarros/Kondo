@@ -50,7 +50,7 @@ void Model::set_hamiltonian(Vec<vec3> const& spin) {
     D.zeros();
 }
 
-double Model::classical_potential() {
+double Model::classical_potential(Vec<vec3> const& spin) {
     double acc = 0;
     for (int i = 0; i < n_sites; i++) {
         acc += -B_zeeman.dot(spin[i]);
@@ -60,7 +60,7 @@ double Model::classical_potential() {
     return acc;
 }
 
-void Model::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3>& force) {
+void Model::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) {
     for (int k = 0; k < n_sites; k++) {
         Vec3<cx_flt> dE_dS(0, 0, 0);
         

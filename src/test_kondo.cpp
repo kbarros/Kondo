@@ -42,7 +42,7 @@ void testKondo1() {
     cout << "   " << *m.D(0, 1) << " " << *m.D(1, 1) << "\n  [(0.0507966,-0.0507966) (0.450972,0)]\n\n";
     
     Vec<vec3>& force = m.dyn_stor[0];
-    m.set_forces(m.D, force);
+    m.set_forces(m.D, m.spin, force);
     
     cout << std::setprecision(9);
     cout << "grand energy " <<  E1 << " " << E2 << "\n            [-1.98657216 -1.98657194]\n";
@@ -131,28 +131,28 @@ void testKondo3() {
 //        engine->set_R_identity(m.H.n_rows);
 //        engine->stoch_orbital(f_c);
 //        auto D = std::bind(&Engine<cx_flt>::stoch_element, engine, _1, _2);
-//        m.set_forces(D, f);
+//        m.set_forces(D, m.spin, f);
 //    };
     __attribute__((unused))
     auto calc2 = [&](Vec<vec3>& f) {
         engine->set_R_uncorrelated(m.H.n_rows, n_colors*2, rng);
         engine->moments(M);
         engine->stoch_matrix(f_c, m.D);
-        m.set_forces(m.D, f);
+        m.set_forces(m.D, m.spin, f);
     };
     __attribute__((unused))
     auto calc3 = [&](Vec<vec3>& f) {
         engine->set_R_correlated(groups, rng);
         engine->moments(M);
         engine->stoch_matrix(f_c, m.D);
-        m.set_forces(m.D, f);
+        m.set_forces(m.D, m.spin, f);
     };
     __attribute__((unused))
     auto calc4 = [&](Vec<vec3>& f) {
         engine->set_R_correlated(groups, rng);
         engine->moments(M);
         engine->autodiff_matrix(g_c, m.D);
-        m.set_forces(m.D, f);
+        m.set_forces(m.D, m.spin, f);
     };
     
     calc4(f1);

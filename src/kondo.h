@@ -40,6 +40,8 @@ public:
     virtual void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) = 0;
     virtual void add_hoppings(Model const& model, fkpm::SpMatElems<cx_flt>& H_elems) = 0;
     virtual Vec<int> groups(int n_colors) = 0;
+    virtual double classical_potential(Vec<vec3> const& spin);
+    virtual vec3 classical_force(Vec<vec3> const& spin, int site);
 };
 class LinearLattice: public Lattice {
 public:
@@ -47,7 +49,7 @@ public:
 };
 class SquareLattice: public Lattice {
 public:
-    static std::unique_ptr<SquareLattice> mk(int w, int h, double t1, double t2, double t3);
+    static std::unique_ptr<SquareLattice> mk(int w, int h, double t1, double t2, double t3, double s1);
     virtual void set_spins_meron(double a, int q, Vec<vec3>& spin) = 0;
 };
 class TriangularLattice: public Lattice {

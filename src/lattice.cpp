@@ -19,6 +19,15 @@ void Lattice::set_spins_random(fkpm::RNG &rng, Vec<vec3> &spin) {
     }
 }
 
+double Lattice::classical_potential(Vec<vec3> const& spin) {
+    return 0.0;
+}
+
+vec3 Lattice::classical_force(Vec<vec3> const& spin, int site) {
+    return vec3(0, 0, 0);
+}
+
+
 class LinearLatticeImpl: public LinearLattice {
 public:
     int w;
@@ -90,9 +99,17 @@ class SquareLatticeImpl: public SquareLattice {
 public:
     int w, h;
     double t1, t2, t3;
+    double s1;
     
-    SquareLatticeImpl(int w, int h, double t1, double t2, double t3):
-    w(w), h(h), t1(t1), t2(t2), t3(t3)
+    static const     int nn1_sz = 4;
+    static constexpr int nn1_dx[] { 1, 0, -1, 0 };
+    static constexpr int nn1_dy[] { 0, 1, 0, -1 };
+    static const     int nn2_sz = 4;
+    static constexpr int nn2_dx[] { 1, -1, -1,  1 };
+    static constexpr int nn2_dy[] { 1,  1, -1, -1 };
+    
+    SquareLatticeImpl(int w, int h, double t1, double t2, double t3, double s1):
+    w(w), h(h), t1(t1), t2(t2), t3(t3), s1(s1)
     {}
     
     int n_sites() { return w*h; }
@@ -165,6 +182,11 @@ public:
         return xp + yp*w;
     }
     
+    void idx2coord(int i, int &x, int &y) {
+        x = i%w;
+        y = i/w;
+    }
+    
     void add_hoppings(Model const& m, fkpm::SpMatElems<cx_flt>& H_elems) {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
@@ -180,9 +202,6 @@ public:
                     }
                 };
                 
-                static int nn1_sz = 4;
-                static int nn1_dx[] { 1, 0, -1, 0 };
-                static int nn1_dy[] { 0, 1, 0, -1 };
                 for (int nn = 0; nn < nn1_sz; nn++) {
                     int dx = nn1_dx[nn];
                     int dy = nn1_dy[nn];
@@ -190,9 +209,6 @@ public:
                     add_hopping(2*dx, 2*dy, t3);
                 }
                 
-                static int nn2_sz = 4;
-                static int nn2_dx[] { 1, -1, -1,  1 };
-                static int nn2_dy[] { 1,  1, -1, -1 };
                 for (int nn = 0; nn < nn2_sz; nn++) {
                     int dx = nn2_dx[nn];
                     int dy = nn2_dy[nn];
@@ -223,10 +239,45 @@ public:
         }
         return colors_to_groups(colors, 2);
     }
+    
+    double classical_potential(Vec<vec3> const& spin) {
+        double acc = 0;
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int i = coord2idx(x, y);
+                for (int nn = 0; nn < nn1_sz; nn++) {
+                    int dx = nn1_dx[nn];
+                    int dy = nn1_dy[nn];
+                    int j = coord2idx(x+dx, y+dy);
+                    acc += s1 * spin[i].dot(spin[j]);
+                }
+            }
+        }
+        return acc/2; // adjust for double counting
+    }
+    
+    vec3 classical_force(Vec<vec3> const& spin, int i) {
+        vec3 acc(0, 0, 0);
+        int x, y;
+        idx2coord(i, x, y);
+        for (int nn = 0; nn < nn1_sz; nn++) {
+            int dx = nn1_dx[nn];
+            int dy = nn1_dy[nn];
+            int j = coord2idx(x+dx, y+dy);
+            acc += - s1 * spin[j];
+        }
+        return acc;
+    }
 };
 
-std::unique_ptr<SquareLattice> SquareLattice::mk(int w, int h, double t1, double t2, double t3) {
-    return std::make_unique<SquareLatticeImpl>(w, h, t1, t2, t3);
+// Somehow, these declarations are necessary to satisfy the linker.
+const int SquareLatticeImpl::nn1_dx[];
+const int SquareLatticeImpl::nn1_dy[];
+const int SquareLatticeImpl::nn2_dx[];
+const int SquareLatticeImpl::nn2_dy[];
+
+std::unique_ptr<SquareLattice> SquareLattice::mk(int w, int h, double t1, double t2, double t3, double s1) {
+    return std::make_unique<SquareLatticeImpl>(w, h, t1, t2, t3, s1);
 }
 
 

@@ -6,11 +6,11 @@ using namespace std::placeholders;
 
 void testKondo1() {
     int w = 6, h = 6;
-    double t1 = -1, t2 = 0, t3 = -0.5;
+    double t1 = -1, t2 = 0, t3 = -0.5, s1 = 0;
     double J = 0.5;
     double kT = 0;
     double mu = 0.103;
-    auto m = Model(SquareLattice::mk(w, h, t1, t2, t3), J, kT);
+    auto m = Model(SquareLattice::mk(w, h, t1, t2, t3, s1), J, kT);
     m.lattice->set_spins("ferro", nullptr, m.spin);
     //m.lattice->set_spins("meron", nullptr, m.spin);
     m.spin[0] = vec3(1, 1, 1).normalized();

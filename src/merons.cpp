@@ -44,7 +44,7 @@ int main(int argc,char **argv) {
     
     RNG rng(0);
     int w = 120;
-    double t1 = -1, t2 = 0, t3 = 0.5;
+    double t1 = -1, t2 = 0, t3 = 0.5, s1 = 0;
     double kT =  0;
     int n_colors = 15*15;
     //Vec<int> Ms {500, 1000, 2000, 4000, 8000};
@@ -88,7 +88,7 @@ int main(int argc,char **argv) {
     fp1 = fopen(filename1, "w");
     printf("filename:%s\n", filename1);
     double filling;
-    auto m = Model(SquareLattice::mk(w, w, t1, t2, t3), min_J, kT);
+    auto m = Model(SquareLattice::mk(w, w, t1, t2, t3, s1), min_J, kT);
     
     //auto engine = mk_engine_cx();
     //auto engine = mk_engine<cx_double>();

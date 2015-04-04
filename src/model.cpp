@@ -56,6 +56,7 @@ double Model::classical_potential() {
         acc += -B_zeeman.dot(spin[i]);
         acc += -easy_z*spin[i].z*spin[i].z;
     }
+    acc += lattice->classical_potential(spin);
     return acc;
 }
 
@@ -78,5 +79,7 @@ void Model::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3>& force) {
         
         force[k] += B_zeeman;
         force[k].z += easy_z*spin[k].z;
+        
+        force[k] += lattice->classical_force(spin, k);
     }
 }

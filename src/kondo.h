@@ -30,62 +30,38 @@ Vec3<T> gaussian_vec3(fkpm::RNG& rng) {
 }
 
 
-class Model;
-
-class Lattice {
-public:
-    static void set_spins_random(fkpm::RNG& rng, Vec<vec3>& spin);
-    virtual int n_sites() = 0;
-    virtual vec3 position(int i) = 0;
-    virtual void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) = 0;
-    virtual void add_hoppings(Model const& model, fkpm::SpMatElems<cx_flt>& H_elems) = 0;
-    virtual Vec<int> groups(int n_colors) = 0;
-    virtual double classical_potential(Vec<vec3> const& spin);
-    virtual vec3 classical_force(Vec<vec3> const& spin, int site);
-};
-class LinearLattice: public Lattice {
-public:
-    static std::unique_ptr<LinearLattice> mk(int w, double t1, double t2);
-};
-class SquareLattice: public Lattice {
-public:
-    static std::unique_ptr<SquareLattice> mk(int w, int h, double t1, double t2, double t3, double s1);
-    virtual void set_spins_meron(double a, int q, Vec<vec3>& spin) = 0;
-};
-class TriangularLattice: public Lattice {
-public:
-    static std::unique_ptr<TriangularLattice> mk(int w, int h, double t1, double t2, double t3);
-};
-class KagomeLattice: public Lattice {
-public:
-    static std::unique_ptr<KagomeLattice> mk(int w, int h, double t1);
-};
-
-
 class Model {
 public:
-    int n_sites;
-    std::unique_ptr<Lattice> lattice;
-    double J, kT_init, kT_decay_rate;
-    vec3 B_zeeman;
-    vec3 current; double current_growth, current_freq;
-    double easy_z;
+    int n_sites; // Number of classical spins
+    int n_rows;  // Number of rows in Hamilitonian
+    double J = 0;
+    double kT_init = 0, kT_decay_rate = 0;
+    vec3 B_zeeman = {0, 0, 0};
+    vec3 current = {0, 0, 0}; double current_growth = 0, current_freq = 0;
+    double easy_z = 0;
     fkpm::SpMatElems<cx_flt> H_elems;
     fkpm::SpMatBsr<cx_flt> H, D;
+    Vec<int> spinor_indices; // Indices into H for the two-component spinors that couple to classical spins
     Vec<vec3> spin;
     double time = 0;
+    Vec<vec3> dyn_stor[5]; // used by Dynamics to store intermediate data between steps
     
-    // used by Dynamics to store intermediate data between steps
-    Vec<vec3> dyn_stor[5];
-    
-    Model(std::unique_ptr<Lattice> lattice, double J, double kT_init, double kT_decay_rate=0,
-          vec3 B_zeeman={0,0,0}, vec3 current={0,0,0}, double current_growth=0, double current_freq=0,
-          double easy_z=0);
-    
+    Model(int n_sites, int n_rows = 0, Vec<int> spinor_indices = {});
+    static void set_spins_random(fkpm::RNG& rng, Vec<vec3>& spin);
     double kT();
     void set_hamiltonian(Vec<vec3> const& spin);
-    double classical_potential(Vec<vec3> const& spin);
-    void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
+    virtual double classical_potential(Vec<vec3> const& spin);
+    virtual void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
+    virtual vec3 position(int i) = 0;
+    virtual void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) = 0;
+    virtual void add_hoppings(fkpm::SpMatElems<cx_flt>& H_elems) = 0;
+    virtual Vec<int> groups(int n_colors) = 0;
+    
+    // instantiations
+    static std::unique_ptr<Model> mk_linear(int w, double t1, double t2);
+    static std::unique_ptr<Model> mk_square(int w, int h, double t1, double t2, double t3, double s1);
+    static std::unique_ptr<Model> mk_triangular(int w, int h, double t1, double t2, double t3);
+    static std::unique_ptr<Model> mk_kagome(int w, int h, double t1);
 };
 
 

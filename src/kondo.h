@@ -29,7 +29,6 @@ Vec3<T> gaussian_vec3(fkpm::RNG& rng) {
     return { dist(rng), dist(rng), dist(rng) };
 }
 
-
 class Model {
 public:
     int n_sites; // Number of classical spins
@@ -39,22 +38,28 @@ public:
     vec3 B_zeeman = {0, 0, 0};
     vec3 current = {0, 0, 0}; double current_growth = 0, current_freq = 0;
     double easy_z = 0;
-    fkpm::SpMatElems<cx_flt> H_elems;
+    fkpm::SpMatElems<cx_flt> H_elems, D_elems;
     fkpm::SpMatBsr<cx_flt> H, D;
-    Vec<int> spinor_indices; // Indices into H for the two-component spinors that couple to classical spins
     Vec<vec3> spin;
     double time = 0;
     Vec<vec3> dyn_stor[5]; // used by Dynamics to store intermediate data between steps
     
-    Model(int n_sites, int n_rows = 0, Vec<int> spinor_indices = {});
+    Model(int n_sites, int n_rows);
     static void set_spins_random(fkpm::RNG& rng, Vec<vec3>& spin);
     double kT();
+    
     void set_hamiltonian(Vec<vec3> const& spin);
-    virtual double classical_potential(Vec<vec3> const& spin);
-    virtual void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
+    virtual void accum_hamiltonian_hopping() = 0;
+    virtual void accum_hamiltonian_hund() = 0;
+    
+    void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
+    virtual void accum_forces_classical(Vec<vec3> const& spin, Vec<vec3>& force);
+    virtual void accum_forces_hund(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) = 0;
+    
+    virtual double energy_classical(Vec<vec3> const& spin);
+    
     virtual vec3 position(int i) = 0;
     virtual void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) = 0;
-    virtual void add_hoppings(fkpm::SpMatElems<cx_flt>& H_elems) = 0;
     virtual Vec<int> groups(int n_colors) = 0;
     
     // instantiations

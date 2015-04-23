@@ -3,24 +3,12 @@
 #include <cassert>
 
 
-Model::Model(int n_sites, int n_rows_def, Vec<int> spinor_indices_def):
+Model::Model(int n_sites, int n_rows):
     n_sites(n_sites),
-    n_rows(n_rows_def > 0 ? n_rows_def : 2*n_sites),
-    H_elems(n_rows, n_rows, 1)
+    n_rows(n_rows),
+    H_elems(n_rows, n_rows, 1),
+    D_elems(n_rows, n_rows, 1)
 {
-    if (spinor_indices_def.size() == 0) {
-        // By default, assume every Hamiltonian index has a local moment
-        assert(n_rows == 2*n_sites);
-        spinor_indices = Vec<int>(n_sites);
-        for (int i = 0; i < n_sites; i++) {
-            spinor_indices[i] = 2*i;
-        }
-    }
-    else {
-        spinor_indices = spinor_indices_def;
-    }
-    assert(spinor_indices.size() == n_sites);
-    
     spin.assign(n_sites, vec3{0, 0, 0});
     dyn_stor[0].assign(n_sites, vec3{0, 0, 0});
     dyn_stor[1].assign(n_sites, vec3{0, 0, 0});
@@ -50,52 +38,35 @@ static Vec3<cx_flt> pauli[2][2] {
 
 void Model::set_hamiltonian(Vec<vec3> const& spin) {
     H_elems.clear();
-    for (int k = 0; k < n_sites; k++) {
-        int idx = spinor_indices[k];
-        for (int s1 = 0; s1 < 2; s1++) {
-            for (int s2 = 0; s2 < 2; s2++) {
-                cx_flt v = -flt(J) * pauli[s1][s2].dot(spin[k]);
-                H_elems.add(idx+s1, idx+s2, &v);
-            }
-        }
-    }
-    add_hoppings(H_elems);
+    D_elems.clear();
+    accum_hamiltonian_hund();
+    accum_hamiltonian_hopping();
     H.build(H_elems);
-    D = H; // TODO: don't calculate unnecessary D elements
-    D.zeros();
+    D.build(D_elems);
 }
 
-double Model::classical_potential(Vec<vec3> const& spin) {
+void Model::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) {
+    for (auto& f : force) {
+        f = {0,0,0};
+    }
+    accum_forces_classical(spin, force);
+    accum_forces_hund(D, spin, force);
+}
+
+void Model::accum_forces_classical(Vec<vec3> const& spin, Vec<vec3>& force) {
+    for (int k = 0; k < n_sites; k++) {
+        force[k] += B_zeeman;
+        force[k].z += easy_z*spin[k].z;
+    }
+}
+
+double Model::energy_classical(Vec<vec3> const& spin) {
     double acc = 0;
     for (int i = 0; i < n_sites; i++) {
         acc += -B_zeeman.dot(spin[i]);
         acc += -easy_z*spin[i].z*spin[i].z;
     }
     return acc;
-}
-
-void Model::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) {
-    for (int k = 0; k < n_sites; k++) {
-        int idx = spinor_indices[k];
-        
-        // Electronic part
-        Vec3<cx_flt> dE_dS(0, 0, 0);
-        for (int s1 = 0; s1 < 2; s1 ++) {
-            for (int s2 = 0; s2 < 2; s2 ++) {
-                // Apply chain rule: dE/dS = dH_ij/dS D_ji
-                // where D_ij = dE/dH_ji is the density matrix
-                Vec3<cx_flt> dH_ij_dS = -J * pauli[s1][s2];
-                cx_flt D_ji = *D(idx+s2, idx+s1);
-                dE_dS += dH_ij_dS * D_ji;
-            }
-        }
-        assert(imag(dE_dS).norm() < 1e-5);
-        force[k] = -real(dE_dS);
-        
-        // Classical part
-        force[k] += B_zeeman;
-        force[k].z += easy_z*spin[k].z;
-    }
 }
 
 
@@ -109,12 +80,50 @@ static Vec<int> colors_to_groups(Vec<int> const& colors, int n_orbs) {
     return groups;
 }
 
-class LinearModel: public Model {
+// TODO: refactor all hoppings/nn indexing to here
+
+class SimpleModel: public Model {
+public:
+    SimpleModel(int n_sites): Model(n_sites, 2*n_sites) {
+    }
+    
+    void accum_hamiltonian_hund() {
+        cx_flt zero = 0;
+        for (int k = 0; k < n_sites; k++) {
+            for (int s1 = 0; s1 < 2; s1++) {
+                for (int s2 = 0; s2 < 2; s2++) {
+                    cx_flt v = -flt(J) * pauli[s1][s2].dot(spin[k]);
+                    H_elems.add(2*k+s1, 2*k+s2, &v);
+                    D_elems.add(2*k+s1, 2*k+s2, &zero);
+                }
+            }
+        }
+    }
+    
+    void accum_forces_hund(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) {
+        for (int k = 0; k < n_sites; k++) {
+            Vec3<cx_flt> dE_dS(0, 0, 0);
+            for (int s1 = 0; s1 < 2; s1 ++) {
+                for (int s2 = 0; s2 < 2; s2 ++) {
+                    // Apply chain rule: dE/dS = dH_ij/dS D_ji
+                    // where D_ij = dE/dH_ji is the density matrix
+                    Vec3<cx_flt> dH_ij_dS = -J * pauli[s1][s2];
+                    cx_flt D_ji = *D(2*k+s2, 2*k+s1);
+                    dE_dS += dH_ij_dS * D_ji;
+                }
+            }
+            assert(imag(dE_dS).norm() < 1e-5);
+            force[k] += -real(dE_dS);
+        }
+    }
+};
+
+class LinearModel: public SimpleModel {
 public:
     int w;
     double t1, t2;
     
-    LinearModel(int w, double t1, double t2): Model(w), w(w), t1(t1), t2(t2)
+    LinearModel(int w, double t1, double t2): SimpleModel(w), w(w), t1(t1), t2(t2)
     {}
     
     vec3 position(int i) {
@@ -134,22 +143,22 @@ public:
         return(x%w+w)%w;
     }
     
-    void add_hoppings(fkpm::SpMatElems<cx_flt>& H_elems) {
-        for (int i = 0; i < w; i++) {
+    void accum_hamiltonian_hopping() {
+        for (int k = 0; k < w; k++) {
             static int nn1_sz = 2;
             static int nn1_dx[] { 1, -1 };
             for (int nn = 0; nn < nn1_sz; nn++) {
                 // nn1
-                int j = coord2idx(i + nn1_dx[nn]);
+                int j = coord2idx(k + nn1_dx[nn]);
                 cx_flt v1 = t1;
-                H_elems.add(2*i+0, 2*j+0, &v1);
-                H_elems.add(2*i+1, 2*j+1, &v1);
+                H_elems.add(2*k+0, 2*j+0, &v1);
+                H_elems.add(2*k+1, 2*j+1, &v1);
                 
                 // nn3, dx scaled by 2
-                j = coord2idx(i + 2*nn1_dx[nn]);
+                j = coord2idx(k + 2*nn1_dx[nn]);
                 cx_flt v2 = t2;
-                H_elems.add(2*i+0, 2*j+0, &v2);
-                H_elems.add(2*i+1, 2*j+1, &v2);
+                H_elems.add(2*k+0, 2*j+0, &v2);
+                H_elems.add(2*k+1, 2*j+1, &v2);
             }
         }
     }
@@ -173,7 +182,7 @@ std::unique_ptr<Model> Model::mk_linear(int w, double t1, double t2) {
 }
 
 
-class SquareModel: public Model {
+class SquareModel: public SimpleModel {
 public:
     int w, h;
     double t1, t2, t3;
@@ -187,39 +196,8 @@ public:
     static constexpr int nn2_dy[] { 1,  1, -1, -1 };
     
     SquareModel(int w, int h, double t1, double t2, double t3, double s1):
-    Model(w*h), w(w), h(h), t1(t1), t2(t2), t3(t3), s1(s1)
+    SimpleModel(w*h), w(w), h(h), t1(t1), t2(t2), t3(t3), s1(s1)
     {}
-    
-    double classical_potential(Vec<vec3> const& spin) override {
-        double acc = Model::classical_potential(spin);
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                int i = coord2idx(x, y);
-                for (int nn = 0; nn < nn1_sz; nn++) {
-                    int dx = nn1_dx[nn];
-                    int dy = nn1_dy[nn];
-                    int j = coord2idx(x+dx, y+dy);
-                    acc += s1 * spin[i].dot(spin[j]);
-                }
-            }
-        }
-        return acc/2; // adjust for double counting
-    }
-    
-    void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) override {
-        Model::set_forces(D, spin, force);
-        for (int y = 0; y < h; y++) {
-            for (int x = 0; x < w; x++) {
-                int i = coord2idx(x, y);
-                for (int nn = 0; nn < nn1_sz; nn++) {
-                    int dx = nn1_dx[nn];
-                    int dy = nn1_dy[nn];
-                    int j = coord2idx(x+dx, y+dy);
-                    force[i] += - s1 * spin[j];
-                }
-            }
-        }
-    }
     
     vec3 position(int i) {
         assert(0 <= i && i < w*h);
@@ -294,7 +272,7 @@ public:
         y = i/w;
     }
     
-    void add_hoppings(fkpm::SpMatElems<cx_flt>& H_elems) {
+    void accum_hamiltonian_hopping() {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int i = coord2idx(x, y);
@@ -321,6 +299,37 @@ public:
                 }
             }
         }
+    }
+    
+    void accum_forces_classical(Vec<vec3> const& spin, Vec<vec3>& force) override {
+        SimpleModel::accum_forces_classical(spin, force);
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int i = coord2idx(x, y);
+                for (int nn = 0; nn < nn1_sz; nn++) {
+                    int dx = nn1_dx[nn];
+                    int dy = nn1_dy[nn];
+                    int j = coord2idx(x+dx, y+dy);
+                    force[i] += - s1 * spin[j];
+                }
+            }
+        }
+    }
+    
+    double energy_classical(Vec<vec3> const& spin) override {
+        double acc = SimpleModel::energy_classical(spin);
+        for (int y = 0; y < h; y++) {
+            for (int x = 0; x < w; x++) {
+                int i = coord2idx(x, y);
+                for (int nn = 0; nn < nn1_sz; nn++) {
+                    int dx = nn1_dx[nn];
+                    int dy = nn1_dy[nn];
+                    int j = coord2idx(x+dx, y+dy);
+                    acc += s1 * spin[i].dot(spin[j]) / 2; // adjust for double counting
+                }
+            }
+        }
+        return acc;
     }
     
     Vec<int> groups(int n_colors) {
@@ -357,13 +366,13 @@ std::unique_ptr<Model> Model::mk_square(int w, int h, double t1, double t2, doub
 }
 
 
-class TriangularModel: public Model {
+class TriangularModel: public SimpleModel {
 public:
     int w, h;
     double t1, t2, t3;
     
     TriangularModel(int w, int h, double t1, double t2, double t3):
-        Model(w*h), w(w), h(h), t1(t1), t2(t2), t3(t3)
+        SimpleModel(w*h), w(w), h(h), t1(t1), t2(t2), t3(t3)
     { assert(t2==0 && "t2 not yet implemented for triangular lattice."); }
     
     vec3 position(int i) {
@@ -404,7 +413,7 @@ public:
         }
     }
     
-    void add_hoppings(fkpm::SpMatElems<cx_flt>& H_elems) {
+    void accum_hamiltonian_hopping() {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 int i = coord2idx(x, y);
@@ -463,13 +472,13 @@ std::unique_ptr<Model> Model::mk_triangular(int w, int h, double t1, double t2, 
 }
 
 
-class KagomeModel: public Model {
+class KagomeModel: public SimpleModel {
 public:
     int w, h;
     double t1;
     
     KagomeModel(int w, int h, double t1):
-    Model(3*w*h), w(w), h(h), t1(t1)
+        SimpleModel(3*w*h), w(w), h(h), t1(t1)
     {}
     
     int coord2idx(int v, int x, int y) {
@@ -596,7 +605,7 @@ public:
         std::abort();
     }
     
-    void add_hoppings(fkpm::SpMatElems<cx_flt>& H_elems) {
+    void accum_hamiltonian_hopping() {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 for (int v = 0; v < 3; v++) {

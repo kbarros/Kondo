@@ -33,10 +33,8 @@ class Model {
 public:
     int n_sites; // Number of classical spins
     int n_rows;  // Number of rows in Hamilitonian
-    double J = 0;
-    double kT_init = 0, kT_decay_rate = 0;
+    double kT_init = 0, kT_decay = 0;
     vec3 B_zeeman = {0, 0, 0};
-    vec3 current = {0, 0, 0}; double current_growth = 0, current_freq = 0;
     double easy_z = 0;
     fkpm::SpMatElems<cx_flt> H_elems, D_elems;
     fkpm::SpMatBsr<cx_flt> H, D;
@@ -50,7 +48,7 @@ public:
     
     void set_hamiltonian(Vec<vec3> const& spin);
     virtual void accum_hamiltonian_hopping() = 0;
-    virtual void accum_hamiltonian_hund() = 0;
+    virtual void accum_hamiltonian_hund(Vec<vec3> const& spin) = 0;
     
     void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
     virtual void accum_forces_classical(Vec<vec3> const& spin, Vec<vec3>& force);
@@ -61,14 +59,33 @@ public:
     virtual vec3 position(int i) = 0;
     virtual void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) = 0;
     virtual Vec<int> groups(int n_colors) = 0;
-    
-    // instantiations
-    static std::unique_ptr<Model> mk_linear(int w, double t1, double t2);
-    static std::unique_ptr<Model> mk_square(int w, int h, double t1, double t2, double t3, double s1);
-    static std::unique_ptr<Model> mk_triangular(int w, int h, double t1, double t2, double t3);
-    static std::unique_ptr<Model> mk_kagome(int w, int h, double t1);
 };
 
+class SimpleModel: public Model {
+public:
+    double J = 0;
+    double t1=0, t2=0, t3=0;
+    double s1=0, s2=0, s3=0;
+    // vec3 current = {0, 0, 0}; double current_growth = 0, current_freq = 0;
+    
+    SimpleModel(int n_sites);
+    
+    void accum_hamiltonian_hopping();
+    void accum_hamiltonian_hund(Vec<vec3> const& spin);
+    
+    void accum_forces_classical(Vec<vec3> const& spin, Vec<vec3>& force);
+    void accum_forces_hund(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
+    
+    double energy_classical(Vec<vec3> const& spin);
+    
+    virtual void set_neighbors(int rank, int k, Vec<int>& idx) = 0;
+    
+    // instantiations
+    static std::unique_ptr<SimpleModel> mk_linear(int w);
+    static std::unique_ptr<SimpleModel> mk_square(int w, int h);
+    static std::unique_ptr<SimpleModel> mk_triangular(int w, int h);
+    static std::unique_ptr<SimpleModel> mk_kagome(int w, int h);
+};
 
 class Dynamics {
 public:

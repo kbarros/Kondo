@@ -7,31 +7,30 @@
 using namespace std::placeholders;
 
 
-std::unique_ptr<Lattice> mk_lattice(cpptoml::toml_group g) {
-    auto type = g.get_unwrap<std::string>("lattice.type");
-    if (type == "square") {
-        return SquareLattice::mk(
-            g.get_unwrap<int64_t>("lattice.w"), g.get_unwrap<int64_t>("lattice.h"), g.get_unwrap<double>("lattice.t1"),
-            g.get_unwrap<double>("lattice.t2", 0.0), g.get_unwrap<double>("lattice.t3", 0.0), g.get_unwrap<double>("lattice.s1", 0.0));
-    } else if (type == "triangular") {
-        return TriangularLattice::mk(
-            g.get_unwrap<int64_t>("lattice.w"), g.get_unwrap<int64_t>("lattice.h"), g.get_unwrap<double>("lattice.t1"),
-            g.get_unwrap<double>("lattice.t2", 0.0), g.get_unwrap<double>("lattice.t3", 0.0));
-    } else if (type == "kagome") {
-        return KagomeLattice::mk(
-            g.get_unwrap<int64_t>("lattice.w"), g.get_unwrap<int64_t>("lattice.h"), g.get_unwrap<double>("lattice.t1"));
+std::unique_ptr<SimpleModel> mk_model(cpptoml::toml_group g) {
+    auto lattice = g.get_unwrap<std::string>("model.lattice");
+    std::unique_ptr<SimpleModel> m;
+    if (lattice == "square") {
+        m = SimpleModel::mk_square(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
+    } else if (lattice == "triangular") {
+        m = SimpleModel::mk_triangular(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
+    } else if (lattice == "kagome") {
+        m = SimpleModel::mk_kagome(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
     }
-    cerr << "Unsupported lattice type `" << type << "`!\n";
-    std::abort();
-}
-
-Model mk_model(cpptoml::toml_group g) {
-    return {
-        mk_lattice(g), g.get_unwrap<double>("J"), g.get_unwrap<double>("kT"), g.get_unwrap<double>("kT_decay", 0),
-        {g.get_unwrap<double>("Bx_zeeman", 0), g.get_unwrap<double>("By_zeeman", 0), g.get_unwrap<double>("Bz_zeeman", 0)},
-        {g.get_unwrap<double>("current_x", 0), g.get_unwrap<double>("current_y", 0), g.get_unwrap<double>("current_z", 0)},
-        g.get_unwrap<double>("current_growth", 0), g.get_unwrap<double>("current_freq", 0), g.get_unwrap<double>("easy_z", 0)
-    };
+    // Model
+    m->kT_init  = g.get_unwrap<double>("model.kT");
+    m->kT_decay = g.get_unwrap<double>("model.kT_decay", 0);
+    m->B_zeeman = {g.get_unwrap<double>("model.zeeman_x", 0), g.get_unwrap<double>("model.zeeman_y", 0), g.get_unwrap<double>("model.zeeman_z", 0)};
+    m->easy_z   = g.get_unwrap<double>("model.easy_z", 0);
+    // SimpleModel
+    m->J  = g.get_unwrap<double>("model.J");
+    m->t1 = g.get_unwrap<double>("model.t1", 0);
+    m->t2 = g.get_unwrap<double>("model.t2", 0);
+    m->t3 = g.get_unwrap<double>("model.t3", 0);
+    m->s1 = g.get_unwrap<double>("model.s1", 0);
+    m->s2 = g.get_unwrap<double>("model.s2", 0);
+    m->s3 = g.get_unwrap<double>("model.s3", 0);
+    return m;
 }
 
 std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
@@ -67,11 +66,11 @@ int main(int argc, char *argv[]) {
     }
     
     cout << "Using input file `" << input_name << "`\n";
-
+    
     cpptoml::parser p{input_file};
     cpptoml::toml_group g = p.parse();
     
-    fkpm::RNG rng(g.get_unwrap<int64_t>("seed"));
+    fkpm::RNG rng(g.get_unwrap<int64_t>("random_seed"));
     bool overwrite_dump = g.get_unwrap<bool>("overwrite_dump");
     int steps_per_dump = g.get_unwrap<int64_t>("steps_per_dump");
     int max_steps = g.get_unwrap<int64_t>("max_steps");
@@ -86,17 +85,17 @@ int main(int argc, char *argv[]) {
         delta_filling = g.get_unwrap<double>("ensemble.delta_filling");
     }
     
-    Model m = mk_model(g);
+    auto m = mk_model(g);
     auto dynamics = mk_dynamics(g);
     
     auto init_spins_type = g.get_unwrap<std::string>("init_spins.type");
     if (init_spins_type == "random") {
-        Lattice::set_spins_random(rng, m.spin);
+        m->set_spins_random(rng, m->spin);
     } else {
-        m.lattice->set_spins(init_spins_type, g.get_group("init_spins"), m.spin);
+        m->set_spins(init_spins_type, g.get_group("init_spins"), m->spin);
     }
     
-    m.set_hamiltonian(m.spin);
+    m->set_hamiltonian(m->spin);
     
     fkpm::EnergyScale es{g.get_unwrap<double>("kpm.energy_scale_lo"), g.get_unwrap<double>("kpm.energy_scale_hi")};
     // double extra = 0.1;
@@ -107,11 +106,13 @@ int main(int argc, char *argv[]) {
     int M_prec           = g.get_unwrap<int64_t>("kpm.cheby_order_precise");
     int Mq               = 4*M;
     int Mq_prec          = 4*M_prec;
-    Vec<int> groups      = m.lattice->groups(g.get_unwrap<int64_t>("kpm.n_colors"));
-    Vec<int> groups_prec = m.lattice->groups(g.get_unwrap<int64_t>("kpm.n_colors_precise"));
+    Vec<int> groups      = m->groups(g.get_unwrap<int64_t>("kpm.n_colors"));
+    Vec<int> groups_prec = m->groups(g.get_unwrap<int64_t>("kpm.n_colors_precise"));
     
     // variables that will be updated in `build_kpm(spin)`
     auto engine = fkpm::mk_engine_cuSPARSE<cx_flt>(device_num);
+    if (engine == nullptr)
+        std::abort();
     Vec<double> moments;
     Vec<double> gamma;
     double energy;
@@ -131,9 +132,9 @@ int main(int argc, char *argv[]) {
   "initSpin": 0,
   "model": {
 )";
-    json_file << "    \"type\": \"" << g.get_unwrap<std::string>("lattice.type") << "\",\n";
-    json_file << "    \"w\": " << g.get_unwrap<int64_t>("lattice.w") << ",\n";
-    json_file << "    \"h\": " << g.get_unwrap<int64_t>("lattice.h") << ",";
+    json_file << "    \"type\": \"" << g.get_unwrap<std::string>("model.lattice") << "\",\n";
+    json_file << "    \"w\": " << g.get_unwrap<int64_t>("model.w") << ",\n";
+    json_file << "    \"h\": " << g.get_unwrap<int64_t>("model.h") << ",";
     json_file << R"(
     "t": 0,
     "t1": 0,
@@ -146,26 +147,26 @@ int main(int argc, char *argv[]) {
     
     // assumes random vectors R have been set appropriately
     auto build_kpm = [&](Vec<vec3> const& spin, int M, int Mq) {
-        m.set_hamiltonian(spin);
-        engine->set_H(m.H, es);
+        m->set_hamiltonian(spin);
+        engine->set_H(m->H, es);
         moments = engine->moments(M);
         gamma = fkpm::moment_transform(moments, Mq);
-        energy = m.classical_potential(m.spin) + dynamics->pseudo_kinetic_energy(m);
+        energy = m->energy_classical(m->spin) + dynamics->pseudo_kinetic_energy(*m);
         if (ensemble_type == "canonical") {
-            mu = filling_to_mu(gamma, es, m.kT(), filling, delta_filling);
-            energy += electronic_energy(gamma, es, m.kT(), filling, mu);
+            mu = filling_to_mu(gamma, es, m->kT(), filling, delta_filling);
+            energy += electronic_energy(gamma, es, m->kT(), filling, mu);
         } else {
-            filling = mu_to_filling(gamma, es, m.kT(), mu);
-            energy += electronic_grand_energy(gamma, es, m.kT(), mu);
+            filling = mu_to_filling(gamma, es, m->kT(), mu);
+            energy += electronic_grand_energy(gamma, es, m->kT(), mu);
         }
-        auto c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m.kT(), mu), es);
-        engine->autodiff_matrix(c, m.D);
+        auto c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m->kT(), mu), es);
+        engine->autodiff_matrix(c, m->D);
     };
     
     auto dump = [&](int step) {
         engine->set_R_correlated(groups_prec, rng);
-        build_kpm(m.spin, M_prec, Mq_prec);
-        double e = energy / m.n_sites;
+        build_kpm(m->spin, M_prec, Mq_prec);
+        double e = energy / m->n_sites;
         
         if (!boost::filesystem::is_directory(base_dir+"/dump")) {
             boost::filesystem::create_directory(base_dir+"/dump");
@@ -176,9 +177,9 @@ int main(int argc, char *argv[]) {
             cerr << "Refuse to overwrite file '" << fname.str() << "'!\n";
             std::abort();
         }
-        cout << "Dumping file '" << fname.str() << "', time=" << m.time << ", energy=" << e << ", n=" << filling << ", mu=" << mu << endl;
+        cout << "Dumping file '" << fname.str() << "', time=" << m->time << ", energy=" << e << ", n=" << filling << ", mu=" << mu << endl;
         std::ofstream dump_file(fname.str(), std::ios::trunc);
-        dump_file << "{\"time\":" << m.time <<
+        dump_file << "{\"time\":" << m->time <<
             ",\"action\":" << e <<
             ",\"filling\":" << filling <<
             ",\"mu\":" << mu <<
@@ -189,11 +190,11 @@ int main(int argc, char *argv[]) {
             if (i < moments.size()-1) dump_file << ",";
         }
         dump_file << "],\"spin\":[";
-        for (int i = 0; i < m.n_sites; i++) {
-            dump_file << m.spin[i].x << ",";
-            dump_file << m.spin[i].y << ",";
-            dump_file << m.spin[i].z;
-            if (i < m.n_sites-1) dump_file << ",";
+        for (int i = 0; i < m->n_sites; i++) {
+            dump_file << m->spin[i].x << ",";
+            dump_file << m->spin[i].y << ",";
+            dump_file << m->spin[i].z;
+            if (i < m->n_sites-1) dump_file << ",";
         }
         dump_file << "]}";
         dump_file.close();
@@ -201,16 +202,16 @@ int main(int argc, char *argv[]) {
     
     auto calc_force = [&](Vec<vec3> const& spin, Vec<vec3>& force) {
         build_kpm(spin, M, Mq);
-        m.set_forces(m.D, spin, force);
+        m->set_forces(m->D, spin, force);
     };
     
     engine->set_R_correlated(groups, rng);
-    dynamics->init(calc_force, rng, m);
+    dynamics->init(calc_force, rng, *m);
     
     dump(dynamics->n_steps);
     while (dynamics->n_steps < max_steps) {
         engine->set_R_correlated(groups, rng);
-        dynamics->step(calc_force, rng, m);
+        dynamics->step(calc_force, rng, *m);
         if (dynamics->n_steps % steps_per_dump == 0) {
             dump(dynamics->n_steps);
         }

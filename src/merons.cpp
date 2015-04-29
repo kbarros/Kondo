@@ -44,8 +44,6 @@ int main(int argc,char **argv) {
     
     RNG rng(0);
     int w = 120;
-    double t1 = -1, t2 = 0, t3 = 0.5, s1 = 0;
-    double kT =  0;
     int n_colors = 15*15;
     //Vec<int> Ms {500, 1000, 2000, 4000, 8000};
     //Vec<int> Ms {500, 1000, 2000, 4000};
@@ -88,13 +86,15 @@ int main(int argc,char **argv) {
     fp1 = fopen(filename1, "w");
     printf("filename:%s\n", filename1);
     double filling;
-    auto m = Model(SquareLattice::mk(w, w, t1, t2, t3, s1), min_J, kT);
+    auto m = SimpleModel::mk_square(w, w);
+    m->t1 = -1;
+    m->t3 = 0.5;
     
     //auto engine = mk_engine_cx();
     //auto engine = mk_engine<cx_double>();
     auto engine = mk_engine_cuSPARSE<cx_flt>(device_index);
     //auto engine = mk_engine<cx_double>(device_index);
-    auto groups = m.lattice->groups(n_colors);
+    auto groups = m->groups(n_colors);
     cout << std::setprecision(9);
     cout << "# J, meron_a, meron_Q, mu, Phi, filling, M(, ED_Phi)\n";
 
@@ -102,16 +102,18 @@ int main(int argc,char **argv) {
 
     engine->set_R_correlated(groups, rng);//step1B, step3B
     for (loop=0; loop<1; loop++){
-    for (m.J = min_J; m.J < max_J; m.J += d_J) {
+    for (m->J = min_J; m->J < max_J; m->J += d_J) {
         for (meron_a = min_a; meron_a < max_a; meron_a += d_a) {
             //for (meron_Q=0; meron_Q<=(w/2); meron_Q++) {//step1
             for (meron_Q=Q1; meron_Q<=Q2; meron_Q++) {//step3
 	   //meron_Q = w/8;
            //engine->set_R_correlated(groups, rng);//step1,step3
 
-            dynamic_cast<SquareLattice *>(m.lattice.get())->set_spins_meron(meron_a, meron_Q, m.spin);
-            m.set_hamiltonian(m.spin);
-            engine->set_H(m.H, es);
+//            dynamic_cast<SquareLattice *>(m->lattice.get())->set_spins_meron(meron_a, meron_Q, m->spin);
+                std::cerr << "Meron lattice currently broken\n";
+                std::abort();
+            m->set_hamiltonian(m->spin);
+            engine->set_H(m->H, es);
             
             auto allMoments = engine->moments(Ms.back());
             
@@ -121,19 +123,19 @@ int main(int argc,char **argv) {
             
             
                 for (double mu = min_mu; mu < max_mu; mu += d_mu) {
-                    double Phi = electronic_grand_energy(gamma, es, kT, mu) / m.n_sites;
-                    filling = mu_to_filling(gamma, es, m.kT(), mu);
+                    double Phi = electronic_grand_energy(gamma, es, m->kT(), mu) / m->n_sites;
+                    filling = mu_to_filling(gamma, es, m->kT(), mu);
                     
-                    printf("%10lf, %10lf, %5d, %10lf, %10lf, %10lf, %d, ", m.J, meron_a, meron_Q, mu, Phi, filling, M);
-                    fprintf(fp1, "%10lf, %10lf, %5d, %10lf, %10lf, %10lf, %d, ", m.J, meron_a, meron_Q, mu, Phi, filling, M);
+                    printf("%10lf, %10lf, %5d, %10lf, %10lf, %10lf, %d, ", m->J, meron_a, meron_Q, mu, Phi, filling, M);
+                    fprintf(fp1, "%10lf, %10lf, %5d, %10lf, %10lf, %10lf, %d, ", m->J, meron_a, meron_Q, mu, Phi, filling, M);
                     fflush(fp1);
                     
                     //bool print_exact = true;
                     bool print_exact = false;
                     if (print_exact) {
-                        //arma::vec eigs = arma::real(arma::eig_gen(m.H.to_arma_dense()));
-                        arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
-			double Phi_exact = electronic_grand_energy(eigs, kT, mu) / m.n_sites;
+                        //arma::vec eigs = arma::real(arma::eig_gen(m->H.to_arma_dense()));
+                        arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m->H.to_arma_dense()));
+			double Phi_exact = electronic_grand_energy(eigs, m->kT(), mu) / m->n_sites;
                         //cout << "   [" << Phi_exact << "]\n";
                         cout << Phi_exact << endl;
 

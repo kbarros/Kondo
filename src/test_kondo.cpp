@@ -6,10 +6,12 @@ using namespace std::placeholders;
 
 void testKondo1() {
     int w = 6, h = 6;
-    double t1 = -1, t2 = 0, t3 = -0.5, s1 = 0;
     double mu = 0.103;
-    auto m = Model::mk_square(w, h, t1, t2, t3, s1);
+    auto m = SimpleModel::mk_square(w, h);
     m->J = 0.5;
+    m->t1 = -1;
+    m->t3 = -0.5;
+    m->s1 = 0.1;
     m->set_spins("ferro", nullptr, m->spin);
     //m->lattice->set_spins("meron", nullptr, m->spin);
     m->spin[0] = vec3(1, 1, 1).normalized();
@@ -50,10 +52,10 @@ void testKondo1() {
 
 void testKondo2() {
     int w = 8, h = 8;
-    double t1 = -1;
-    auto m = Model::mk_kagome(w, h, t1);
-    m->J = 0.1;
     double mu = -1.98397;
+    auto m = SimpleModel::mk_kagome(w, h);
+    m->J = 0.1;
+    m->t1 = -1;
     EnergyScale es{-10, 10};
     int M = 1000;
     int Mq = 4*M;
@@ -96,11 +98,11 @@ void testKondo3() {
     __attribute__((unused))
     int w = 2048, h = w;
     __attribute__((unused))
-    double t1 = -1, t2 = 0, t3 = 0;
-    //    auto m = Model::mk_square(w, h, t1, t2, t3);
-    //    auto m = Model::mk_kagome(w, h, t1);
-    auto m = Model::mk_linear(w, t1, t2);
+    //    auto m = SimpleModel::mk_square(w, h);
+    //    auto m = SimpleModel::mk_kagome(w, h);
+    auto m = SimpleModel::mk_linear(w);
     m->J = 0.5;
+    m->t1 = -1;
     double mu = 0;
     
 //    m->set_spins_random(rng, m->spin);

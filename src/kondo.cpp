@@ -8,29 +8,41 @@ using namespace std::placeholders;
 
 
 std::unique_ptr<SimpleModel> mk_model(cpptoml::toml_group g) {
-    auto lattice = g.get_unwrap<std::string>("model.lattice");
-    std::unique_ptr<SimpleModel> m;
-    if (lattice == "square") {
-        m = SimpleModel::mk_square(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
-    } else if (lattice == "triangular") {
-        m = SimpleModel::mk_triangular(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
-    } else if (lattice == "kagome") {
-        m = SimpleModel::mk_kagome(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
+    auto type = g.get_unwrap<std::string>("model.type");
+    if (type == "simple") {
+        auto lattice = g.get_unwrap<std::string>("model.lattice");
+        std::unique_ptr<SimpleModel> m;
+        if (lattice == "square") {
+            m = SimpleModel::mk_square(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
+        } else if (lattice == "triangular") {
+            m = SimpleModel::mk_triangular(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
+        } else if (lattice == "kagome") {
+            m = SimpleModel::mk_kagome(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
+        } else {
+            std::cerr << "Simple model lattice '" << lattice << "' not supported.\n";
+            std::exit(EXIT_FAILURE);
+        }
+        // Model
+        m->kT_init  = g.get_unwrap<double>("model.kT");
+        m->kT_decay = g.get_unwrap<double>("model.kT_decay", 0);
+        m->B_zeeman = {g.get_unwrap<double>("model.zeeman_x", 0), g.get_unwrap<double>("model.zeeman_y", 0), g.get_unwrap<double>("model.zeeman_z", 0)};
+        m->easy_z   = g.get_unwrap<double>("model.easy_z", 0);
+        // SimpleModel
+        m->J  = g.get_unwrap<double>("model.J");
+        m->t1 = g.get_unwrap<double>("model.t1", 0);
+        m->t2 = g.get_unwrap<double>("model.t2", 0);
+        m->t3 = g.get_unwrap<double>("model.t3", 0);
+        m->s1 = g.get_unwrap<double>("model.s1", 0);
+        m->s2 = g.get_unwrap<double>("model.s2", 0);
+        m->s3 = g.get_unwrap<double>("model.s3", 0);
+        return m;
+    } else if (type == "dp_perovskite") {
+        std::cerr << "Model type '" << type << "' not supported.\n";
+        std::exit(EXIT_FAILURE);
+    } else {
+        std::cerr << "Model type '" << type << "' not supported.\n";
+        std::exit(EXIT_FAILURE);
     }
-    // Model
-    m->kT_init  = g.get_unwrap<double>("model.kT");
-    m->kT_decay = g.get_unwrap<double>("model.kT_decay", 0);
-    m->B_zeeman = {g.get_unwrap<double>("model.zeeman_x", 0), g.get_unwrap<double>("model.zeeman_y", 0), g.get_unwrap<double>("model.zeeman_z", 0)};
-    m->easy_z   = g.get_unwrap<double>("model.easy_z", 0);
-    // SimpleModel
-    m->J  = g.get_unwrap<double>("model.J");
-    m->t1 = g.get_unwrap<double>("model.t1", 0);
-    m->t2 = g.get_unwrap<double>("model.t2", 0);
-    m->t3 = g.get_unwrap<double>("model.t3", 0);
-    m->s1 = g.get_unwrap<double>("model.s1", 0);
-    m->s2 = g.get_unwrap<double>("model.s2", 0);
-    m->s3 = g.get_unwrap<double>("model.s3", 0);
-    return m;
 }
 
 std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
@@ -44,10 +56,8 @@ std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
         return Dynamics::mk_sll(g.get_unwrap<double>("dynamics.alpha"), dt);
     }
     cerr << "Unsupported dynamics type `" << type << "`!\n";
-    std::abort();
+    std::exit(EXIT_FAILURE);
 }
-
-
 
 
 int main(int argc, char *argv[]) {
@@ -62,7 +72,7 @@ int main(int argc, char *argv[]) {
     std::ifstream input_file(input_name);
     if (!input_file.is_open()) {
         cerr << "Unable to open file `" << input_name << "`!\n";
-        std::abort();
+        std::exit(EXIT_FAILURE);
     }
     
     cout << "Using input file `" << input_name << "`\n";
@@ -112,7 +122,7 @@ int main(int argc, char *argv[]) {
     // variables that will be updated in `build_kpm(spin)`
     auto engine = fkpm::mk_engine_cuSPARSE<cx_flt>(device_num);
     if (engine == nullptr)
-        std::abort();
+        std::exit(EXIT_FAILURE);
     Vec<double> moments;
     Vec<double> gamma;
     double energy;
@@ -175,7 +185,7 @@ int main(int argc, char *argv[]) {
         fname << base_dir << "/dump/dump" << std::setfill('0') << std::setw(4) << step/steps_per_dump << ".json";
         if (!overwrite_dump && boost::filesystem::exists(fname.str())) {
             cerr << "Refuse to overwrite file '" << fname.str() << "'!\n";
-            std::abort();
+            std::exit(EXIT_FAILURE);
         }
         cout << "Dumping file '" << fname.str() << "', time=" << m->time << ", energy=" << e << ", n=" << filling << ", mu=" << mu << endl;
         std::ofstream dump_file(fname.str(), std::ios::trunc);

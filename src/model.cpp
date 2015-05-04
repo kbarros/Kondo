@@ -101,7 +101,7 @@ void SimpleModel::set_hamiltonian(Vec<vec3> const& spin) {
 }
 
 void SimpleModel::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) {
-    // Local energy
+    // Local forces
     Model::set_forces(D, spin, force);
     
     // Hund-coupling forces
@@ -187,6 +187,7 @@ public:
         }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";
+            std::exit(EXIT_FAILURE);
         }
     }
     
@@ -209,7 +210,7 @@ public:
         n_colors = std::min(n_colors, n_sites);
         if (n_sites % n_colors != 0) {
             std::cerr << "n_colors=" << n_colors << "is not a divisor of lattice size w=" << n_sites << std::endl;
-            std::abort();
+            std::exit(EXIT_FAILURE);
         }
         Vec<int> colors(n_sites);
         for (int i = 0; i < n_sites; i++) {
@@ -247,6 +248,7 @@ public:
         }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";
+            std::exit(EXIT_FAILURE);
         }
     }
     
@@ -301,11 +303,11 @@ public:
         int c_len = int(sqrt(n_colors));
         if (c_len*c_len != n_colors) {
             std::cerr << "n_colors=" << n_colors << " is not a perfect square\n";
-            std::abort();
+            std::exit(EXIT_FAILURE);
         }
         if (w % c_len != 0 || h % c_len != 0) {
             std::cerr << "sqrt(n_colors)=" << c_len << " is not a divisor of lattice size (w,h)=(" << w << "," << h << ")\n";
-            std::abort();
+            std::exit(EXIT_FAILURE);
         }
         Vec<int> colors(n_sites);
         for (int i = 0; i < n_sites; i++) {
@@ -352,11 +354,11 @@ public:
                     case 2: spin[i] = vec3(+1, -1, -1).normalized(); break;
                     case 3: spin[i] = vec3(-1, -1, +1).normalized(); break;
                 }
-                std::abort();
             }
         }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";
+            std::exit(EXIT_FAILURE);
         }
     }
     
@@ -390,11 +392,11 @@ public:
         int c_len = int(sqrt(n_colors));
         if (c_len*c_len != n_colors) {
             std::cerr << "n_colors=" << n_colors << " is not a perfect square\n";
-            std::abort();
+            std::exit(EXIT_FAILURE);
         }
         if (w % c_len != 0 || h % c_len != 0) {
             std::cerr << "sqrt(n_colors)=" << c_len << " is not a divisor of lattice size (w,h)=(" << w << "," << h << ")\n";
-            std::abort();
+            std::exit(EXIT_FAILURE);
         }
         Vec<int> colors(n_sites);
         for (int i = 0; i < n_sites; i++) {
@@ -489,13 +491,14 @@ public:
             }, spin);
         } else {
             std::cerr << "Unknown configuration type `" << name << "`\n";
+            std::exit(EXIT_FAILURE);
         }
     }
     
     void set_neighbors(int rank, int k, Vec<int>& idx) {
         if (rank != 0) {
             std::cerr << "Only nearest neighbors supported on kagome lattice\n";
-            std::abort();
+            std::exit(EXIT_FAILURE);
         }
         idx.resize(4);
         int v = k%3;
@@ -548,16 +551,16 @@ public:
         n_colors = std::min(n_colors, n_sites);
         if (n_colors%3 != 0) {
             std::cerr << "n_colors=" << n_colors << " is not a multiple of 3\n";
-            std::abort();
+            std::exit(EXIT_FAILURE);
         }
         int c_len = int(sqrt(n_colors/3));
         if (c_len*c_len != n_colors/3) {
             std::cerr << "n_colors/3=" << n_colors/3 << " is not a perfect square\n";
-            std::abort();
+            std::exit(EXIT_FAILURE);
         }
         if (w % c_len != 0 || h % c_len != 0) {
             std::cerr << "sqrt(n_colors/3)=" << c_len << " is not a divisor of lattice size (w,h)=(" << w << "," << h << ")\n";
-            std::abort();
+            std::exit(EXIT_FAILURE);
         }
         Vec<int> colors(n_sites);
         for (int i = 0; i < n_sites; i++) {

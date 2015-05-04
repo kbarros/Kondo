@@ -93,6 +93,28 @@ public:
     static std::unique_ptr<SimpleModel> mk_kagome(int w, int h);
 };
 
+class MostovoyModel: public Model {
+private:
+    int d_idx(int i, int alpha, int sigma);
+    int p_idx(int i, int b, int sigma);
+    
+public:
+    static constexpr int rows_per_site = 10;
+    static constexpr int d_off = 0;
+    static constexpr int p_off = 4;
+    int lx, ly, lz;
+    double J, t_pds, t_pp, delta;
+    
+    MostovoyModel(int lx, int ly, int lz, double J, double t_pds, double t_pp, double delta);
+    
+    void set_hamiltonian(Vec<vec3> const& spin);
+    void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
+    
+    vec3 position(int i);
+    void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin);
+    Vec<int> groups(int n_colors);
+};
+
 class Dynamics {
 public:
     typedef std::function<void(Vec<vec3> const& spin, Vec<vec3>& force)> CalcForce;

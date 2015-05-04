@@ -3,11 +3,21 @@
 #include <cassert>
 
 
-Model::Model(int n_sites, int n_rows):
+Vec<int> Model::colors_to_groups(Vec<int> const& colors) {
+    Vec<int> groups(colors.size()*n_orbs);
+    for (int i = 0; i < colors.size(); i++) {
+        for (int o = 0; o < n_orbs; o++) {
+            groups[i*n_orbs+o] = n_orbs*colors[i] + o;
+        }
+    }
+    return groups;
+}
+
+Model::Model(int n_sites, int n_orbs):
     n_sites(n_sites),
-    n_rows(n_rows),
-    H_elems(n_rows, n_rows, 1),
-    D_elems(n_rows, n_rows, 1)
+    n_orbs(n_orbs),
+    H_elems(n_sites*n_orbs, n_sites*n_orbs, 1),
+    D_elems(n_sites*n_orbs, n_sites*n_orbs, 1)
 {
     spin.assign(n_sites, vec3{0, 0, 0});
     dyn_stor[0].assign(n_sites, vec3{0, 0, 0});
@@ -26,15 +36,6 @@ void Model::set_spins_random(fkpm::RNG &rng, Vec<vec3> &spin) {
 double Model::kT() {
     return kT_init * exp(- time*kT_decay);
 }
-
-// {s1, s2} components of pauli matrix vector,
-// sigma1     sigma2     sigma3
-//  0  1       0 -I       1  0
-//  1  0       I  0       0 -1
-static Vec3<cx_flt> pauli[2][2] {
-    {{0, 0, 1}, {1, -I, 0}},
-    {{1, I, 0}, {0, 0, -1}}
-};
 
 void Model::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) {
     for (auto& f : force) {
@@ -56,9 +57,8 @@ double Model::energy_classical(Vec<vec3> const& spin) {
 }
 
 
-SimpleModel::SimpleModel(int n_sites): Model(n_sites, 2*n_sites) {
+SimpleModel::SimpleModel(int n_sites): Model(n_sites, 2) {
 }
-
 
 void SimpleModel::set_hamiltonian(Vec<vec3> const& spin) {
     H_elems.clear();
@@ -155,20 +155,6 @@ double SimpleModel::energy_classical(Vec<vec3> const& spin) {
     return acc;
 }
 
-static inline int positive_mod(int i, int n) {
-    return (i%n + n) % n;
-}
-
-static Vec<int> colors_to_groups(Vec<int> const& colors, int n_orbs) {
-    Vec<int> groups(colors.size()*n_orbs);
-    for (int i = 0; i < colors.size(); i++) {
-        for (int o = 0; o < n_orbs; o++) {
-            groups[i*n_orbs+o] = n_orbs*colors[i] + o;
-        }
-    }
-    return groups;
-}
-
 
 class LinearModel: public SimpleModel {
 public:
@@ -216,7 +202,7 @@ public:
         for (int i = 0; i < n_sites; i++) {
             colors[i] = i % n_colors;
         }
-        return colors_to_groups(colors, 2);
+        return colors_to_groups(colors);
     }
 };
 
@@ -317,7 +303,7 @@ public:
             int cy = y % c_len;
             colors[i] = cy*c_len + cx;
         }
-        return colors_to_groups(colors, 2);
+        return colors_to_groups(colors);
     }
 };
 std::unique_ptr<SimpleModel> SimpleModel::mk_square(int w, int h) {
@@ -406,7 +392,7 @@ public:
             int cy = y % c_len;
             colors[i] = cy*c_len + cx;
         }
-        return colors_to_groups(colors, 2);
+        return colors_to_groups(colors);
     }
 };
 std::unique_ptr<SimpleModel> SimpleModel::mk_triangular(int w, int h) {
@@ -571,7 +557,7 @@ public:
             int cy = y%c_len;
             colors[i] = 3*(cy*c_len+cx) + v;
         }
-        return colors_to_groups(colors, 2);
+        return colors_to_groups(colors);
     }
 };
 std::unique_ptr<SimpleModel> SimpleModel::mk_kagome(int w, int h) {

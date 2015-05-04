@@ -12,8 +12,21 @@ typedef std::complex<flt> cx_flt;
 
 using fkpm::Vec;
 using fkpm::Pi;
-constexpr cx_flt I(0, 1);
+constexpr cx_flt  I(0,  1);
+constexpr cx_flt mI(0, -1);
 
+// {s1, s2} components of pauli matrix vector,
+// sigma1     sigma2     sigma3
+//  0  1       0 -I       1  0
+//  1  0       I  0       0 -1
+constexpr Vec3<cx_flt> pauli[2][2] {
+    {{0, 0, 1}, {1, mI, 0}},
+    {{1, I, 0}, {0, 0, -1}}
+};
+
+inline int positive_mod(int i, int n) {
+    return (i%n + n) % n;
+}
 
 // C++14 feature missing in C++11
 namespace std {
@@ -30,9 +43,12 @@ Vec3<T> gaussian_vec3(fkpm::RNG& rng) {
 }
 
 class Model {
+protected:
+    Vec<int> colors_to_groups(Vec<int> const& colors);
+
 public:
     int n_sites; // Number of classical spins
-    int n_rows;  // Number of rows in Hamilitonian
+    int n_orbs;  // Number of rows in Hamilitonian
     double kT_init = 0, kT_decay = 0;
     vec3 B_zeeman = {0, 0, 0};
     double easy_z = 0;
@@ -42,7 +58,7 @@ public:
     double time = 0;
     Vec<vec3> dyn_stor[5]; // used by Dynamics to store intermediate data between steps
     
-    Model(int n_sites, int n_rows);
+    Model(int n_sites, int n_orbs);
     static void set_spins_random(fkpm::RNG& rng, Vec<vec3>& spin);
     double kT();
     

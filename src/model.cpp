@@ -36,24 +36,10 @@ static Vec3<cx_flt> pauli[2][2] {
     {{1, I, 0}, {0, 0, -1}}
 };
 
-void Model::set_hamiltonian(Vec<vec3> const& spin) {
-    H_elems.clear();
-    D_elems.clear();
-    accum_hamiltonian_hund(spin);
-    accum_hamiltonian_hopping();
-    H.build(H_elems);
-    D.build(D_elems);
-}
-
 void Model::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) {
     for (auto& f : force) {
         f = {0,0,0};
     }
-    accum_forces_classical(spin, force);
-    accum_forces_hund(D, spin, force);
-}
-
-void Model::accum_forces_classical(Vec<vec3> const& spin, Vec<vec3>& force) {
     for (int i = 0; i < n_sites; i++) {
         force[i] += B_zeeman;
         force[i].z += easy_z*spin[i].z;
@@ -73,30 +59,12 @@ double Model::energy_classical(Vec<vec3> const& spin) {
 SimpleModel::SimpleModel(int n_sites): Model(n_sites, 2*n_sites) {
 }
 
-void SimpleModel::accum_hamiltonian_hopping() {
-    Vec<int> js;
-    Vec<double> ts = {t1, t2, t3};
-    for (int rank = 0; rank < ts.size(); rank++) {
-        if (ts[rank] != 0.0) {
-            cx_flt t = ts[rank];
-            for (int i = 0; i < n_sites; i++) {
-                set_neighbors(rank, i, js);
-                
-                // To handle current, would need to add phase:
-                // // flt theta = 2*Pi*(dx*current.x/w + dy*current.y/h);
-                // // theta *= (1 + current_growth*time) * cos(current_freq*time);
-                // // cx_flt v = exp(I*theta)*flt(t);
-                
-                for (int j : js) {
-                    H_elems.add(2*i+0, 2*j+0, &t);
-                    H_elems.add(2*i+1, 2*j+1, &t);
-                }
-            }
-        }
-    }
-}
 
-void SimpleModel::accum_hamiltonian_hund(Vec<vec3> const& spin) {
+void SimpleModel::set_hamiltonian(Vec<vec3> const& spin) {
+    H_elems.clear();
+    D_elems.clear();
+    
+    // Hund coupling
     cx_flt zero = 0;
     for (int i = 0; i < n_sites; i++) {
         for (int s1 = 0; s1 < 2; s1++) {
@@ -107,10 +75,52 @@ void SimpleModel::accum_hamiltonian_hund(Vec<vec3> const& spin) {
             }
         }
     }
+    
+    // Hopping terms
+    Vec<int> js;
+    Vec<double> ts = {t1, t2, t3};
+    for (int rank = 0; rank < ts.size(); rank++) {
+        if (ts[rank] != 0.0) {
+            cx_flt t = ts[rank];
+            for (int i = 0; i < n_sites; i++) {
+                set_neighbors(rank, i, js);
+                // To handle current, would need to add phase:
+                // // flt theta = 2*Pi*(dx*current.x/w + dy*current.y/h);
+                // // theta *= (1 + current_growth*time) * cos(current_freq*time);
+                // // cx_flt v = exp(I*theta)*flt(t);
+                for (int j : js) {
+                    H_elems.add(2*i+0, 2*j+0, &t);
+                    H_elems.add(2*i+1, 2*j+1, &t);
+                }
+            }
+        }
+    }
+    
+    H.build(H_elems);
+    D.build(D_elems);
 }
 
-void SimpleModel::accum_forces_classical(Vec<vec3> const& spin, Vec<vec3>& force) {
-    Model::accum_forces_classical(spin, force);
+void SimpleModel::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) {
+    // Local energy
+    Model::set_forces(D, spin, force);
+    
+    // Hund-coupling forces
+    for (int i = 0; i < n_sites; i++) {
+        Vec3<cx_flt> dE_dS(0, 0, 0);
+        for (int s1 = 0; s1 < 2; s1 ++) {
+            for (int s2 = 0; s2 < 2; s2 ++) {
+                // Apply chain rule: dE/dS = dH_ij/dS D_ji
+                // where D_ij = dE/dH_ji is the density matrix
+                Vec3<cx_flt> dH_ij_dS = -J * pauli[s1][s2];
+                cx_flt D_ji = *D(2*i+s2, 2*i+s1);
+                dE_dS += dH_ij_dS * D_ji;
+            }
+        }
+        assert(imag(dE_dS).norm() < 1e-5);
+        force[i] += -real(dE_dS);
+    }
+    
+    // Super-exchange forces
     Vec<int> js;
     Vec<double> ss = {s1, s2, s3};
     for (int rank = 0; rank < ss.size(); rank++) {
@@ -126,7 +136,10 @@ void SimpleModel::accum_forces_classical(Vec<vec3> const& spin, Vec<vec3>& force
 }
 
 double SimpleModel::energy_classical(Vec<vec3> const& spin) {
+    // Local energy
     double acc = Model::energy_classical(spin);
+    
+    // Super-exchange energy
     Vec<int> js;
     Vec<double> ss = {s1, s2, s3};
     for (int rank = 0; rank < ss.size(); rank++) {
@@ -140,23 +153,6 @@ double SimpleModel::energy_classical(Vec<vec3> const& spin) {
         }
     }
     return acc;
-}
-
-void SimpleModel::accum_forces_hund(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) {
-    for (int i = 0; i < n_sites; i++) {
-        Vec3<cx_flt> dE_dS(0, 0, 0);
-        for (int s1 = 0; s1 < 2; s1 ++) {
-            for (int s2 = 0; s2 < 2; s2 ++) {
-                // Apply chain rule: dE/dS = dH_ij/dS D_ji
-                // where D_ij = dE/dH_ji is the density matrix
-                Vec3<cx_flt> dH_ij_dS = -J * pauli[s1][s2];
-                cx_flt D_ji = *D(2*i+s2, 2*i+s1);
-                dE_dS += dH_ij_dS * D_ji;
-            }
-        }
-        assert(imag(dE_dS).norm() < 1e-5);
-        force[i] += -real(dE_dS);
-    }
 }
 
 static inline int positive_mod(int i, int n) {

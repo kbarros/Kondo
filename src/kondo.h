@@ -46,14 +46,8 @@ public:
     static void set_spins_random(fkpm::RNG& rng, Vec<vec3>& spin);
     double kT();
     
-    void set_hamiltonian(Vec<vec3> const& spin);
-    virtual void accum_hamiltonian_hopping() = 0;
-    virtual void accum_hamiltonian_hund(Vec<vec3> const& spin) = 0;
-    
-    void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
-    virtual void accum_forces_classical(Vec<vec3> const& spin, Vec<vec3>& force);
-    virtual void accum_forces_hund(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) = 0;
-    
+    virtual void set_hamiltonian(Vec<vec3> const& spin) = 0;
+    virtual void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
     virtual double energy_classical(Vec<vec3> const& spin);
     
     virtual vec3 position(int i) = 0;
@@ -70,12 +64,8 @@ public:
     
     SimpleModel(int n_sites);
     
-    void accum_hamiltonian_hopping();
-    void accum_hamiltonian_hund(Vec<vec3> const& spin);
-    
-    void accum_forces_classical(Vec<vec3> const& spin, Vec<vec3>& force);
-    void accum_forces_hund(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
-    
+    void set_hamiltonian(Vec<vec3> const& spin);
+    void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
     double energy_classical(Vec<vec3> const& spin);
     
     virtual void set_neighbors(int rank, int k, Vec<int>& idx) = 0;

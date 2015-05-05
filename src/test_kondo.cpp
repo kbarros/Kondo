@@ -170,30 +170,52 @@ void testKondo4() {
     RNG rng(1);
     int lx = 4;
     auto m = MostovoyModel(lx, lx, lx);
-    m.J = 1000;
     m.t_pds = 1.7;
     m.t_pp = 0.65;
     m.delta = -2.0;
-    
+    m.set_spins("helical", mk_toml("q_idx = 2"), m.spin);
     double filling = 1.0 / m.n_orbs;
     
-//    m.set_spins("ferro", mk_toml(""), m.spin);
-    m.set_spins("helical", mk_toml("q_idx = 2"), m.spin);
-    // m.set_spins("ferro", nullptr, m.spin);
+    cout << "Exact energy: -5.79133  (J=inf)\n";
+    m.J = 10000;
     m.set_hamiltonian(m.spin);
-    
-    // cout << "hamiltonian " << m.H.to_arma_dense() << "\n";
-    
     arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
-    double E = electronic_energy(eigs, m.kT(), filling) / m.n_sites;
+    double E_diag = electronic_energy(eigs, m.kT(), filling) / m.n_sites;
+    cout << "E_diag      : " << E_diag << " [-5.79161] (J=10000)\n";
     
-    cout << "Energy " << E << "\n";
+    m.J = 2;
+    m.set_hamiltonian(m.spin);
+    eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
+    E_diag = electronic_energy(eigs, m.kT(), filling) / m.n_sites;
+    cout << "E_diag      : " << E_diag << " [-6.15479] (J=2)\n";
+    
+    double extra = 0.1;
+    double tolerance = 1e-2;
+    auto es = energy_scale(m.H, extra, tolerance);
+    int M = 200;
+    int Mq = 4*M;
+    
+    auto engine = mk_engine<cx_flt>();
+    engine->set_H(m.H, es);
+    
+    int n_colors = 4*4*4;
+    Vec<int> groups = m.groups(n_colors);
+    engine->set_R_correlated(groups, rng);
+    
+    cout << "calculating kpm moments... " << std::flush;
+    auto moments = engine->moments(M);
+    cout << "done.\n";
+    auto gamma = moment_transform(moments, Mq);
+    
+    double mu = filling_to_mu(gamma, es, m.kT(), filling, 0);
+    double E_kpm = electronic_energy(gamma, es, m.kT(), filling, mu) / m.n_sites;
+    cout << "E_kpm       : " << E_kpm << " [-6.1596] (J=2, M=200)\n";
 }
 
 int main(int argc,char **argv) {
-//    testKondo1();
-//    testKondo2();
-//    testKondo3();
-    testKondo4();
+    testKondo1();
+    testKondo2();
+    testKondo3();
+//    testKondo4();
 }
 

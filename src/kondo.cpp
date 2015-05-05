@@ -7,7 +7,8 @@
 using namespace std::placeholders;
 
 
-std::unique_ptr<SimpleModel> mk_model(cpptoml::toml_group g) {
+std::unique_ptr<Model> mk_model(cpptoml::toml_group g) {
+    std::unique_ptr<Model> ret;
     auto type = g.get_unwrap<std::string>("model.type");
     if (type == "simple") {
         auto lattice = g.get_unwrap<std::string>("model.lattice");
@@ -22,12 +23,6 @@ std::unique_ptr<SimpleModel> mk_model(cpptoml::toml_group g) {
             std::cerr << "Simple model lattice '" << lattice << "' not supported.\n";
             std::exit(EXIT_FAILURE);
         }
-        // Model
-        m->kT_init  = g.get_unwrap<double>("model.kT");
-        m->kT_decay = g.get_unwrap<double>("model.kT_decay", 0);
-        m->B_zeeman = {g.get_unwrap<double>("model.zeeman_x", 0), g.get_unwrap<double>("model.zeeman_y", 0), g.get_unwrap<double>("model.zeeman_z", 0)};
-        m->easy_z   = g.get_unwrap<double>("model.easy_z", 0);
-        // SimpleModel
         m->J  = g.get_unwrap<double>("model.J");
         m->t1 = g.get_unwrap<double>("model.t1", 0);
         m->t2 = g.get_unwrap<double>("model.t2", 0);
@@ -35,14 +30,25 @@ std::unique_ptr<SimpleModel> mk_model(cpptoml::toml_group g) {
         m->s1 = g.get_unwrap<double>("model.s1", 0);
         m->s2 = g.get_unwrap<double>("model.s2", 0);
         m->s3 = g.get_unwrap<double>("model.s3", 0);
-        return m;
-    } else if (type == "dp_perovskite") {
-        std::cerr << "Model type '" << type << "' not supported.\n";
-        std::exit(EXIT_FAILURE);
+        ret = std::move(m);
+    } else if (type == "mostovoy") {
+        auto m = std::make_unique<MostovoyModel>(g.get_unwrap<int64_t>("model.lx"),
+                                                 g.get_unwrap<int64_t>("model.ly"),
+                                                 g.get_unwrap<int64_t>("model.lz"));
+        m->J     = g.get_unwrap<double>("model.J");
+        m->t_pds = g.get_unwrap<double>("model.t_pds");
+        m->t_pp  = g.get_unwrap<double>("model.t_pp");
+        m->delta = g.get_unwrap<double>("model.delta");
+        ret = std::move(m);
     } else {
         std::cerr << "Model type '" << type << "' not supported.\n";
         std::exit(EXIT_FAILURE);
     }
+    ret->kT_init  = g.get_unwrap<double>("model.kT");
+    ret->kT_decay = g.get_unwrap<double>("model.kT_decay", 0);
+    ret->B_zeeman = {g.get_unwrap<double>("model.zeeman_x", 0), g.get_unwrap<double>("model.zeeman_y", 0), g.get_unwrap<double>("model.zeeman_z", 0)};
+    ret->easy_z   = g.get_unwrap<double>("model.easy_z", 0);
+    return ret;
 }
 
 std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
@@ -102,7 +108,7 @@ int main(int argc, char *argv[]) {
     if (init_spins_type == "random") {
         m->set_spins_random(rng, m->spin);
     } else {
-        m->set_spins(init_spins_type, g.get_group("init_spins"), m->spin);
+        m->set_spins(init_spins_type, *g.get_group("init_spins"), m->spin);
     }
     
     m->set_hamiltonian(m->spin);

@@ -119,13 +119,13 @@ vec3 MostovoyModel::position(int i) {
     return {x, y, z};
 }
 
-void MostovoyModel::set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) {
+void MostovoyModel::set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
     if (name == "ferro") {
         spin.assign(n_sites, vec3{0, 0, 1});
     }
     else if (name == "helical") {
-        int q_idx = params->get_unwrap<int64_t>("q_idx");
-        if (q_idx < 0 || lz/2 <= q_idx) {
+        int q_idx = params.get_unwrap<int64_t>("q_idx");
+        if (q_idx < 0 || lz/2 < q_idx) {
             std::cerr << "q_idx = " << q_idx << " is out of bounds [0, " << lz/2 << ")\n";
             std::exit(EXIT_FAILURE);
         }

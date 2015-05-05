@@ -28,6 +28,11 @@ inline int positive_mod(int i, int n) {
     return (i%n + n) % n;
 }
 
+inline cpptoml::toml_group mk_toml(std::string str) {
+    std::istringstream is(str);
+    return cpptoml::parser(is).parse();
+}
+
 // C++14 feature missing in C++11
 namespace std {
     template<typename T, typename ...Args>
@@ -66,8 +71,10 @@ public:
     virtual void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
     virtual double energy_classical(Vec<vec3> const& spin);
     
+    // TODO: replace this with explicit methods on subclasses?
+    virtual void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) = 0;
+    
     virtual vec3 position(int i) = 0;
-    virtual void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) = 0;
     virtual Vec<int> groups(int n_colors) = 0;
 };
 
@@ -108,7 +115,7 @@ public:
     void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
     
     vec3 position(int i);
-    void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin);
+    void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin);
     Vec<int> groups(int n_colors);
 };
 

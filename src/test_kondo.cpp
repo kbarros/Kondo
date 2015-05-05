@@ -12,7 +12,7 @@ void testKondo1() {
     m->t1 = -1;
     m->t3 = -0.5;
     m->s1 = 0.1;
-    m->set_spins("ferro", nullptr, m->spin);
+    m->set_spins("ferro", mk_toml(""), m->spin);
     //m->lattice->set_spins("meron", nullptr, m->spin);
     m->spin[0] = vec3(1, 1, 1).normalized();
     
@@ -60,7 +60,7 @@ void testKondo2() {
     int M = 1000;
     int Mq = 4*M;
     
-    m->set_spins("ncp1", nullptr, m->spin);
+    m->set_spins("ncp1", mk_toml(""), m->spin);
     m->set_hamiltonian(m->spin);
     auto engine = mk_engine<cx_flt>();
     engine->set_H(m->H, es);
@@ -106,7 +106,7 @@ void testKondo3() {
     double mu = 0;
     
 //    m->set_spins_random(rng, m->spin);
-    m->set_spins("ferro", nullptr, m->spin);
+    m->set_spins("ferro", mk_toml(""), m->spin);
     m->set_hamiltonian(m->spin);
     
     int n_colors = 4;
@@ -177,10 +177,8 @@ void testKondo4() {
     
     double filling = 1.0 / m.n_orbs;
     
-    m.set_spins("ferro", nullptr, m.spin);
-    std::istringstream is("q_idx = 2");
-    auto p = cpptoml::parser(is).parse();
-    m.set_spins("ferro", std::shared_ptr<cpptoml::toml_group>(&p), m.spin);
+//    m.set_spins("ferro", mk_toml(""), m.spin);
+    m.set_spins("helical", mk_toml("q_idx = 2"), m.spin);
     // m.set_spins("ferro", nullptr, m.spin);
     m.set_hamiltonian(m.spin);
     
@@ -193,8 +191,9 @@ void testKondo4() {
 }
 
 int main(int argc,char **argv) {
-    testKondo1();
-    testKondo2();
-    testKondo3();
+//    testKondo1();
+//    testKondo2();
+//    testKondo3();
+    testKondo4();
 }
 

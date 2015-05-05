@@ -167,7 +167,7 @@ public:
         return {double(i), 0, 0};
     }
     
-    void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) {
+    void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, vec3{0, 0, 1});
         }
@@ -225,12 +225,12 @@ public:
         return {x, y, 0};
     }
     
-    void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) {
+    void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, vec3{0, 0, 1});
         }
         else if (name == "meron") {
-            set_spins_meron(params->get_unwrap<double>("a"), params->get_unwrap<int64_t>("q"), spin);
+            set_spins_meron(params.get_unwrap<double>("a"), params.get_unwrap<int64_t>("q"), spin);
         }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";
@@ -327,7 +327,7 @@ public:
         return {a*x - 0.5*a*y, b*y, 0};
     }
     
-    void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) {
+    void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, vec3{0, 0, 1});
         } else if (name == "allout") {
@@ -448,7 +448,7 @@ public:
         }
     }
     
-    void set_spins(std::string const& name, std::shared_ptr<cpptoml::toml_group> params, Vec<vec3>& spin) {
+    void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, vec3{0, 0, 1});
         } else if (name == "ncp1") {

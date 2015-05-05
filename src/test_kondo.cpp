@@ -166,6 +166,32 @@ void testKondo3() {
     cout << "f_var " << f_var << endl;
 }
 
+void testKondo4() {
+    RNG rng(1);
+    int lx = 4;
+    auto m = MostovoyModel(lx, lx, lx);
+    m.J = 1000;
+    m.t_pds = 1.7;
+    m.t_pp = 0.65;
+    m.delta = -2.0;
+    
+    double filling = 1.0 / m.n_orbs;
+    
+    m.set_spins("ferro", nullptr, m.spin);
+    std::istringstream is("q_idx = 2");
+    auto p = cpptoml::parser(is).parse();
+    m.set_spins("ferro", std::shared_ptr<cpptoml::toml_group>(&p), m.spin);
+    // m.set_spins("ferro", nullptr, m.spin);
+    m.set_hamiltonian(m.spin);
+    
+    // cout << "hamiltonian " << m.H.to_arma_dense() << "\n";
+    
+    arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
+    double E = electronic_energy(eigs, m.kT(), filling) / m.n_sites;
+    
+    cout << "Energy " << E << "\n";
+}
+
 int main(int argc,char **argv) {
     testKondo1();
     testKondo2();

@@ -3,12 +3,8 @@
 #include <cassert>
 
 
-MostovoyModel::MostovoyModel(int lx, int ly, int lz, double J, double t_pds, double t_pp, double delta):
-Model(lx*ly*lz, 10),
-lx(lx), ly(ly), lz(lz),
-J(J), t_pds(t_pds), t_pp(t_pp), delta(delta) {
+MostovoyModel::MostovoyModel(int lx, int ly, int lz): Model(lx*ly*lz, 10), lx(lx), ly(ly), lz(lz) {
 }
-
 
 int MostovoyModel::d_idx(int i, int alpha, int sigma) {
     return n_orbs*i + 0 + 2*alpha + sigma;
@@ -46,7 +42,7 @@ void MostovoyModel::set_hamiltonian(Vec<vec3> const& spin) {
         for (int a = 0; a < 2; a++) {
             for (int s1 = 0; s1 < 2; s1++) {
                 for (int s2 = 0; s2 < 2; s2++) {
-                    cx_flt v = -flt(J) * pauli[s1][s2].dot(spin[i]);
+                    cx_flt v = flt(J) * (pauli[s1][s2].dot(spin[i]) + flt(s1 == s2 ? 1.0 : 0.0));
                     H_elems.add(d_idx(i, a, s1), d_idx(i, a, s2), &v);
                     D_elems.add(d_idx(i, a, s1), d_idx(i, a, s2), &zero_cx);
                 }
@@ -104,7 +100,7 @@ void MostovoyModel::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const&
                 for (int s2 = 0; s2 < 2; s2 ++) {
                     // Apply chain rule: dE/dS = dH_ij/dS D_ji
                     // where D_ij = dE/dH_ji is the density matrix
-                    Vec3<cx_flt> dH_ij_dS = -J * pauli[s1][s2];
+                    Vec3<cx_flt> dH_ij_dS = J * pauli[s1][s2];
                     cx_flt D_ji = *D(d_idx(i, a, s2), d_idx(i, a, s1));
                     dE_dS += dH_ij_dS * D_ji;
                 }
@@ -130,7 +126,7 @@ void MostovoyModel::set_spins(std::string const& name, std::shared_ptr<cpptoml::
     else if (name == "helical") {
         int q_idx = params->get_unwrap<int64_t>("q_idx");
         if (q_idx < 0 || lz/2 <= q_idx) {
-            std::cerr << "model.q_idx = " << q_idx << " is out of bounds [0, " << lz/2 << ")\n";
+            std::cerr << "q_idx = " << q_idx << " is out of bounds [0, " << lz/2 << ")\n";
             std::exit(EXIT_FAILURE);
         }
         // constexpr double Pi = acos(-1);

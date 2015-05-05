@@ -99,13 +99,10 @@ private:
     int p_idx(int i, int b, int sigma);
     
 public:
-    static constexpr int rows_per_site = 10;
-    static constexpr int d_off = 0;
-    static constexpr int p_off = 4;
     int lx, ly, lz;
-    double J, t_pds, t_pp, delta;
+    double J = 0, t_pds = 0, t_pp = 0, delta = 0;
     
-    MostovoyModel(int lx, int ly, int lz, double J, double t_pds, double t_pp, double delta);
+    MostovoyModel(int lx, int ly, int lz);
     
     void set_hamiltonian(Vec<vec3> const& spin);
     void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);

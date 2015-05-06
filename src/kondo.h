@@ -12,15 +12,14 @@ typedef std::complex<flt> cx_flt;
 
 using fkpm::Vec;
 using fkpm::Pi;
-constexpr cx_flt  I(0,  1);
-constexpr cx_flt mI(0, -1);
+const cx_flt I(0,  1);
 
 // {s1, s2} components of pauli matrix vector,
 // sigma1     sigma2     sigma3
 //  0  1       0 -I       1  0
 //  1  0       I  0       0 -1
-constexpr Vec3<cx_flt> pauli[2][2] {
-    {{0, 0, 1}, {1, mI, 0}},
+const Vec3<cx_flt> pauli[2][2] {
+    {{0, 0, 1}, {1, -I, 0}},
     {{1, I, 0}, {0, 0, -1}}
 };
 

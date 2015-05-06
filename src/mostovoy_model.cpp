@@ -126,7 +126,7 @@ void MostovoyModel::set_spins(std::string const& name, cpptoml::toml_group const
     else if (name == "helical") {
         int q_idx = params.get_unwrap<int64_t>("q_idx");
         if (q_idx < 0 || lz/2 < q_idx) {
-            std::cerr << "q_idx = " << q_idx << " is out of bounds [0, " << lz/2 << ")\n";
+            std::cerr << "q_idx = " << q_idx << " is out of bounds [0, " << lz/2 << "]\n";
             std::exit(EXIT_FAILURE);
         }
         // constexpr double Pi = acos(-1);

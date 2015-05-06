@@ -32,6 +32,11 @@ std::unique_ptr<Model> mk_model(cpptoml::toml_group g) {
         m->s3 = g.get_unwrap<double>("model.s3", 0);
         ret = std::move(m);
     } else if (type == "mostovoy") {
+        auto lattice = g.get_unwrap<std::string>("model.lattice");
+        if (lattice != "cubic") {
+            std::cerr << "Mostovoy model requires `lattice = \"cubic\"`\n";
+            std::exit(EXIT_FAILURE);
+        }
         auto m = std::make_unique<MostovoyModel>(g.get_unwrap<int64_t>("model.lx"),
                                                  g.get_unwrap<int64_t>("model.ly"),
                                                  g.get_unwrap<int64_t>("model.lz"));
@@ -148,9 +153,16 @@ int main(int argc, char *argv[]) {
   "initSpin": 0,
   "model": {
 )";
-    json_file << "    \"type\": \"" << g.get_unwrap<std::string>("model.lattice") << "\",\n";
-    json_file << "    \"w\": " << g.get_unwrap<int64_t>("model.w") << ",\n";
-    json_file << "    \"h\": " << g.get_unwrap<int64_t>("model.h") << ",";
+    auto lattice = g.get_unwrap<std::string>("model.lattice");
+    json_file << "    \"type\": \"" << lattice << "\",\n";
+    if (lattice == "cubic") {
+        json_file << "    \"w\": " << g.get_unwrap<int64_t>("model.lx") << ",\n";
+        json_file << "    \"h\": " << g.get_unwrap<int64_t>("model.ly")*g.get_unwrap<int64_t>("model.lz") << ",";
+    }
+    else {
+        json_file << "    \"w\": " << g.get_unwrap<int64_t>("model.w") << ",\n";
+        json_file << "    \"h\": " << g.get_unwrap<int64_t>("model.h") << ",";
+    }
     json_file << R"(
     "t": 0,
     "t1": 0,

@@ -173,7 +173,7 @@ void testKondo4() {
     m.t_pds = 1.7;
     m.t_pp = 0.65;
     m.delta = -2.0;
-    m.set_spins("helical", mk_toml("q_idx = 2"), m.spin);
+    m.set_spins_helical(2, m.spin);
     double filling = 1.0 / m.n_orbs;
     
     cout << "Exact energy: -5.79133  (J=inf)\n";
@@ -212,10 +212,36 @@ void testKondo4() {
     cout << "E_kpm       : " << E_kpm << " [-6.1596] (J=2, M=200)\n";
 }
 
+void testKondo5() {
+    RNG rng(1);
+    int lx = 6;
+    auto m = MostovoyModel(lx, lx, lx);
+    m.t_pds = 0.5;
+    m.t_pp = 0.2; // 0.5;
+    double filling = 1.0 / m.n_orbs;
+    
+    cout << std::setw(10) << "delta" << std::setw(10) << "J" << std::setw(10) << "q" << std::setw(10) << "e\n";
+    for (double delta : Vec<double>{-1 /* -2, -5*/}) {
+        for (double J : Vec<double>{2 /* 5 , 20, 100*/}) {
+            m.delta = delta;
+            m.J = J;
+            for (int q_idx = 0; q_idx <= lx/2; q_idx++) {
+                m.set_spins_helical(q_idx, m.spin);
+                m.set_hamiltonian(m.spin);
+                arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
+                double e = electronic_energy(eigs, m.kT(), filling) / m.n_sites;
+                double q = 2*Pi*q_idx/lx;
+                cout << std::setw(10) << delta << std::setw(10) << J << std::setw(10) << q << std::setw(10) << e << "\n";
+            }
+        }
+    }
+}
+
 int main(int argc,char **argv) {
     testKondo1();
     testKondo2();
     testKondo3();
 //    testKondo4();
+//    testKondo5();
 }
 

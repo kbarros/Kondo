@@ -15,28 +15,28 @@ int main(int argc, char **argv) {
     fkpm::RNG rng(0);
     std::normal_distribution<flt> normal;
     
-    int w = 8;
-    int h = 8;
+    int w = 48;
+    int h = 48;
     
     double t = 1.0;
-    double mu = 0; // -1.5 * t;
-    double V0 = 1.0 * t;
-    double V1 = 0 * t; // - 2.2 * t;
-//    double E_imp = 1 * t;
+    double mu = 0 * t;
+    double V0 = 1.3 * t;
+    double V1 = 0 * t;
+    double E_imp = 5 * t;
     double kT = 0.001 * t;
     
     double Delta_init_0 = 1 * t;
-    double Delta_init_1 = 0*t; //0.1 * t;
+    double Delta_init_1 = 0 * t;
     
     double blend = 0.5;
     
     int n_sites = w*h;
     int n_rows = 2*n_sites;
     
-    int n_colors = 4*4;
+    int n_colors = 16*16;
     n_colors = std::min(n_colors, n_sites);
     
-    int M = 500;
+    int M = 1000;
     int Mq = 4*M;
     
     auto idx = [&](int b, int x, int y) {
@@ -49,8 +49,13 @@ int main(int argc, char **argv) {
         for (int y = 0; y < h; y++) {
             for (int x = 0; x < w; x++) {
                 
+                cx_flt os = -mu;
+                if (x == 0 && y == 0) {
+                    os += E_imp;
+                }
+                
                 // on-site term
-                Vec<Vec<cx_flt>> vs = { {-mu, Delta_init_0}, {Delta_init_0, +mu} };
+                Vec<Vec<cx_flt>> vs = { {os, Delta_init_0}, {Delta_init_0, -os} };
                 for (int bi = 0; bi < 2; bi++) {
                     for (int bj = 0; bj < 2; bj++) {
                         int i = idx(bi, x, y);
@@ -166,6 +171,7 @@ int main(int argc, char **argv) {
         engine->set_H(H, es);
         auto moments = engine->moments(M);
         engine->autodiff_matrix(g_c, D);
+        // engine->stoch_matrix(f_c, D);
         
         cx_flt delta_mom1 = 0;
         cx_flt delta_mom2 = 0;
@@ -178,18 +184,18 @@ int main(int argc, char **argv) {
         }
         cx_flt mean_delta   = delta_mom1 / double(w*h);
         cx_flt var_delta = delta_mom2 / double(w*h) - mean_delta * conj(mean_delta);
+        cout << "Iter  = " << iter << "\n";
         cout << "Delta = " << mean_delta << " +- " << sqrt(var_delta) << "\n";
-        
-        int ui1 = idx(0, 0, 0);
-        int vi1 = idx(1, 0, 0);
-        int ui2 = idx(0, 0, 1);
-        int vi2 = idx(1, 0, 1);
-        cout << "iter " << iter << "\n";
-        cout << "H elem=" << *H(ui1, vi1) << "\n"; // Delta block: (0, 0) -> (1, 0)
-        cout << "H elem=" << *H(ui2, vi2) << "\n"; // Delta block: (0, 0) -> (1, 0)
         
         mix_delta(D, H);
     }
 
+
+    cout << "# x Delta\n";
+    for (int x = 0; x < w; x++) {
+        auto d = *H(idx(0, x, 0), idx(1, x, 0));
+        cout << x << " " << d.real() << "\n";
+    }
+    
     return 0;
 }

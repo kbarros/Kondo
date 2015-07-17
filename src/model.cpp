@@ -89,6 +89,17 @@ double Model::energy_classical(Vec<vec3> const& spin) {
     return acc;
 }
 
+fkpm::SpMatBsr<cx_flt> Model::electric_current_operator(Vec<vec3> const& spin, vec3 dir) {
+    std::cerr << "electric_current_operator() not implemented for this model type\n";
+    std::exit(EXIT_FAILURE);
+}
+
+vec3 Model::displacement(int i, int j) {
+    std::cerr << "displacement(i, j) not implemented for this model type\n";
+    std::exit(EXIT_FAILURE);
+}
+
+
 
 SimpleModel::SimpleModel(int n_sites): Model(n_sites, 2) {
 }
@@ -152,6 +163,31 @@ void SimpleModel::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& s
         assert(imag(dE_dS).norm() < 1e-5);
         force[i] += -real(dE_dS);
     }
+}
+
+
+fkpm::SpMatBsr<cx_flt> SimpleModel::electric_current_operator(Vec<vec3> const& spin, vec3 dir) {
+    fkpm::SpMatElems<cx_flt> j_elems(n_sites*n_orbs, n_sites*n_orbs, 1);
+    cx_flt zero = 0;
+    for (int i = 0; i < n_sites*n_orbs; i++) {
+        j_elems.add(i, i, &zero);
+    }
+    Vec<int> js;
+    Vec<double> ts = {t1, t2, t3};
+    for (int rank = 0; rank < ts.size(); rank++) {
+        if (ts[rank] != 0.0) {
+            for (int i = 0; i < n_sites; i++) {
+                set_neighbors(rank, i, js);
+                for (int j : js) {
+                    vec3 dR = displacement(i, j);
+                    cx_flt v = I * flt(dir.normalized().dot(dR) * ts[rank]);
+                    j_elems.add(2*i+0, 2*j+0, &v);
+                    j_elems.add(2*i+1, 2*j+1, &v);
+                }
+            }
+        }
+    }
+    return fkpm::SpMatBsr<cx_flt>(j_elems);
 }
 
 
@@ -326,6 +362,28 @@ public:
         return {a*x - 0.5*a*y, b*y, 0};
     }
     
+    vec3 displacement(int i, int j) {
+        vec3 dR = position(i) - position(j);
+        double Lx = w;
+        double Ly = sqrt(3.0)*h/2.0;
+        while (dR.y > Ly/2) {
+            dR.y -= Ly;
+            dR.x -= h/2.0;
+        }
+        while (dR.y < -Ly/2) {
+            dR.y += Ly;
+            dR.x += h/2.0;
+        }
+        while (dR.x > Lx/2) {
+            dR.x -= Lx;
+        }
+        while (dR.x < -Lx/2) {
+            dR.x += Lx;
+        }
+        return dR;
+    }
+    
+    
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, vec3{0, 0, 1});
@@ -427,6 +485,28 @@ public:
         return {a*x + 0.5*a*y + r*cos(theta), b*y + r*sin(theta), 0};
     }
     
+    vec3 displacement(int i, int j) {
+        vec3 dR = position(i) - position(j);
+        double a = 2.;
+        double Lx = a * w;
+        double Ly = a * sqrt(3.0)*h/2.0;
+        while (dR.y > Ly/2) {
+            dR.y -= Ly;
+            dR.x -= h/2.0 * a;
+        }
+        while (dR.y < -Ly/2) {
+            dR.y += Ly;
+            dR.x += h/2.0 * a;
+        }
+        while (dR.x > Lx/2) {
+            dR.x -= Lx;
+        }
+        while (dR.x < -Lx/2) {
+            dR.x += Lx;
+        }
+        return dR;
+    }
+
     void set_spins_3q(Vec<Vec<vec3>> b, Vec<vec3>& spin) {
         for (int i = 0; i < n_sites; i++) {
             int v = i%3;

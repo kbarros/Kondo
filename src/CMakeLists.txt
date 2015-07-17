@@ -12,3 +12,6 @@ target_link_libraries(test_kondo ${LIBS})
 
 add_executable(kondo kondo.cpp $<TARGET_OBJECTS:kondo_base>)
 target_link_libraries(kondo ${LIBS})
+
+add_executable(conductivity.x conductivity.cpp $<TARGET_OBJECTS:kondo_base>)
+target_link_libraries (conductivity.x ${LIBS})

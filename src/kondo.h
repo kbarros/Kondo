@@ -70,12 +70,14 @@ public:
     virtual void set_hamiltonian(Vec<vec3> const& spin) = 0;
     virtual void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
     virtual double energy_classical(Vec<vec3> const& spin);
+    virtual fkpm::SpMatBsr<cx_flt> electric_current_operator(Vec<vec3> const& spin, vec3 dir);
     
     // TODO: replace this with explicit methods on subclasses?
     virtual void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) = 0;
     
     virtual void set_neighbors(int rank, int k, Vec<int>& idx) = 0;
     virtual vec3 position(int i) = 0;
+    virtual vec3 displacement(int i, int j);
     virtual Vec<int> groups(int n_colors) = 0;
 };
 
@@ -89,6 +91,7 @@ public:
     
     void set_hamiltonian(Vec<vec3> const& spin);
     void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
+    fkpm::SpMatBsr<cx_flt> electric_current_operator(Vec<vec3> const& spin, vec3 dir);
     
     // instantiations
     static std::unique_ptr<SimpleModel> mk_linear(int w);

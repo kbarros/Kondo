@@ -343,12 +343,283 @@ void testKondo1_cubic() {//cubic
     }
 }
 
+
+inline int pos_square(int x, int y, int lx) { int temp = x + lx * y; assert(temp>=0 && temp<lx*lx); return temp; }
+arma::cx_mat transformU(int lx) {
+    int n = lx * lx;
+    arma::cx_mat ret(n,n);
+    ret.zeros();
+    for (int kx = 0; kx < lx; kx++) {
+        for (int ky = 0; ky < lx; ky++) {
+            int pos_k = pos_square(kx, ky, lx);
+            for (int ix = 0; ix < lx; ix++) {
+                for (int iy = 0; iy < lx; iy++) {
+                    int pos_i = pos_square(ix, iy, lx);
+                    ret(pos_k,pos_i) = std::exp(cx_double(0.0, 2.0 * (kx*ix + ky*iy) * Pi / n)) / std::sqrt(n);
+                }
+            }
+        }
+    }
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            std::cout << "i,j=" << i << "," << j << ", ret=" << ret(i,j) << std::endl;
+        }
+    }
+    arma::cx_mat test(n,n);
+    test = arma::trans(ret);
+    test = ret * test;
+//    for (int i = 0; i < n; i++) {
+//        if (std::abs(test(i,i)-1.0)>1e-9) {
+//            std::cout << "test(" << i << "," << i << ")=" << test(i,i) << std::endl;
+//        }
+//        for (int j = 0; j < n; j++) {
+//            if (i != j && std::abs(test(i,j))>1e-9) {
+//                std::cout << "test(" << i << "," << j << ")=" << test(i,j) << std::endl;
+//            }
+//        }
+//    }
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            std::cout << "i,j=" << i << "," << j << ", test=" << test(i,j) << std::endl;
+        }
+    }
+    return ret;
+}
+
+// triangular lattice
+void testKondo6() {
+    int w = 100, h = 100;
+    auto m = SimpleModel::mk_triangular(w, h);
+    m->J = 5.0 * sqrt(3.0);
+    m->t1 = -1;
+    int M = 200;
+    int Mq = M;
+    int n_colors = 12;
+    auto kernel = fkpm::jackson_kernel(M);
+
+    auto engine = mk_engine<cx_flt>();
+    
+    m->set_spins("allout", mk_toml(""), m->spin);
+    m->set_hamiltonian(m->spin);
+    
+    double extra = 0.1;
+    double tolerance = 1e-2;
+    auto es = energy_scale(m->H, extra, tolerance);
+    
+    engine->set_H(m->H, es);
+
+    RNG rng(0);
+    //engine->set_R_correlated(m->groups(n_colors), rng);
+    engine->set_R_uncorrelated(m->H.n_rows, 2*n_colors, rng);
+    engine->R2 = engine->R;
+    
+//    auto u_fourier = transformU(4);
+    
+    double area = w*h*sqrt(3.0)/2.0;
+    auto jx = m->electric_current_operator(m->spin, {1,0,0});
+    auto jy = m->electric_current_operator(m->spin, {0,1,0});
+    jx.scale(1/sqrt(area));
+    jy.scale(1/sqrt(area));
+    
+    cout << "calculating moments2... " << std::flush;
+    timer[0].reset();
+    auto mu_xy = engine->moments2_v1(M, jx, jy);
+    cout << " done. " << timer[0].measure() << "s.\n";
+
+    cout << "T=" << m->kT();
+    
+    cout << "calculating xy conductivities... " << std::flush;
+    std::ofstream fout2("test.dat", std::ios::out /* | std::ios::app */);
+    fout2 << std::scientific << std::right;
+    fout2 << std::setw(20) << "#M" << std::setw(20) << "beta" << std::setw(20) << "mu" << std::setw(20) << "sigma_xy" << std::endl;
+    arma::Col<double> sigma_xy(Mq);
+    sigma_xy.zeros();
+    for (int i = 0; i < Mq; i++) {
+        double mu = es.lo + i * (es.hi-es.lo) / Mq;
+        auto cmn = electrical_conductivity_coefficients(M, Mq, m->kT(), mu, 0.0, es, kernel);
+        sigma_xy(i) = std::real(fkpm::moment_product(cmn, mu_xy));
+        fout2 << std::setw(20) << M << std::setw(20) << 1.0/m->kT() << std::setw(20) << mu << std::setw(20) << sigma_xy(i) << std::endl;
+    }
+    fout2.close();
+    cout << " done. " << timer[0].measure() << "s.\n";
+    
+//    auto cmn = electrical_conductivity_coefficients(M, Mq, m->kT(), -10.0, 0.0, es, kernel);
+//    std::ofstream fout6("cmn_mu_m10_RE.dat", std::ios::out /* | std::ios::app */);
+//    std::ofstream fout7("cmn_mu_m10_IM.dat", std::ios::out /* | std::ios::app */);
+//    for (int m1 = 0; m1 < M; m1++) {
+//        for (int m2 = 0; m2 < M; m2++) {
+//            fout6 << std::setw(20) << std::real(cmn[m1][m2]);
+//            fout7 << std::setw(20) << std::imag(cmn[m1][m2]);
+//        }
+//        fout6 << endl;
+//        fout7 << endl;
+//    }
+//    fout6.close();
+//    fout7.close();
+//    
+//    cmn = electrical_conductivity_coefficients(M, Mq, m->kT(), -9.0, 0.0, es, kernel);
+//    std::ofstream fout8("cmn_mu_m9_RE.dat", std::ios::out /* | std::ios::app */);
+//    std::ofstream fout9("cmn_mu_m9_IM.dat", std::ios::out /* | std::ios::app */);
+//    for (int m1 = 0; m1 < M; m1++) {
+//        for (int m2 = 0; m2 < M; m2++) {
+//            fout8 << std::setw(20) << std::real(cmn[m1][m2]);
+//            fout9 << std::setw(20) << std::imag(cmn[m1][m2]);
+//        }
+//        fout8 << endl;
+//        fout9 << endl;
+//    }
+//    fout8.close();
+//    fout9.close();
+//    
+//    cmn = electrical_conductivity_coefficients(M, Mq, m->kT(), -7.5, 0.0, es, kernel);
+//    std::ofstream fout10("cmn_mu_m7d5_RE.dat", std::ios::out /* | std::ios::app */);
+//    std::ofstream fout11("cmn_mu_m7d5_IM.dat", std::ios::out /* | std::ios::app */);
+//    for (int m1 = 0; m1 < M; m1++) {
+//        for (int m2 = 0; m2 < M; m2++) {
+//            fout10 << std::setw(20) << std::real(cmn[m1][m2]);
+//            fout11 << std::setw(20) << std::imag(cmn[m1][m2]);
+//        }
+//        fout10 << endl;
+//        fout11 << endl;
+//    }
+//    fout10.close();
+//    fout11.close();
+//    
+//    auto dmn = electrical_conductivity_coefficients(M, Mq, m->kT(), std::sqrt(2.0), 0.0, es, kernel);
+//    std::ofstream fout16("cmn_mu_sqrt2_RE.dat", std::ios::out /* | std::ios::app */);
+//    std::ofstream fout17("cmn_mu_sqrt2_IM.dat", std::ios::out /* | std::ios::app */);
+//    for (int m1 = 0; m1 < M; m1++) {
+//        for (int m2 = 0; m2 < M; m2++) {
+//            fout16 << std::setw(20) << std::real(dmn[m1][m2]);
+//            fout17 << std::setw(20) << std::imag(dmn[m1][m2]);
+//        }
+//        fout16 << endl;
+//        fout17 << endl;
+//    }
+//    fout10.close();
+//    fout11.close();
+//    
+//    auto f = std::bind(fkpm::fermi_density, _1, m->kT(), -9.0);
+//    auto f_c = expansion_coefficients(M, Mq, f, es);
+    
+//    std::ofstream fout13("c_mu_m9_RE.dat", std::ios::out /* | std::ios::app */);
+//    for (int m = 0; m < M; m++) {
+//        fout13 << std::setw(20)<< m << std::setw(20) << f_c[m] << std::endl;
+//    }
+//    fout13.close();
+//    
+//    f = std::bind(fkpm::fermi_density, _1, m->kT(), -7.5);
+//    f_c = expansion_coefficients(M, Mq, f, es);
+//    std::ofstream fout14("c_mu_m7d5_RE.dat", std::ios::out /* | std::ios::app */);
+//    for (int m = 0; m < M; m++) {
+//        fout14 << std::setw(20)<< m << std::setw(20) << f_c[m] << std::endl;
+//    }
+//    fout14.close();
+//    
+//    f = std::bind(fkpm::fermi_density, _1, m->kT(), -10.0);
+//    f_c = expansion_coefficients(M, Mq, f, es);
+//    std::ofstream fout15("c_mu_m10_RE.dat", std::ios::out /* | std::ios::app */);
+//    for (int m = 0; m < M; m++) {
+//        fout15 << std::setw(20)<< m << std::setw(20) << f_c[m] << std::endl;
+//    }
+//    fout15.close();
+    
+}
+
+void testKondo7() {
+    int w = 32, h = 32;
+    auto m = SimpleModel::mk_kagome(w, h);
+    m->J = 15.0 * sqrt(3.0);
+    m->t1 = -3.5;
+    int M = 300;
+    int Mq = M;
+    int Lc = 4;
+    int n_colors = 3 * Lc * Lc;
+    auto kernel = fkpm::jackson_kernel(M);
+    
+    auto engine = mk_engine<cx_flt>();
+    
+    //m->set_spins("allout", mk_toml(""), m->spin);
+    
+    double dz = 0.55;
+    for(int i=0; i<m->n_sites; i++) {
+        int v = i % 3;
+        vec3 s(0, 0, 0);
+        if(v == 0) s = vec3(-0.5 * sqrt(3.), -0.5, dz);
+        else if(v == 1) s = vec3(0, 1, dz);
+        else s = vec3(+0.5 * sqrt(3.), -0.5, dz);
+        
+        m->spin[i] = s.normalized();
+    }
+    
+    m->set_hamiltonian(m->spin);
+    
+    double extra = 0.1;
+    double tolerance = 1e-2;
+    auto es = energy_scale(m->H, extra, tolerance);
+    
+    engine->set_H(m->H, es);
+    
+    RNG rng(0);
+    //engine->set_R_correlated(m->groups(n_colors), rng);
+    engine->set_R_uncorrelated(m->H.n_rows, 2*n_colors, rng);
+    engine->R2 = engine->R;
+    
+    auto moments = engine->moments(M);
+    std::cout << "time to calculate moments : " << fkpm::timer[0].measure() << "\n";
+    auto gamma = fkpm::moment_transform(moments, Mq);
+
+    std::ofstream fs("dos.dat");
+    Vec<double> x, rho, irho;
+    fkpm::density_function(gamma, es, x, rho);
+    fkpm::integrated_density_function(gamma, es, x, irho);
+    for (int i = 0; i < x.size(); i++) {
+        fs << x[i] << " " << rho[i] / m->H.n_rows << " " << irho[i] / m->H.n_rows << "\n";
+    }
+    fs.close();
+    
+    //    auto u_fourier = transformU(4);
+    
+    double area = 4. * w*h*sqrt(3.0)/2.0;
+    auto jx = m->electric_current_operator(m->spin, {1,0,0});
+    auto jy = m->electric_current_operator(m->spin, {0,1,0});
+    jx.scale(1/sqrt(area));
+    jy.scale(1/sqrt(area));
+    
+    cout << "calculating moments2... " << std::flush;
+    timer[0].reset();
+    auto mu_xy = engine->moments2_v1(M, jx, jy, 3);
+    auto mu_xx = engine->moments2_v1(M, jx, jx, 3);
+    cout << " done. " << timer[0].measure() << "s.\n";
+    
+    cout << "calculating xy conductivities... " << std::flush;
+    std::ofstream fout2("test.dat", std::ios::out /* | std::ios::app */);
+    fout2 << std::scientific << std::right;
+    fout2 << std::setw(20) << "#M" << std::setw(20) << "beta" << std::setw(20) << "mu" << std::setw(20) << "sigma_xy" << std::endl;
+    double n_mus = 2*Mq;
+    arma::Col<double> sigma_xy(n_mus);
+    arma::Col<double> sigma_xx(n_mus);
+    sigma_xy.zeros();
+    sigma_xx.zeros();
+    for (int i = 0; i < n_mus; i++) {
+        double mu = es.lo + i * (es.hi-es.lo) / n_mus;
+        auto cmn = electrical_conductivity_coefficients(M, Mq, m->kT(), mu, 0.0, es, kernel);
+        sigma_xy(i) = std::real(fkpm::moment_product(cmn, mu_xy));
+        sigma_xx(i) = std::real(fkpm::moment_product(cmn, mu_xx));
+        fout2 << std::setw(20) << M << std::setw(20) << 1.0/m->kT() << std::setw(20) << mu << std::setw(20) << sigma_xy(i) << '\t' << sigma_xx(i) << std::endl;
+    }
+    fout2.close();
+    cout << " done. " << timer[0].measure() << "s.\n";
+}
+
 int main(int argc,char **argv) {
-    testKondo1();
-    testKondo2();
-    testKondo3();
+//    testKondo1();
+//    testKondo2();
+//    testKondo3();
 //    testKondo4();
 //    testKondo5();
 //    testKondo1_cubic();
+//    testKondo6();
+//    testKondo7();
 }
 

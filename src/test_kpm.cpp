@@ -54,6 +54,7 @@ void testMat() {
 
 template <typename T>
 void testKPM1() {
+    cout << "testKPM1: Energy/density matrix for simple Hamiltonian, templated input\n";
     int n = 4;
     fkpm::SpMatElems<T> elems(4, 4, 1);
     Vec<T> v {5, -5, 0, 0};
@@ -94,10 +95,11 @@ void testKPM1() {
     for (int i = 0; i < 4; i++)
         cout << *D(i, i) << " ";
     cout << ">\n";
-    cout << "expected   <9.99980319956 -9.99980319958 8.42069190159e-14 8.42069190159e-14 >\n";
+    cout << "expected   <9.99980319956 -9.99980319958 8.42069190159e-14 8.42069190159e-14 >\n\n";
 }
 
 void testKPM2() {
+    cout << "testKPM2: Energy/density matrix with various stochastic approximations\n";
     int n = 100;
     int s = n/4;
     double noise = 0.2;
@@ -176,10 +178,11 @@ void testKPM2() {
     cout << "Det. KPM deriv.         " << dE_dH_2 << endl;
     cout << "Stoch. deriv. (uncorr.) " << dE_dH_3 << endl;
     cout << "Stoch. deriv. (corr.)   " << dE_dH_4 << endl;
-    cout << "Autodif. deriv. (corr.) " << dE_dH_5 << endl;
+    cout << "Autodif. deriv. (corr.) " << dE_dH_5 << endl << endl;
 }
 
 void testKPM3() {
+    cout << "testKPM3: Comparing autodiff matrix with finite differencing\n";
     int n = 100;
     double noise = 0.2;
     fkpm::RNG rng(0);
@@ -211,6 +214,7 @@ void testKPM3() {
     auto f_c = expansion_coefficients(M, Mq, f, es);
     auto engine = fkpm::mk_engine<cx_double>();
     engine->set_R_uncorrelated(n, 1, rng);
+//    engine->set_R_identity(n);
     
     double eps = 1e-5;
     int i=0, j=1;
@@ -238,15 +242,74 @@ void testKPM3() {
     
     std::cout << std::setprecision(10);
     cout << dE_dH << endl;
-    cout << *D1(i, j) << endl;
+    cout << *D1(i, j) << endl << endl;
+}
+
+void testKPM4() {
+    cout << "testKPM4: Energy/density matrix with various stochastic approximations\n";
+    int n = 20;
+    int s = n/4;
+    double noise = 0.2;
+    fkpm::RNG rng(0);
+    std::normal_distribution<double> normal;
+    
+    // Build noisy tri-diagonal matrix
+    fkpm::SpMatElems<cx_double> elems(n, n, 1);
+    for (int i = 0; i < n; i++) {
+        auto x = 1.0 + noise * cx_double(normal(rng), normal(rng));
+        int j = (i-1+n)%n;
+        cx_double v1 = 0, v2 = x, v3 = conj(x);
+        elems.add(i, i, &v1);
+        elems.add(i, j, &v2);
+        elems.add(j, i, &v3);
+    }
+    fkpm::SpMatBsr<cx_double> H(elems);
+    auto H_dense = H.to_arma_dense();
+    
+    double kT = 0.0;
+    double mu = 0.2;
+    
+    using std::placeholders::_1;
+    auto g = std::bind(fkpm::fermi_energy, _1, kT, mu);
+    auto f = std::bind(fkpm::fermi_density, _1, 0, mu);
+    
+    double extra = 0.1;
+    double tolerance = 1e-2;
+    auto es = fkpm::energy_scale(H, extra, tolerance);
+    int M = 1000;
+    int Mq = 4*M;
+    auto g_c = expansion_coefficients(M, Mq, g, es);
+    auto f_c = expansion_coefficients(M, Mq, f, es);
+    auto engine = fkpm::mk_engine<cx_double>();
+    engine->set_H(H, es);
+    
+    engine->set_R_identity(n, 0, n);
+    double E0 = fkpm::moment_product(g_c, engine->moments(M));
+    auto D0 = H;
+    engine->autodiff_matrix(g_c, D0);
+    
+    engine->set_R_identity(n, 0, n/3);
+    double E1 = fkpm::moment_product(g_c, engine->moments(M));
+    auto D1a = H;
+    engine->autodiff_matrix(g_c, D1a);
+    engine->set_R_identity(n, n/3, n);
+    E1 += fkpm::moment_product(g_c, engine->moments(M));
+    auto D1b = H;
+    engine->autodiff_matrix(g_c, D1b);
+    
+    cout << "Energy identity (full) " << E0 << "\n";
+    cout << "Energy identity (parts)" << E1 << "\n";
+    cout << "Density matrix  (full) " << *D0(0,0) << "\n";
+    cout << "Density matrix  (parts)" << (*D1a(0,0) + *D1b(0,0)) << "\n";
 }
 
 int main(int argc, char **argv) {
     // testExpansionCoeffs();
-    testMat();
+    // testMat();
     testKPM1<cx_float>();
     testKPM1<cx_double>();
     testKPM2();
     testKPM3();
+    testKPM4();
 }
 

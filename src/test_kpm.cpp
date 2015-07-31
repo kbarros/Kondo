@@ -283,16 +283,18 @@ void testKPM4() {
     auto engine = fkpm::mk_engine<cx_double>();
     engine->set_H(H, es);
     
-    engine->set_R_identity(n, 0, n);
+    fkpm::RNG rng0 = rng;
+    engine->set_R_uncorrelated(n, s, rng);
     double E0 = fkpm::moment_product(g_c, engine->moments(M));
     auto D0 = H;
     engine->autodiff_matrix(g_c, D0);
     
-    engine->set_R_identity(n, 0, n/3);
+    rng = rng0;
+    engine->set_R_uncorrelated(n, s, rng, 0, s/3);
     double E1 = fkpm::moment_product(g_c, engine->moments(M));
     auto D1a = H;
     engine->autodiff_matrix(g_c, D1a);
-    engine->set_R_identity(n, n/3, n);
+    engine->set_R_uncorrelated(n, s, rng, s/3, s);
     E1 += fkpm::moment_product(g_c, engine->moments(M));
     auto D1b = H;
     engine->autodiff_matrix(g_c, D1b);

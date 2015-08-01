@@ -246,7 +246,7 @@ void testKPM3() {
 }
 
 void testKPM4() {
-    cout << "testKPM4: Energy/density matrix with various stochastic approximations\n";
+    cout << "testKPM4: Energy/density matrix calculated using chunked R\n";
     int n = 20;
     int s = n/4;
     double noise = 0.2;

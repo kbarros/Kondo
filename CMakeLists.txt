@@ -7,16 +7,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # -- COMPILE OPTIONS -------------------------------------------
 
-# MPI
-set(WITH_MPI no CACHE BOOL "Build with MPI support")
-
 # Performance/debug options
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -g -gdwarf-3")
 add_definitions(-D_GLIBCXX_DEBUG=1) # libstdc++
 add_definitions(-D_LIBCPP_DEBUG2=1) # libc++
-
-
-# -- C++11 -------------------------------------------
 
 # C++11
 include(CheckCXXCompilerFlag)
@@ -39,12 +33,6 @@ endif()
 
 # -- DEPENDENCIES -------------------------------------------
 
-# Armadillo
-find_package(Armadillo 4.400.2 REQUIRED CONFIG
-             PATHS "/usr/local" "$ENV{ARMA_ROOT}" NO_SYSTEM_ENVIRONMENT_PATH)
-include_directories(SYSTEM ${ARMADILLO_INCLUDE_DIRS})
-set(LIBS ${LIBS} ${ARMADILLO_LIBRARIES})
-
 # Thread Building Blocks
 find_package(TBB)
 if (TBB_FOUND)
@@ -52,6 +40,22 @@ if (TBB_FOUND)
     set(LIBS ${LIBS} ${TBB_LIBRARIES})
     add_definitions(-DWITH_TBB)
 endif()
+
+# MPI
+find_package(MPI)
+if (WITH_MPI)
+  include_directories(${MPI_INCLUDE_PATH})
+  set(LIBS ${LIBS} ${MPI_LIBRARIES})
+  set(CMAKE_CXX_FLAGS        "${CMAKE_CXX_FLAGS} ${MPI_COMPILE_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${MPI_LINK_FLAGS}")
+  add_definitions(-DWITH_MPI)
+endif()
+
+# Armadillo
+find_package(Armadillo 4.400.2 REQUIRED CONFIG
+             PATHS "/usr/local" "$ENV{ARMA_ROOT}" NO_SYSTEM_ENVIRONMENT_PATH)
+include_directories(SYSTEM ${ARMADILLO_INCLUDE_DIRS})
+set(LIBS ${LIBS} ${ARMADILLO_LIBRARIES})
 
 # FastKPM
 find_package(FastKPM REQUIRED)
@@ -81,5 +85,5 @@ message("C++ compiler flags  : ${CMAKE_CXX_FLAGS}")
 get_property(INC_DIRS DIRECTORY PROPERTY INCLUDE_DIRECTORIES)
 message("LIBS:     ${LIBS}")
 message("INCLUDES: ${INC_DIRS}")
-message("WITH_MPI: ${WITH_MPI}")
+message("WITH_MPI: ${MPI_FOUND}")
 message("")

@@ -72,12 +72,11 @@ std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
 
 
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        cout << "Usage: " << argv[0] << " <base_dir> <device #>\n";
+    if (argc != 2) {
+        cout << "Usage: " << argv[0] << " <base_dir>\n";
         std::exit(EXIT_SUCCESS);
     }
     std::string base_dir(argv[1]);
-    int device_num = std::stoi(argv[2]);
     
     auto input_name = base_dir + "/config.toml";
     std::ifstream input_file(input_name);
@@ -131,7 +130,7 @@ int main(int argc, char *argv[]) {
     Vec<int> groups_prec = m->groups(g.get_unwrap<int64_t>("kpm.n_colors_precise"));
     
     // variables that will be updated in `build_kpm(spin)`
-    auto engine = fkpm::mk_engine_cuSPARSE<cx_flt>(device_num);
+    auto engine = fkpm::mk_engine_mpi<cx_flt>();
     if (engine == nullptr)
         std::exit(EXIT_FAILURE);
     Vec<double> moments;

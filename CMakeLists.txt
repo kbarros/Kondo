@@ -58,7 +58,7 @@ include_directories(SYSTEM ${ARMADILLO_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${ARMADILLO_LIBRARIES})
 
 # FastKPM
-find_package(FastKPM REQUIRED)
+find_package(fastkpm REQUIRED)
 include_directories(SYSTEM ${FASTKPM_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${FASTKPM_LIBRARIES})
 

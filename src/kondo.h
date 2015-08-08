@@ -114,7 +114,7 @@ public:
     void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
     
     vec3 position(int i);
-    void set_spins_helical(int q_idx, Vec<vec3>& spin);
+    void set_spins_helical(int qx, int qy, int qz, Vec<vec3>& spin);
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin);
     Vec<int> groups(int n_colors);
 };

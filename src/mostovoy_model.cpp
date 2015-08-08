@@ -119,17 +119,20 @@ vec3 MostovoyModel::position(int i) {
     return {x, y, z};
 }
 
-void MostovoyModel::set_spins_helical(int q_idx, Vec<vec3>& spin) {
-    if (q_idx < 0 || lz/2 < q_idx) {
-        std::cerr << "q_idx = " << q_idx << " is out of bounds [0, " << lz/2 << "]\n";
+void MostovoyModel::set_spins_helical(int qx, int qy, int qz, Vec<vec3>& spin) {
+    vec3 q = 2 * Pi * vec3{double(qx)/lx, double(qy)/ly, double(qz)/lz};
+    if (qx < 0 || lx/2 < qx ||
+        qy < 0 || ly/2 < qy ||
+        qz < 0 || lz/2 < qz) {
+        std::cerr << "Component of q=" << q << " is out of bounds [0,Pi]\n";
         std::exit(EXIT_FAILURE);
     }
-    // constexpr double Pi = acos(-1);
-    double q = 2*Pi*q_idx/lz;
+    
+//    constexpr double Pi = acos(-1);
     for (int i = 0; i < n_sites; i++) {
-        int z = i / (lx*ly);
-        spin[i].x = cos(q * z);
-        spin[i].y = sin(q * z);
+        vec3 p = position(i);
+        spin[i].x = cos(q.dot(p));
+        spin[i].y = sin(q.dot(p));
         spin[i].z = 0;
     }
 }
@@ -139,7 +142,7 @@ void MostovoyModel::set_spins(std::string const& name, cpptoml::toml_group const
         spin.assign(n_sites, vec3{0, 0, 1});
     }
     else if (name == "helical") {
-        set_spins_helical(params.get_unwrap<int64_t>("q_idx"), spin);
+        set_spins_helical(params.get_unwrap<int64_t>("qx", 0), params.get_unwrap<int64_t>("qy", 0), params.get_unwrap<int64_t>("qz", 0), spin);
     }
     else {
         std::cerr << "Unknown configuration type `" << name << "`\n";

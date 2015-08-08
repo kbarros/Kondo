@@ -174,7 +174,7 @@ void testKondo4() {
     m.t_pds = 1.7;
     m.t_pp = 0.65;
     m.delta = -2.0;
-    m.set_spins_helical(2, m.spin);
+    m.set_spins_helical(0, 0, 2, m.spin);
     double filling = 1.0 / m.n_orbs;
     
     cout << "Exact energy: -5.79133  (J=inf)\n";
@@ -241,7 +241,7 @@ void testKondo5() {
                 int Mq = 4*M;
                 
                 for (int q_idx = 0; q_idx <= lx/2; q_idx++) {
-                    m.set_spins_helical(q_idx, m.spin);
+                    m.set_spins_helical(0, 0, q_idx, m.spin);
                     m.set_hamiltonian(m.spin);
                     // arma::vec eigs = arma::sort(arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense())));
                     // double e = electronic_energy(eigs, m.kT(), filling) / m.n_sites;

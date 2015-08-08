@@ -72,6 +72,9 @@ std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
 
 
 int main(int argc, char *argv[]) {
+    auto engine = fkpm::mk_engine_mpi<cx_flt>();
+    if (engine == nullptr) std::exit(EXIT_FAILURE);
+    
     if (argc != 2) {
         cout << "Usage: " << argv[0] << " <base_dir>\n";
         std::exit(EXIT_SUCCESS);
@@ -130,9 +133,6 @@ int main(int argc, char *argv[]) {
     Vec<int> groups_prec = m->groups(g.get_unwrap<int64_t>("kpm.n_colors_precise"));
     
     // variables that will be updated in `build_kpm(spin)`
-    auto engine = fkpm::mk_engine_mpi<cx_flt>();
-    if (engine == nullptr)
-        std::exit(EXIT_FAILURE);
     Vec<double> moments;
     Vec<double> gamma;
     double energy;

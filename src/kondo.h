@@ -56,6 +56,7 @@ public:
     double kT_init = 0, kT_decay = 0;
     vec3 B_zeeman = {0, 0, 0};
     double easy_z = 0;
+    double s1=0, s2=0, s3=0; // Super-exchange interactions
     fkpm::SpMatElems<cx_flt> H_elems, D_elems;
     fkpm::SpMatBsr<cx_flt> H, D;
     Vec<vec3> spin;
@@ -73,6 +74,7 @@ public:
     // TODO: replace this with explicit methods on subclasses?
     virtual void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) = 0;
     
+    virtual void set_neighbors(int rank, int k, Vec<int>& idx) = 0;
     virtual vec3 position(int i) = 0;
     virtual Vec<int> groups(int n_colors) = 0;
 };
@@ -81,16 +83,12 @@ class SimpleModel: public Model {
 public:
     double J = 0;
     double t1=0, t2=0, t3=0;
-    double s1=0, s2=0, s3=0;
     // vec3 current = {0, 0, 0}; double current_growth = 0, current_freq = 0;
     
     SimpleModel(int n_sites);
     
     void set_hamiltonian(Vec<vec3> const& spin);
     void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
-    double energy_classical(Vec<vec3> const& spin);
-    
-    virtual void set_neighbors(int rank, int k, Vec<int>& idx) = 0;
     
     // instantiations
     static std::unique_ptr<SimpleModel> mk_linear(int w);
@@ -113,9 +111,11 @@ public:
     void set_hamiltonian(Vec<vec3> const& spin);
     void set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force);
     
-    vec3 position(int i);
     void set_spins_helical(int qx, int qy, int qz, Vec<vec3>& spin);
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin);
+    
+    void set_neighbors(int rank, int k, Vec<int>& idx);
+    vec3 position(int i);
     Vec<int> groups(int n_colors);
 };
 

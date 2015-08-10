@@ -41,18 +41,51 @@ void Model::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, V
     for (auto& f : force) {
         f = {0,0,0};
     }
+    
+    // Site-local forces
     for (int i = 0; i < n_sites; i++) {
         force[i] += B_zeeman;
         force[i].z += easy_z*spin[i].z;
+    }
+    
+    // Super-exchange forces
+    Vec<int> js;
+    Vec<double> ss = {s1, s2, s3};
+    for (int rank = 0; rank < ss.size(); rank++) {
+        if (ss[rank] != 0.0) {
+            for (int i = 0; i < n_sites; i++) {
+                set_neighbors(rank, i, js);
+                for (int j : js) {
+                    force[i] += - ss[rank] * spin[j];
+                }
+            }
+        }
     }
 }
 
 double Model::energy_classical(Vec<vec3> const& spin) {
     double acc = 0;
+    
+    // Site-local energy
     for (int i = 0; i < n_sites; i++) {
         acc += -B_zeeman.dot(spin[i]);
         acc += -easy_z*spin[i].z*spin[i].z;
     }
+    
+    // Super-exchange energy
+    Vec<int> js;
+    Vec<double> ss = {s1, s2, s3};
+    for (int rank = 0; rank < ss.size(); rank++) {
+        if (ss[rank] != 0.0) {
+            for (int i = 0; i < n_sites; i++) {
+                set_neighbors(rank, i, js);
+                for (int j : js) {
+                    acc += ss[rank] * spin[i].dot(spin[j]) / 2; // adjust for double counting
+                }
+            }
+        }
+    }
+    
     return acc;
 }
 
@@ -101,7 +134,7 @@ void SimpleModel::set_hamiltonian(Vec<vec3> const& spin) {
 }
 
 void SimpleModel::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) {
-    // Local forces
+    // Classical forces
     Model::set_forces(D, spin, force);
     
     // Hund-coupling forces
@@ -119,40 +152,6 @@ void SimpleModel::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& s
         assert(imag(dE_dS).norm() < 1e-5);
         force[i] += -real(dE_dS);
     }
-    
-    // Super-exchange forces
-    Vec<int> js;
-    Vec<double> ss = {s1, s2, s3};
-    for (int rank = 0; rank < ss.size(); rank++) {
-        if (ss[rank] != 0.0) {
-            for (int i = 0; i < n_sites; i++) {
-                set_neighbors(rank, i, js);
-                for (int j : js) {
-                    force[i] += - ss[rank] * spin[j];
-                }
-            }
-        }
-    }
-}
-
-double SimpleModel::energy_classical(Vec<vec3> const& spin) {
-    // Local energy
-    double acc = Model::energy_classical(spin);
-    
-    // Super-exchange energy
-    Vec<int> js;
-    Vec<double> ss = {s1, s2, s3};
-    for (int rank = 0; rank < ss.size(); rank++) {
-        if (ss[rank] != 0.0) {
-            for (int i = 0; i < n_sites; i++) {
-                set_neighbors(rank, i, js);
-                for (int j : js) {
-                    acc += ss[rank] * spin[i].dot(spin[j]) / 2; // adjust for double counting
-                }
-            }
-        }
-    }
-    return acc;
 }
 
 

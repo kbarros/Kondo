@@ -89,7 +89,7 @@ void MostovoyModel::set_hamiltonian(Vec<vec3> const& spin) {
 }
 
 void MostovoyModel::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, Vec<vec3>& force) {
-    // Local forces
+    // Classical forces
     Model::set_forces(D, spin, force);
     
     // Hund-coupling forces
@@ -112,13 +112,6 @@ void MostovoyModel::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const&
 }
 
 
-vec3 MostovoyModel::position(int i) {
-    double x = i % lx;
-    double y = (i/lx) % ly;
-    double z = i/(lx*ly);
-    return {x, y, z};
-}
-
 void MostovoyModel::set_spins_helical(int qx, int qy, int qz, Vec<vec3>& spin) {
     vec3 q = 2 * Pi * vec3{double(qx)/lx, double(qy)/ly, double(qz)/lz};
     if (qx < 0 || lx/2 < qx ||
@@ -128,7 +121,6 @@ void MostovoyModel::set_spins_helical(int qx, int qy, int qz, Vec<vec3>& spin) {
         std::exit(EXIT_FAILURE);
     }
     
-//    constexpr double Pi = acos(-1);
     for (int i = 0; i < n_sites; i++) {
         vec3 p = position(i);
         spin[i].x = cos(q.dot(p));
@@ -148,6 +140,35 @@ void MostovoyModel::set_spins(std::string const& name, cpptoml::toml_group const
         std::cerr << "Unknown configuration type `" << name << "`\n";
         std::exit(EXIT_FAILURE);
     }
+}
+
+
+void MostovoyModel::set_neighbors(int rank, int i, Vec<int>& idx) {
+    struct Delta {int x; int y; int z;};
+    static Vec<Vec<Delta>> deltas {
+        { {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1} },
+    };
+    assert(0 <= rank && rank < deltas.size());
+    auto d = deltas[rank];
+    
+    int x = i % lx;
+    int y = (i/lx) % ly;
+    int z = i/(lx*ly);
+    
+    idx.resize(d.size());
+    for (int n = 0; n < idx.size(); n++) {
+        int xp = positive_mod(x+d[n].x, lx);
+        int yp = positive_mod(y+d[n].y, ly);
+        int zp = positive_mod(z+d[n].z, lz);
+        idx[n] = (zp*ly + yp)*lx + xp;
+    }
+}
+
+vec3 MostovoyModel::position(int i) {
+    double x = i % lx;
+    double y = (i/lx) % ly;
+    double z = i/(lx*ly);
+    return {x, y, z};
 }
 
 Vec<int> MostovoyModel::groups(int n_colors) {

@@ -27,9 +27,6 @@ std::unique_ptr<Model> mk_model(cpptoml::toml_group g) {
         m->t1 = g.get_unwrap<double>("model.t1", 0);
         m->t2 = g.get_unwrap<double>("model.t2", 0);
         m->t3 = g.get_unwrap<double>("model.t3", 0);
-        m->s1 = g.get_unwrap<double>("model.s1", 0);
-        m->s2 = g.get_unwrap<double>("model.s2", 0);
-        m->s3 = g.get_unwrap<double>("model.s3", 0);
         ret = std::move(m);
     } else if (type == "mostovoy") {
         auto lattice = g.get_unwrap<std::string>("model.lattice");
@@ -53,6 +50,9 @@ std::unique_ptr<Model> mk_model(cpptoml::toml_group g) {
     ret->kT_decay = g.get_unwrap<double>("model.kT_decay", 0);
     ret->B_zeeman = {g.get_unwrap<double>("model.zeeman_x", 0), g.get_unwrap<double>("model.zeeman_y", 0), g.get_unwrap<double>("model.zeeman_z", 0)};
     ret->easy_z   = g.get_unwrap<double>("model.easy_z", 0);
+    ret->s1       = g.get_unwrap<double>("model.s1", 0);
+    ret->s2       = g.get_unwrap<double>("model.s2", 0);
+    ret->s3       = g.get_unwrap<double>("model.s3", 0);
     return ret;
 }
 

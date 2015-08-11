@@ -213,7 +213,7 @@ void testKPM3() {
     auto g_c = expansion_coefficients(M, Mq, g, es);
     auto f_c = expansion_coefficients(M, Mq, f, es);
     auto engine = fkpm::mk_engine<cx_double>();
-    engine->set_R_uncorrelated(n, 1, rng);
+    engine->set_R_uncorrelated(n, 4, rng);
 //    engine->set_R_identity(n);
     
     double eps = 1e-5;
@@ -248,7 +248,7 @@ void testKPM3() {
 void testKPM4() {
     cout << "testKPM4: Energy/density matrix calculated using chunked R\n";
     int n = 20;
-    int s = n/4;
+    int s = n/2;
     double noise = 0.2;
     fkpm::RNG rng(0);
     std::normal_distribution<double> normal;

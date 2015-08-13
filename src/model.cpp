@@ -562,3 +562,83 @@ public:
 std::unique_ptr<SimpleModel> SimpleModel::mk_kagome(int w, int h) {
     return std::make_unique<KagomeModel>(w, h);
 }
+
+
+class CubicModel: public SimpleModel {
+public:
+    int lx, ly, lz;
+    
+    CubicModel(int lx, int ly, int lz): SimpleModel(lx*ly*lz), lx(lx), ly(ly), lz(lz) {
+    }
+    
+    vec3 position(int i) {
+        assert(0 <= i && i < lx*ly*lz);
+        double x = (i % lx);
+        double y = (i / lx)%ly;
+        double z = (i / lx)/ ly;
+        return {x, y, z};
+    }
+    
+    void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
+        if (name == "ferro") {
+            spin.assign(n_sites, vec3{0, 0, 1});
+        }
+        else {
+            std::cerr << "Unknown configuration type `" << name << "`\n";
+            std::exit(EXIT_FAILURE);
+        }
+    }
+    
+    void set_neighbors(int rank, int i, Vec<int>& idx) {
+        struct Delta {int x; int y; int z;};
+        static Vec<Vec<Delta>> deltas {
+            { {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {-1, 0, 0}, {0, -1, 0}, {0, 0, -1} },
+            { {1, 1, 0}, {-1, 1, 0}, {-1, -1, 0}, {1, -1, 0}, {1, 0, 1}, {-1, 0, 1}, {-1, 0, -1}, {1, 0, -1}, {0, 1, 1}, {0, -1, 1}, {0, -1, -1}, {0, 1, -1}},
+            { {2, 0, 0}, {0, 2, 0}, {0, 0, 2}, {-2, 0, 0}, {0, -2, 0}, {0, 0, -2} },
+        };
+        assert(0 <= rank && rank < deltas.size());
+        auto d = deltas[rank];
+        
+        int x = (i%lx);
+        int y = (i/lx)%ly;
+        int z = (i/lx)/ly;
+        idx.resize(d.size());
+        for (int n = 0; n < idx.size(); n++) {
+            int xp = positive_mod(x+d[n].x, lx);
+            int yp = positive_mod(y+d[n].y, ly);
+            int zp = positive_mod(z+d[n].z, lz);
+            idx[n] = (zp*ly + yp)*lx + xp;
+        }
+    }
+    
+    Vec<int> groups(int n_colors) {
+        n_colors = std::min(n_colors, n_sites);
+        int c_len = int(std::cbrt(n_colors));
+        if (c_len*c_len*c_len != n_colors) {
+            std::cerr << "n_colors=" << n_colors << " is not a perfect cube\n";
+            std::exit(EXIT_FAILURE);
+        }
+
+        if (lx % c_len != 0 || ly % c_len != 0 || lz % c_len != 0) {
+            std::cerr << "cbrt(n_colors)=" << c_len << " is not a divisor of lattice size (lx,ly,lz)=(" << lx << "," << ly << "," << lz << ")\n";
+            std::exit(EXIT_FAILURE);
+        }
+        Vec<int> colors(n_sites);
+        for (int i = 0; i < n_sites; i++) {
+            int x = i % lx;
+            int y = (i/lx) % ly;
+            int z = i/(lx*ly);
+            int cx = x % c_len;
+            int cy = y % c_len;
+            int cz = z % c_len;
+            colors[i] = cz*c_len*c_len + cy*c_len + cx;
+        }
+        return colors_to_groups(colors);
+
+    }
+};
+std::unique_ptr<SimpleModel> SimpleModel::mk_cubic(int w, int h, int h_z) {
+    return std::make_unique<CubicModel>(w, h, h_z);
+}
+
+

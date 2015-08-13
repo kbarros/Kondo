@@ -263,11 +263,92 @@ void testKondo5() {
     }
 }
 
+
+
+void testKondo1_cubic() {//cubic
+    
+    auto engine = fkpm::mk_engine<cx_flt>();
+    if (engine == nullptr) std::exit(EXIT_FAILURE);
+
+    
+    int w = 6, h = 6, h_z = 6;
+    int int_mu, total_mu=100;
+    double mu =0.0, del_mu=12.4/total_mu, mu_start=-6.2;
+    
+    std::stringstream fname;
+
+    auto m = SimpleModel::mk_cubic(w, h, h_z);
+    m->J = 0.2;
+    m->t1 = -1;
+    m->t3 = 0.5;
+    m->s1 = 0.0;
+    m->set_spins("ferro", mk_toml(""), m->spin);
+    //m->lattice->set_spins("meron", nullptr, m->spin);
+    m->spin[0] = vec3(1, 1, 1).normalized();
+
+    fname << "mu_n_cubic_test_L_" << w << "_t1_" <<  m->t1 << "_t2_" <<  m->t2 << "_t3_" <<  m->t3 << "_J_" <<  m->J << "_01.txt";
+    
+    m->set_hamiltonian(m->spin);
+    int n = m->H.n_rows;
+
+    std::ofstream dump_file(fname.str(), std::ios::trunc);
+
+    
+    for (int_mu=0; int_mu<total_mu; int_mu++) {
+        mu = del_mu*int_mu + mu_start;
+        
+        Vec<double> gamma;
+        Vec<double> moments;
+        
+        arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m->H.to_arma_dense()));
+        //double E1 = electronic_grand_energy(eigs, m->kT(), mu) / m->n_sites;
+        
+        double extra = 0.1;
+        double tolerance = 1e-2;
+        auto es = energy_scale(m->H, extra, tolerance);
+        int M = 2000;
+        int Mq = 4*M;
+        auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m->kT(), mu), es);
+        auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m->kT(), mu), es);
+        auto engine = mk_engine<cx_flt>();
+        engine->set_H(m->H, es);
+        engine->set_R_identity(n);
+        
+        
+        
+        //double E2 = moment_product(g_c, engine->moments(M)) / m->n_sites;
+        
+        //cout << "H: " << *m->H(0, 0) << " " << *m->H(1, 0) << "\n  [(-0.288675,0)  (-0.288675,-0.288675)]\n";
+        //cout << "   " << *m->H(0, 1) << " " << *m->H(1, 1) << "\n  [(-0.288675,0.288675) (0.288675,0)]\n\n";
+        
+        engine->autodiff_matrix(g_c, m->D);
+        //cout << "D: " << *m->D(0, 0) << " " << *m->D(1, 0) << "\n  [(0.481926,0) (0.0507966,0.0507966)]\n";
+        //cout << "   " << *m->D(0, 1) << " " << *m->D(1, 1) << "\n  [(0.0507966,-0.0507966) (0.450972,0)]\n\n";
+        
+        Vec<vec3>& force = m->dyn_stor[0];
+        m->set_forces(m->D, m->spin, force);
+        
+        //cout << std::setprecision(9);
+        //cout << "grand energy " <<  E1 << " " << E2 << "\n            [-1.98657216 -1.98657194]\n";
+        //cout << "force " << force[0] << "\n     [<x=0.0507965542, y=0.0507965542, z=-0.384523162>]\n\n";
+
+        moments = engine->moments(M);
+        gamma = fkpm::moment_transform(moments, Mq);
+
+        //fprintf(fp1, "%10f, %10lf\n", mu, g.get_unwrap<double>("ensemble.filling"));
+        //printf("%10lf, %10f\n", mu, g.get_unwrap<double>("ensemble.filling"));
+        double filling =  mu_to_filling(gamma, es, m->kT(), mu);
+        dump_file << mu << ", " << filling << endl;
+        cout  << mu << ", " << filling << endl;
+    }
+}
+
 int main(int argc,char **argv) {
     testKondo1();
     testKondo2();
     testKondo3();
 //    testKondo4();
 //    testKondo5();
+//    testKondo1_cubic();
 }
 

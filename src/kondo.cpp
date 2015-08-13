@@ -19,6 +19,8 @@ std::unique_ptr<Model> mk_model(cpptoml::toml_group g) {
             m = SimpleModel::mk_triangular(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
         } else if (lattice == "kagome") {
             m = SimpleModel::mk_kagome(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
+        } else if (lattice == "cubic") {
+            m = SimpleModel::mk_cubic(g.get_unwrap<int64_t>("model.lx"), g.get_unwrap<int64_t>("model.ly"), g.get_unwrap<int64_t>("model.lz"));
         } else {
             std::cerr << "Simple model lattice '" << lattice << "' not supported.\n";
             std::exit(EXIT_FAILURE);

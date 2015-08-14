@@ -214,11 +214,13 @@ void testKondo4() {
 }
 
 void testKondo5() {
+    auto engine = mk_engine_mpi<cx_flt>();
+    
     RNG rng(4);
     int lx = 16;
     auto m = MostovoyModel(lx, lx, lx);
-    m.t_pds = 1.3; // 0.89;
-    m.t_pp = 0.4; // 0.44;
+    m.t_pds = 0.89;
+    m.t_pp = 0.44;
     double filling = 1.0 / m.n_orbs;
     
     // KPM Parameters
@@ -226,12 +228,11 @@ void testKondo5() {
     assert(lx % lc == 0);
     int n_colors = lc*lc*lc;
     Vec<int> groups = m.groups(n_colors);
-    auto engine = mk_engine<cx_flt>();
     engine->set_R_correlated(groups, rng);
     
-    cout << std::setw(10) << "delta" << std::setw(10) << "J" << std::setw(10) << "q" << std::setw(10) << "e" << std::setw(10) << "e_kpm\n";
-    for (double delta : Vec<double>{-2.0 /*, -3, -4 */}) {
-        for (double J : Vec<double>{2 /* 5 , 20, 100*/}) {
+    cout << std::setw(10) << "delta" << std::setw(10) << "J" << std::setw(10) << "q" << std::setw(10) << "e_kpm\n";
+    for (double delta : Vec<double>{-3.1 /*, -3, -4 */}) {
+        for (double J : Vec<double>{1 /* 5 , 20, 100*/}) {
             m.delta = delta;
             m.J = J;
             EnergyScale es = {-std::abs(delta)-5, 8};
@@ -241,22 +242,21 @@ void testKondo5() {
                 int Mq = 4*M;
                 
                 for (int q_idx = 0; q_idx <= lx/2; q_idx++) {
-                    m.set_spins_helical(0, 0, q_idx, m.spin);
+                    m.set_spins_helical(q_idx, q_idx, q_idx, m.spin);
+                    timer[0].reset();
                     m.set_hamiltonian(m.spin);
-                    // arma::vec eigs = arma::sort(arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense())));
-                    // double e = electronic_energy(eigs, m.kT(), filling) / m.n_sites;
-                    // cout << "  (max=" << eigs[0] << " min=" << eigs[eigs.size()-1] << ")\n";
-                    double e = 0;
-                
                     engine->set_H(m.H, es);
+                    
+                    timer[0].reset();
                     auto moments = engine->moments(M);
+                    cout << "time = " << timer[0].measure() << "\n";
                     auto gamma = moment_transform(moments, Mq);
                     double mu = filling_to_mu(gamma, es, m.kT(), filling, 0);
                     double e_kpm = electronic_energy(gamma, es, m.kT(), filling, mu) / m.n_sites;
-                
+                    
                     double q = 2*Pi*q_idx/lx;
                     cout << std::setw(10) << delta << std::setw(10) << J << std::setw(10) << q
-                         << std::setw(10) << e << std::setw(10) << e_kpm << endl;
+                         << std::setw(10) << e_kpm << endl;
                 }
             }
         }

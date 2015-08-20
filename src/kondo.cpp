@@ -1,10 +1,45 @@
 #include "kondo.h"
 #include "iostream_util.h"
 
+#include <climits>
+#include <cstdint>
 #include <sstream>
 #include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 
-using namespace std::placeholders;
+
+// workaround missing "is_trivially_copyable" in g++ < 5.0
+#if __GNUG__ && __GNUC__ < 5
+#define IS_TRIVIALLY_COPYABLE(T) __has_trivial_copy(T)
+#else
+#define IS_TRIVIALLY_COPYABLE(T) std::is_trivially_copyable<T>::value
+#endif
+static const std::string nibble2hex = "0123456789ABCDEF";
+int hex2nibble(char c) {
+    for (int i = 0; i < 16; i++) {
+        if (c == nibble2hex[i]) return i;
+    }
+    assert(false);
+}
+template <typename T, class=typename std::enable_if<IS_TRIVIALLY_COPYABLE(T)>::type>
+void serialize_to_hex(T const& data, std::ostream &os) {
+    uint8_t *bytes = (uint8_t *)&data;
+    for (size_t i = 0; i < sizeof(T)*CHAR_BIT/8; i++) {
+        os << nibble2hex[(bytes[i] >> 4) & 0xF];
+        os << nibble2hex[bytes[i] & 0xF];
+    }
+}
+template <typename T, class=typename std::enable_if<IS_TRIVIALLY_COPYABLE(T)>::type>
+void deserialize_from_hex(std::istream& is, T& data) {
+    uint8_t *bytes = (uint8_t *)&data;
+    for (int i = 0; i < sizeof(T)*CHAR_BIT/8; i++) {
+        char c1, c2;
+        is >> c1 >> c2;
+        bytes[i] = (hex2nibble(c1) << 4) | hex2nibble(c2);
+    }
+}
 
 
 std::unique_ptr<Model> mk_model(cpptoml::toml_group g) {
@@ -72,6 +107,40 @@ std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
     std::exit(EXIT_FAILURE);
 }
 
+void read_state_from_dump(boost::filesystem::path const& dump_dir, fkpm::RNG &rng, Model &m, Dynamics &dynamics) {
+    Vec<boost::filesystem::path> v;
+    boost::filesystem::path p(dump_dir);
+    std::copy(boost::filesystem::directory_iterator(p),
+              boost::filesystem::directory_iterator(),
+              std::back_inserter(v));
+    std::sort(v.begin(), v.end());
+    boost::filesystem::ifstream is(v.back());
+    boost::property_tree::ptree pt;
+    boost::property_tree::read_json (is, pt);
+    
+    std::cout << "RESUMING from " << v.back() << "!\n";
+    
+    // Read random state
+    std::string rng_state = pt.get<std::string>("rng_state");
+    std::stringstream ss(rng_state);
+    deserialize_from_hex(ss, rng);
+    
+    // Read spin configuration
+    Vec<double> data;
+    for (auto& elem : pt.get_child("spin")) {
+        assert(elem.first.empty()); // array elements have no names
+        data.push_back(std::stod(elem.second.data()));
+    }
+    assert(data.size() == 3*m.n_sites);
+    for (int i = 0; i < m.n_sites; i++) {
+        m.spin[i] = {data[3*i+0], data[3*i+1], data[3*i+2]};
+    }
+    
+    // Read n_steps
+    dynamics.n_steps = pt.get<size_t>("n_steps");
+    
+    // TODO: load velocity in GJ-F dynamics... ?
+}
 
 int main(int argc, char *argv[]) {
     auto engine = fkpm::mk_engine_mpi<cx_flt>();
@@ -81,10 +150,10 @@ int main(int argc, char *argv[]) {
         cout << "Usage: " << argv[0] << " <base_dir>\n";
         std::exit(EXIT_SUCCESS);
     }
-    std::string base_dir(argv[1]);
+    boost::filesystem::path base_dir(argv[1]);
     
-    auto input_name = base_dir + "/config.toml";
-    std::ifstream input_file(input_name);
+    auto input_name = base_dir / "config.toml";
+    boost::filesystem::ifstream input_file(input_name);
     if (!input_file.is_open()) {
         cerr << "Unable to open file `" << input_name << "`!\n";
         std::exit(EXIT_FAILURE);
@@ -96,7 +165,6 @@ int main(int argc, char *argv[]) {
     cpptoml::toml_group g = p.parse();
     
     fkpm::RNG rng(g.get_unwrap<int64_t>("random_seed"));
-    bool overwrite_dump = g.get_unwrap<bool>("overwrite_dump");
     int steps_per_dump = g.get_unwrap<int64_t>("steps_per_dump");
     int max_steps = g.get_unwrap<int64_t>("max_steps");
     
@@ -112,15 +180,6 @@ int main(int argc, char *argv[]) {
     
     auto m = mk_model(g);
     auto dynamics = mk_dynamics(g);
-    
-    auto init_spins_type = g.get_unwrap<std::string>("init_spins.type");
-    if (init_spins_type == "random") {
-        m->set_spins_random(rng, m->spin);
-    } else {
-        m->set_spins(init_spins_type, *g.get_group("init_spins"), m->spin);
-    }
-    
-    m->set_hamiltonian(m->spin);
     
     fkpm::EnergyScale es{g.get_unwrap<double>("kpm.energy_scale_lo"), g.get_unwrap<double>("kpm.energy_scale_hi")};
     // double extra = 0.1;
@@ -139,41 +198,6 @@ int main(int argc, char *argv[]) {
     Vec<double> gamma;
     double energy;
     
-    // Write json file for visualization
-    std::ofstream json_file(base_dir + "/cfg.json");
-    json_file <<
-    R"(// Automatically generated for backward-compatibility with visualization tools
-{
-  "T": 0,
-  "mu": 0,
-  "order": 0,
-  "order_exact": 0,
-  "dt_per_rand": 0,
-  "nrand": 0,
-  "dumpPeriod": 0,
-  "initSpin": 0,
-  "model": {
-)";
-    auto lattice = g.get_unwrap<std::string>("model.lattice");
-    json_file << "    \"type\": \"" << lattice << "\",\n";
-    if (lattice == "cubic") {
-        json_file << "    \"w\": " << g.get_unwrap<int64_t>("model.lx") << ",\n";
-        json_file << "    \"h\": " << g.get_unwrap<int64_t>("model.ly")*g.get_unwrap<int64_t>("model.lz") << ",";
-    }
-    else {
-        json_file << "    \"w\": " << g.get_unwrap<int64_t>("model.w") << ",\n";
-        json_file << "    \"h\": " << g.get_unwrap<int64_t>("model.h") << ",";
-    }
-    json_file << R"(
-    "t": 0,
-    "t1": 0,
-    "t2": 0,
-    "J_H": 0,
-    "B_n": 0
-  }
-})";
-    json_file.close();
-    
     // assumes random vectors R have been set appropriately
     auto build_kpm = [&](Vec<vec3> const& spin, int M, int Mq) {
         m->set_hamiltonian(spin);
@@ -188,45 +212,8 @@ int main(int argc, char *argv[]) {
             filling = mu_to_filling(gamma, es, m->kT(), mu);
             energy += electronic_grand_energy(gamma, es, m->kT(), mu);
         }
-        auto c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m->kT(), mu), es);
+        auto c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, std::placeholders::_1, m->kT(), mu), es);
         engine->autodiff_matrix(c, m->D);
-    };
-    
-    auto dump = [&](int step) {
-        engine->set_R_correlated(groups_prec, rng);
-        build_kpm(m->spin, M_prec, Mq_prec);
-        double e = energy / m->n_sites;
-        
-        if (!boost::filesystem::is_directory(base_dir+"/dump")) {
-            boost::filesystem::create_directory(base_dir+"/dump");
-        }
-        std::stringstream fname;
-        fname << base_dir << "/dump/dump" << std::setfill('0') << std::setw(4) << step/steps_per_dump << ".json";
-        if (!overwrite_dump && boost::filesystem::exists(fname.str())) {
-            cerr << "Refuse to overwrite file '" << fname.str() << "'!\n";
-            std::exit(EXIT_FAILURE);
-        }
-        cout << "Dumping file '" << fname.str() << "', time=" << m->time << ", energy=" << e << ", n=" << filling << ", mu=" << mu << endl;
-        std::ofstream dump_file(fname.str(), std::ios::trunc);
-        dump_file << "{\"time\":" << m->time <<
-            ",\"action\":" << e <<
-            ",\"filling\":" << filling <<
-            ",\"mu\":" << mu <<
-            ",\"eig\":[]" <<
-            ",\"moments\":[";
-        for (int i = 0; i < moments.size(); i++) {
-            dump_file << moments[i];
-            if (i < moments.size()-1) dump_file << ",";
-        }
-        dump_file << "],\"spin\":[";
-        for (int i = 0; i < m->n_sites; i++) {
-            dump_file << m->spin[i].x << ",";
-            dump_file << m->spin[i].y << ",";
-            dump_file << m->spin[i].z;
-            if (i < m->n_sites-1) dump_file << ",";
-        }
-        dump_file << "]}";
-        dump_file.close();
     };
     
     auto calc_force = [&](Vec<vec3> const& spin, Vec<vec3>& force) {
@@ -234,10 +221,103 @@ int main(int argc, char *argv[]) {
         m->set_forces(m->D, spin, force);
     };
     
-    engine->set_R_correlated(groups, rng);
-    dynamics->init(calc_force, rng, *m);
+    auto dump = [&](int step) {
+        engine->set_R_correlated(groups_prec, rng);
+        build_kpm(m->spin, M_prec, Mq_prec);
+        double e = energy / m->n_sites;
+        
+        std::stringstream fname;
+        fname << "dump" << std::setfill('0') << std::setw(4) << step/steps_per_dump << ".json";
+        cout << "Dumping file " << base_dir/"dump"/fname.str() << ", time=" << m->time << ", energy=" << e << ", n=" << filling << ", mu=" << mu << endl;
+        boost::filesystem::ofstream dump_file(base_dir/"dump"/fname.str());
+        dump_file << "{\n" <<
+        "\"n_steps\":" << dynamics->n_steps << ",\n" <<
+        "\"time\":" << m->time << ",\n" <<
+        "\"action\":" << e << ",\n" <<
+        "\"filling\":" << filling << ",\n" <<
+        "\"mu\":" << mu << ",\n" <<
+        "\"eig\":[]" << ",\n" <<
+        "\"moments\":[";
+        for (int i = 0; i < moments.size(); i++) {
+            dump_file << moments[i];
+            if (i < moments.size()-1) dump_file << ",";
+        }
+        dump_file << "],\n";
+        dump_file << "\"rng_state\":\"";
+        serialize_to_hex(rng, dump_file);
+        dump_file << "\",\n";
+        dump_file << "\"spin\":[";
+        for (int i = 0; i < m->n_sites; i++) {
+            dump_file << m->spin[i].x << ",";
+            dump_file << m->spin[i].y << ",";
+            dump_file << m->spin[i].z;
+            if (i < m->n_sites-1) dump_file << ",";
+        }
+        dump_file << "]\n" <<
+        "}\n";
+        dump_file.close();
+    };
     
-    dump(dynamics->n_steps);
+    auto write_json_vis = [&]() {
+        boost::filesystem::ofstream json_file(base_dir/"cfg.json");
+        json_file <<
+        R"(// Automatically generated for backward-compatibility with visualization tools
+        {
+            "T": 0,
+            "mu": 0,
+            "order": 0,
+            "order_exact": 0,
+            "dt_per_rand": 0,
+            "nrand": 0,
+            "dumpPeriod": 0,
+            "initSpin": 0,
+            "model": {
+                )";
+                auto lattice = g.get_unwrap<std::string>("model.lattice");
+                json_file << "    \"type\": \"" << lattice << "\",\n";
+                if (lattice == "cubic") {
+                    json_file << "    \"w\": " << g.get_unwrap<int64_t>("model.lx") << ",\n";
+                    json_file << "    \"h\": " << g.get_unwrap<int64_t>("model.ly")*g.get_unwrap<int64_t>("model.lz") << ",";
+                }
+                else {
+                    json_file << "    \"w\": " << g.get_unwrap<int64_t>("model.w") << ",\n";
+                    json_file << "    \"h\": " << g.get_unwrap<int64_t>("model.h") << ",";
+                }
+                json_file << R"(
+                "t": 0,
+                "t1": 0,
+                "t2": 0,
+                "J_H": 0,
+                "B_n": 0
+            }
+        })";
+        json_file.close();
+    };
+    
+    if (!boost::filesystem::is_directory(base_dir/"dump")) {
+        boost::filesystem::create_directory(base_dir/"dump");
+    }
+    boost::filesystem::directory_iterator it(base_dir/"dump"), end_it;
+    if(it != end_it) {
+        // non-empty dump directory -- resume previous simulation
+        read_state_from_dump(base_dir/"dump", rng, *m, *dynamics);
+    }
+    else {
+        // empty dump directory -- start from scratch
+        auto init_spins_type = g.get_unwrap<std::string>("init_spins.type");
+        if (init_spins_type == "random") {
+            m->set_spins_random(rng, m->spin);
+        } else {
+            m->set_spins(init_spins_type, *g.get_group("init_spins"), m->spin);
+        }
+        
+        write_json_vis();
+        dump(dynamics->n_steps);
+        
+        engine->set_R_correlated(groups, rng);
+        dynamics->init(calc_force, rng, *m);
+    }
+    
     while (dynamics->n_steps < max_steps) {
         engine->set_R_correlated(groups, rng);
         dynamics->step(calc_force, rng, *m);
@@ -246,5 +326,5 @@ int main(int argc, char *argv[]) {
         }
     }
     
-    return 0;
+    return EXIT_SUCCESS;
 }

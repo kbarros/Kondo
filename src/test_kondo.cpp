@@ -2,8 +2,6 @@
 #include "iostream_util.h"
 #include "kondo.h"
 
-using namespace fkpm;
-using namespace std::placeholders;
 
 void testKondo1() {
     int w = 6, h = 6;
@@ -21,20 +19,21 @@ void testKondo1() {
     int n = m->H.n_rows;
     
     arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m->H.to_arma_dense()));
-    double E1 = electronic_grand_energy(eigs, m->kT(), mu) / m->n_sites;
+    double E1 = fkpm::electronic_grand_energy(eigs, m->kT(), mu) / m->n_sites;
     
     double extra = 0.1;
     double tolerance = 1e-2;
     auto es = energy_scale(m->H, extra, tolerance);
     int M = 2000;
     int Mq = 4*M;
-    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m->kT(), mu), es);
-    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m->kT(), mu), es);
-    auto engine = mk_engine<cx_flt>();
+    using std::placeholders::_1;
+    auto g_c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m->kT(), mu), es);
+    auto f_c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_density, _1, m->kT(), mu), es);
+    auto engine = fkpm::mk_engine<cx_flt>();
     engine->set_H(m->H, es);
     engine->set_R_identity(n);
     
-    double E2 = moment_product(g_c, engine->moments(M)) / m->n_sites;
+    double E2 = fkpm::moment_product(g_c, engine->moments(M)) / m->n_sites;
     
     cout << "H: " << *m->H(0, 0) << " " << *m->H(1, 0) << "\n  [(-0.288675,0)  (-0.288675,-0.288675)]\n";
     cout << "   " << *m->H(0, 1) << " " << *m->H(1, 1) << "\n  [(-0.288675,0.288675) (0.288675,0)]\n\n";
@@ -57,13 +56,13 @@ void testKondo2() {
     auto m = SimpleModel::mk_kagome(w, h);
     m->J = 0.1;
     m->t1 = -1;
-    EnergyScale es{-10, 10};
+    fkpm::EnergyScale es{-10, 10};
     int M = 1000;
     int Mq = 4*M;
     
     m->set_spins("ncp1", mk_toml(""), m->spin);
     m->set_hamiltonian(m->spin);
-    auto engine = mk_engine<cx_flt>();
+    auto engine = fkpm::mk_engine<cx_flt>();
     engine->set_H(m->H, es);
     
     cout << "calculating exact eigenvalues... " << std::flush;
@@ -71,31 +70,31 @@ void testKondo2() {
     cout << "done.\n";
     
     cout << "calculating kpm moments... " << std::flush;
-    RNG rng(0);
+    fkpm::RNG rng(0);
     int n_colors = 3*(w/2)*(h/2);
     Vec<int> groups = m->groups(n_colors);
     engine->set_R_correlated(groups, rng);
     auto moments = engine->moments(M);
-    auto gamma = moment_transform(moments, Mq);
+    auto gamma = fkpm::moment_transform(moments, Mq);
     cout << "done.\n";
     
-    double e1 = electronic_grand_energy(eigs, m->kT(), mu) / m->n_sites;
-    double e2 = electronic_grand_energy(gamma, es, m->kT(), mu) / m->n_sites;
+    double e1 = fkpm::electronic_grand_energy(eigs, m->kT(), mu) / m->n_sites;
+    double e2 = fkpm::electronic_grand_energy(gamma, es, m->kT(), mu) / m->n_sites;
     cout << "ncp1, grand energy, mu = " << mu << "\n";
     cout << "exact=" << e1 << "\n";
     cout << "kpm  =" << e2 << "\n";
     
     double filling = 0.25;
-    double e3 = electronic_energy(eigs, m->kT(), filling) / m->n_sites;
-    mu = filling_to_mu(gamma, es, m->kT(), filling, 0);
-    double e4 = electronic_energy(gamma, es, m->kT(), filling, mu) / m->n_sites;
+    double e3 = fkpm::electronic_energy(eigs, m->kT(), filling) / m->n_sites;
+    mu = fkpm::filling_to_mu(gamma, es, m->kT(), filling, 0);
+    double e4 = fkpm::electronic_energy(gamma, es, m->kT(), filling, mu) / m->n_sites;
     cout << "ncp1, canonical energy, n=1/4\n";
     cout << "exact=" << e3 << "\n";
     cout << "kpm=" << e4 << "\n";
 }
 
 void testKondo3() {
-    RNG rng(1);
+    fkpm::RNG rng(1);
     __attribute__((unused))
     int w = 2048, h = w;
     __attribute__((unused))
@@ -118,9 +117,10 @@ void testKondo3() {
     auto es = energy_scale(m->H, extra, tolerance);
     int M = 1000;
     int Mq = 4*M;
-    auto g_c = expansion_coefficients(M, Mq, std::bind(fermi_energy, _1, m->kT(), mu), es);
-    auto f_c = expansion_coefficients(M, Mq, std::bind(fermi_density, _1, m->kT(), mu), es);
-    auto engine = mk_engine<cx_flt>();
+    using std::placeholders::_1;
+    auto g_c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m->kT(), mu), es);
+    auto f_c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_density, _1, m->kT(), mu), es);
+    auto engine = fkpm::mk_engine<cx_flt>();
     engine->set_H(m->H, es);
     
     Vec<vec3>& f1 = m->dyn_stor[0];
@@ -164,11 +164,11 @@ void testKondo3() {
     double f_var = acc / m->n_sites;
     
     cout << std::setprecision(9);
-    cout << "f_var " << f_var << endl;
+    cout << "f_var " << f_var << " [order 0.0016]\n";
 }
 
-void testKondo4() {
-    RNG rng(1);
+void mostovoy_energy() {
+    fkpm::RNG rng(1);
     int lx = 4;
     auto m = MostovoyModel(lx, lx, lx);
     m.t_pds = 1.7;
@@ -181,13 +181,13 @@ void testKondo4() {
     m.J = 10000;
     m.set_hamiltonian(m.spin);
     arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
-    double E_diag = electronic_energy(eigs, m.kT(), filling) / m.n_sites;
+    double E_diag = fkpm::electronic_energy(eigs, m.kT(), filling) / m.n_sites;
     cout << "E_diag      : " << E_diag << " [-5.79161] (J=10000)\n";
     
     m.J = 2;
     m.set_hamiltonian(m.spin);
     eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m.H.to_arma_dense()));
-    E_diag = electronic_energy(eigs, m.kT(), filling) / m.n_sites;
+    E_diag = fkpm::electronic_energy(eigs, m.kT(), filling) / m.n_sites;
     cout << "E_diag      : " << E_diag << " [-6.15479] (J=2)\n";
     
     double extra = 0.1;
@@ -196,7 +196,7 @@ void testKondo4() {
     int M = 200;
     int Mq = 4*M;
     
-    auto engine = mk_engine<cx_flt>();
+    auto engine = fkpm::mk_engine<cx_flt>();
     engine->set_H(m.H, es);
     
     int n_colors = 4*4*4;
@@ -206,7 +206,7 @@ void testKondo4() {
     cout << "calculating kpm moments... " << std::flush;
     auto moments = engine->moments(M);
     cout << "done.\n";
-    auto gamma = moment_transform(moments, Mq);
+    auto gamma = fkpm::moment_transform(moments, Mq);
     
     double mu = filling_to_mu(gamma, es, m.kT(), filling, 0);
     double E_kpm = electronic_energy(gamma, es, m.kT(), filling, mu) / m.n_sites;
@@ -214,9 +214,9 @@ void testKondo4() {
 }
 
 void mostovoy_variational() {
-    auto engine = mk_engine_mpi<cx_flt>();
+    auto engine = fkpm::mk_engine_mpi<cx_flt>();
     
-    RNG rng(4);
+    fkpm::RNG rng(4);
     int lx = 16;
     auto m = MostovoyModel(lx, lx, lx);
     m.t_pds = 0.89;
@@ -235,7 +235,7 @@ void mostovoy_variational() {
         for (double J : Vec<double>{1 /* 5 , 20, 100*/}) {
             m.delta = delta;
             m.J = J;
-            EnergyScale es = {-std::abs(delta)-5, 8};
+            fkpm::EnergyScale es = {-std::abs(delta)-5, 8};
             
             for (int M: Vec<int>{500, 1000, 2000}) {
                 cout << "\nM=" << M << endl;
@@ -243,16 +243,16 @@ void mostovoy_variational() {
                 
                 for (int q_idx = 0; q_idx <= lx/2; q_idx++) {
                     m.set_spins_helical(q_idx, q_idx, q_idx, m.spin);
-                    timer[0].reset();
+                    fkpm::timer[0].reset();
                     m.set_hamiltonian(m.spin);
                     engine->set_H(m.H, es);
                     
-                    timer[0].reset();
+                    fkpm::timer[0].reset();
                     auto moments = engine->moments(M);
-                    cout << "time = " << timer[0].measure() << "\n";
-                    auto gamma = moment_transform(moments, Mq);
-                    double mu = filling_to_mu(gamma, es, m.kT(), filling, 0);
-                    double e_kpm = electronic_energy(gamma, es, m.kT(), filling, mu) / m.n_sites;
+                    cout << "time = " << fkpm::timer[0].measure() << "\n";
+                    auto gamma = fkpm::moment_transform(moments, Mq);
+                    double mu = fkpm::filling_to_mu(gamma, es, m.kT(), filling, 0);
+                    double e_kpm = fkpm::electronic_energy(gamma, es, m.kT(), filling, mu) / m.n_sites;
                     
                     double q = 2*Pi*q_idx/lx;
                     cout << std::setw(10) << delta << std::setw(10) << J << std::setw(10) << q
@@ -268,7 +268,7 @@ int main(int argc,char **argv) {
     testKondo1();
     testKondo2();
     testKondo3();
-    testKondo4();
+//    mostovoy_energy();
 //    mostovoy_variational();
 }
 

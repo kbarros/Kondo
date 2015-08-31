@@ -155,11 +155,11 @@ int main(int argc, char *argv[]) {
     auto input_name = base_dir / "config.toml";
     boost::filesystem::ifstream input_file(input_name);
     if (!input_file.is_open()) {
-        cerr << "Unable to open file `" << input_name << "`!\n";
+        cerr << "Unable to open file " << input_name << "!\n";
         std::exit(EXIT_FAILURE);
     }
     
-    cout << "Using input file `" << input_name << "`\n";
+    cout << "Using input file " << input_name << ".\n";
     
     cpptoml::parser p{input_file};
     cpptoml::toml_group g = p.parse();

@@ -107,8 +107,8 @@ int main(int argc, char **argv) {
                     int yp = (y + y_off[nn] + h) % h;
                     
                     int ui = idx(0, x, y);
-                    int uj = idx(0, xp, yp);
-                    int vi = idx(1, x, y);
+                    // int uj = idx(0, xp, yp);
+                    // int vi = idx(1, x, y);
                     int vj = idx(1, xp, yp);
                     
                     cx_flt old_delta = *H(ui, vj);

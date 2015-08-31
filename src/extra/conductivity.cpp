@@ -114,7 +114,8 @@ void triangular(int argc, char *argv[]) {
     std::cout << "seed:    " << seed << std::endl;
     
     fkpm::RNG rng(seed);
-    engine->set_R_uncorrelated(m->H.n_rows, 2*n_colors, rng);
+    //engine->set_R_uncorrelated(m->H.n_rows, 2*n_colors, rng);
+    engine->set_R_correlated(m->groups(n_colors), rng);
     auto kernel = fkpm::jackson_kernel(M);
     engine->set_H(m->H, es);
     

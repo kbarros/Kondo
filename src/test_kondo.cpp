@@ -167,6 +167,44 @@ void testKondo3() {
     cout << "f_var " << f_var << " [order 0.0016]\n";
 }
 
+void conductivity() {
+    auto engine = fkpm::mk_engine<cx_flt>();
+    int w = 4, h = 4;
+    int M = 200;
+    int Mq = M;
+    int n_colors = 4*4;
+    auto kernel = fkpm::jackson_kernel(M);
+    
+    auto m = SimpleModel::mk_triangular(w, h);
+    m->J = 1;
+    m->t1 = -1;
+    m->set_spins("allout", mk_toml(""), m->spin);
+    m->set_hamiltonian(m->spin);
+    
+    double extra = 0.1;
+    double tolerance = 1e-2;
+    auto es = energy_scale(m->H, extra, tolerance);
+    
+    engine->set_H(m->H, es);
+    
+    fkpm::RNG rng(1);
+    engine->set_R_correlated(m->groups(n_colors), rng);
+    
+    double area = w*h*sqrt(3.0)/2.0;
+    auto jx = m->electric_current_operator(m->spin, {1,0,0});
+    auto jy = m->electric_current_operator(m->spin, {0,1,0});
+    jx.scale(1/sqrt(area));
+    jy.scale(1/sqrt(area));
+    
+    auto moments = engine->moments(M);
+    auto moments_xy = engine->moments2_v1(M, jx, jy);
+    
+    auto gamma = fkpm::moment_transform(moments, Mq);
+    auto mu = fkpm::filling_to_mu(gamma, es, m->kT(), 0.25, 0.0);
+    auto cmn = electrical_conductivity_coefficients(M, Mq, m->kT(), mu, 0.0, es, kernel);
+    std::cout << "sigma_xy " << std::real(fkpm::moment_product(cmn, moments_xy)) << " [1.22566]\n";
+}
+
 void mostovoy_energy() {
     fkpm::RNG rng(1);
     int lx = 4;
@@ -263,11 +301,12 @@ void mostovoy_variational() {
     }
 }
 
-
 int main(int argc,char **argv) {
     testKondo1();
     testKondo2();
     testKondo3();
+    conductivity();
+    
 //    mostovoy_energy();
 //    mostovoy_variational();
 }

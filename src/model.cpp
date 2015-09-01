@@ -89,17 +89,6 @@ double Model::energy_classical(Vec<vec3> const& spin) {
     return acc;
 }
 
-fkpm::SpMatBsr<cx_flt> Model::electric_current_operator(Vec<vec3> const& spin, vec3 dir) {
-    std::cerr << "electric_current_operator() not implemented for this model type\n";
-    std::exit(EXIT_FAILURE);
-}
-
-vec3 Model::displacement(int i, int j) {
-    std::cerr << "displacement(i, j) not implemented for this model type\n";
-    std::exit(EXIT_FAILURE);
-}
-
-
 
 SimpleModel::SimpleModel(int n_sites): Model(n_sites, 2) {
 }
@@ -202,6 +191,11 @@ public:
         return {double(i), 0, 0};
     }
     
+    vec3 displacement(int i, int j) {
+        std::cerr << "displacement(i, j) not implemented for model\n";
+        std::exit(EXIT_FAILURE);
+    }
+    
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, vec3{0, 0, 1});
@@ -258,6 +252,11 @@ public:
         double x = i % w;
         double y = i / w;
         return {x, y, 0};
+    }
+    
+    vec3 displacement(int i, int j) {
+        std::cerr << "displacement(i, j) not implemented for model\n";
+        std::exit(EXIT_FAILURE);
     }
     
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
@@ -657,6 +656,11 @@ public:
         double y = (i / lx)%ly;
         double z = (i / lx)/ ly;
         return {x, y, z};
+    }
+    
+    vec3 displacement(int i, int j) {
+        std::cerr << "displacement(i, j) not implemented for model\n";
+        std::exit(EXIT_FAILURE);
     }
     
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {

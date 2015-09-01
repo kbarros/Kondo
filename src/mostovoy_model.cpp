@@ -111,6 +111,11 @@ void MostovoyModel::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const&
     }
 }
 
+fkpm::SpMatBsr<cx_flt> MostovoyModel::electric_current_operator(Vec<vec3> const& spin, vec3 dir) {
+    std::cerr << "electric_current_operator() not implemented for MostovoyModel\n";
+    std::exit(EXIT_FAILURE);
+}
+
 
 void MostovoyModel::set_spins_helical(int qx, int qy, int qz, Vec<vec3>& spin) {
     vec3 q = 2 * Pi * vec3{double(qx)/lx, double(qy)/ly, double(qz)/lz};
@@ -169,6 +174,11 @@ vec3 MostovoyModel::position(int i) {
     double y = (i/lx) % ly;
     double z = i/(lx*ly);
     return {x, y, z};
+}
+
+vec3 MostovoyModel::displacement(int i, int j) {
+    std::cerr << "displacement(i, j) not implemented for MostovoyModel\n";
+    std::exit(EXIT_FAILURE);
 }
 
 Vec<int> MostovoyModel::groups(int n_colors) {

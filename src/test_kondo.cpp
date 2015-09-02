@@ -190,11 +190,8 @@ void conductivity() {
     fkpm::RNG rng(1);
     engine->set_R_correlated(m->groups(n_colors), rng);
     
-    double area = w*h*sqrt(3.0)/2.0;
     auto jx = m->electric_current_operator(m->spin, {1,0,0});
     auto jy = m->electric_current_operator(m->spin, {0,1,0});
-    jx.scale(1/sqrt(area));
-    jy.scale(1/sqrt(area));
     
     auto moments = engine->moments(M);
     auto moments_xy = engine->moments2_v1(M, jx, jy);

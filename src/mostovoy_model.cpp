@@ -169,6 +169,10 @@ void MostovoyModel::set_neighbors(int rank, int i, Vec<int>& idx) {
     }
 }
 
+vec3 MostovoyModel::dimensions() {
+    return {double(lx), double(ly), double(lz)};
+}
+
 vec3 MostovoyModel::position(int i) {
     double x = i % lx;
     double y = (i/lx) % ly;

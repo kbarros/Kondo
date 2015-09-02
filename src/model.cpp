@@ -156,6 +156,9 @@ void SimpleModel::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& s
 
 
 fkpm::SpMatBsr<cx_flt> SimpleModel::electric_current_operator(Vec<vec3> const& spin, vec3 dir) {
+    vec3 d = dimensions();
+    double sqrt_vol = sqrt(d.x*d.y*d.z);
+    
     fkpm::SpMatElems<cx_flt> j_elems(n_sites*n_orbs, n_sites*n_orbs, 1);
     cx_flt zero = 0;
     for (int i = 0; i < n_sites*n_orbs; i++) {
@@ -169,7 +172,7 @@ fkpm::SpMatBsr<cx_flt> SimpleModel::electric_current_operator(Vec<vec3> const& s
                 set_neighbors(rank, i, js);
                 for (int j : js) {
                     vec3 dR = displacement(i, j);
-                    cx_flt v = I * flt(dir.normalized().dot(dR) * ts[rank]);
+                    cx_flt v = I * flt(dir.normalized().dot(dR) * ts[rank] / sqrt_vol);
                     j_elems.add(2*i+0, 2*j+0, &v);
                     j_elems.add(2*i+1, 2*j+1, &v);
                 }
@@ -185,6 +188,10 @@ public:
     int w;
     
     LinearModel(int w): SimpleModel(w), w(w) {
+    }
+    
+    vec3 dimensions() {
+        return {double(w), 1, 1};
     }
     
     vec3 position(int i) {
@@ -245,6 +252,10 @@ public:
     int w, h;
     
     SquareModel(int w, int h): SimpleModel(w*h), w(w), h(h) {
+    }
+    
+    vec3 dimensions() {
+        return {double(w), double(h), 1};
     }
     
     vec3 position(int i) {
@@ -350,6 +361,10 @@ public:
     int w, h;
     
     TriangularModel(int w, int h): SimpleModel(w*h), w(w), h(h) {
+    }
+    
+    vec3 dimensions() {
+        return {double(w), 0.5*sqrt(3.0)*h, 1};
     }
     
     vec3 position(int i) {
@@ -461,6 +476,10 @@ public:
     int w, h;
     
     KagomeModel(int w, int h): SimpleModel(3*w*h), w(w), h(h) {
+    }
+    
+    vec3 dimensions() {
+        return {2.0*w, sqrt(3.0)*h, 1};
     }
     
     //
@@ -648,6 +667,10 @@ public:
     int lx, ly, lz;
     
     CubicModel(int lx, int ly, int lz): SimpleModel(lx*ly*lz), lx(lx), ly(ly), lz(lz) {
+    }
+    
+    vec3 dimensions() {
+        return {double(lx), double(ly), double(lz)};
     }
     
     vec3 position(int i) {

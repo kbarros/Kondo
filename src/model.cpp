@@ -89,6 +89,42 @@ double Model::energy_classical(Vec<vec3> const& spin) {
     return acc;
 }
 
+void Model::pbc_shear(double& xy, double& xz, double& yz) {
+    xy = xz = yz = 0;
+}
+
+vec3 Model::displacement(int i, int j) {
+    // calculate wrapping vectors
+    vec3 dim = dimensions();
+    double sxy, sxz, syz;
+    pbc_shear(sxy, sxz, syz);
+    vec3 vx = vec3{1,     0, 0} * dim.x;
+    vec3 vy = vec3{sxy,   1, 0} * dim.y;
+    vec3 vz = vec3{sxz, syz, 1} * dim.z;
+    
+    // row vectors of inverse of [vx, vy, vz] matrix
+    vec3 ux = vec3{1, -sxy, -sxz} / dim.x;
+    vec3 uy = vec3{0,    1, -syz} / dim.y;
+    vec3 uz = vec3{0,    0,    1} / dim.y;
+    
+    // naive offset
+    vec3 dR = position(i) - position(j);
+    
+    // corrected offset
+    dR = (vx * std::remainder(ux.dot(dR), 1) +
+          vy * std::remainder(uy.dot(dR), 1) +
+          vz * std::remainder(uz.dot(dR), 1));
+    
+    if (std::abs(dR.dot(vx)) > 0.5*vx.norm2() ||
+        std::abs(dR.dot(vy)) > 0.5*vy.norm2() ||
+        std::abs(dR.dot(vz)) > 0.5*vz.norm2()) {
+        std::cerr << "Detected invalid displacement between sites " << i << " and " << j << "!\n";
+        std::cerr << "Try increasing system size or decreasing coupling length scale.\n";
+        std::exit(EXIT_FAILURE);
+    }
+    return dR;
+}
+
 
 SimpleModel::SimpleModel(int n_sites): Model(n_sites, 2) {
 }
@@ -198,11 +234,6 @@ public:
         return {double(i), 0, 0};
     }
     
-    vec3 displacement(int i, int j) {
-        std::cerr << "displacement(i, j) not implemented for model\n";
-        std::exit(EXIT_FAILURE);
-    }
-    
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, vec3{0, 0, 1});
@@ -263,11 +294,6 @@ public:
         double x = i % w;
         double y = i / w;
         return {x, y, 0};
-    }
-    
-    vec3 displacement(int i, int j) {
-        std::cerr << "displacement(i, j) not implemented for model\n";
-        std::exit(EXIT_FAILURE);
     }
     
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
@@ -356,6 +382,9 @@ std::unique_ptr<SimpleModel> SimpleModel::mk_square(int w, int h) {
 }
 
 
+// TODO: change this to +1 for consistency with Kagome
+#define TRIANGULAR_SHEAR_DIRECTION (-1)
+
 class TriangularModel: public SimpleModel {
 public:
     int w, h;
@@ -373,30 +402,13 @@ public:
         double y = i / w;
         double a = 1.0;                // horizontal distance between columns
         double b = 0.5*sqrt(3.0)*a;    // vertical distance between rows
-        return {a*x - 0.5*a*y, b*y, 0};
+        return {a*x + TRIANGULAR_SHEAR_DIRECTION * 0.5*a*y, b*y, 0};
     }
     
-    vec3 displacement(int i, int j) {
-        vec3 dR = position(i) - position(j);
-        double Lx = w;
-        double Ly = sqrt(3.0)*h/2.0;
-        while (dR.y > Ly/2) {
-            dR.y -= Ly;
-            dR.x -= h/2.0;
-        }
-        while (dR.y < -Ly/2) {
-            dR.y += Ly;
-            dR.x += h/2.0;
-        }
-        while (dR.x > Lx/2) {
-            dR.x -= Lx;
-        }
-        while (dR.x < -Lx/2) {
-            dR.x += Lx;
-        }
-        return dR;
+    void pbc_shear(double& xy, double& xz, double& yz) {
+        xy = TRIANGULAR_SHEAR_DIRECTION * 1.0/sqrt(3.0);
+        xz = yz = 0.0;
     }
-    
     
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
@@ -422,6 +434,7 @@ public:
     void set_neighbors(int rank, int i, Vec<int>& idx) {
         struct Delta {int x; int y;};
         static Vec<Vec<Delta>> deltas {
+#if TRIANGULAR_SHEAR_DIRECTION == -1
             // . . C 1 B
             // . 2 c b 0
             // D d * a A
@@ -430,6 +443,16 @@ public:
             { {1, 0}, {1, 1}, {0,  1}, {-1,  0}, {-1, -1}, {0, -1} }, // a b c d e f
             { {2, 1}, {1, 2}, {-1, 1}, {-2, -1}, {-1, -2}, {1, -1} }, // 0 1 2 3 4 5
             { {2, 0}, {2, 2}, {0,  2}, {-2,  0}, {-2, -2}, {0, -2} }, // A B C D E F
+#elif
+            // C 1 B . .
+            // 2 c b 0 .
+            // D d * a A
+            // . 3 e f 5
+            // . . E 4 F
+            { {1, 0}, {0, 1}, {-1,  1}, {-1,  0}, {0, -1}, {1, -1} }, // a b c d e f
+            { {1, 1}, {-1, 2}, {-2, 1}, {-1, -1}, {1, -2}, {2, -1} }, // 0 1 2 3 4 5
+            { {2, 0}, {0, 2}, {-2,  2}, {-2,  0}, {0, -2}, {2, -2} }, // A B C D E F
+#endif
         };
         assert(0 <= rank && rank < deltas.size());
         auto d = deltas[rank];
@@ -503,28 +526,11 @@ public:
         return {a*x + 0.5*a*y + r*cos(theta), b*y + r*sin(theta), 0};
     }
     
-    vec3 displacement(int i, int j) {
-        vec3 dR = position(i) - position(j);
-        double a = 2.;
-        double Lx = a * w;
-        double Ly = a * sqrt(3.0)*h/2.0;
-        while (dR.y > Ly/2) {
-            dR.y -= Ly;
-            dR.x -= h/2.0 * a;
-        }
-        while (dR.y < -Ly/2) {
-            dR.y += Ly;
-            dR.x += h/2.0 * a;
-        }
-        while (dR.x > Lx/2) {
-            dR.x -= Lx;
-        }
-        while (dR.x < -Lx/2) {
-            dR.x += Lx;
-        }
-        return dR;
+    void pbc_shear(double& xy, double& xz, double& yz) {
+        xy = 1.0/sqrt(3.0);
+        xz = yz = 0.0;
     }
-
+    
     void set_spins_3q(Vec<Vec<vec3>> b, Vec<vec3>& spin) {
         for (int i = 0; i < n_sites; i++) {
             int v = i%3;
@@ -679,11 +685,6 @@ public:
         double y = (i / lx)%ly;
         double z = (i / lx)/ ly;
         return {x, y, z};
-    }
-    
-    vec3 displacement(int i, int j) {
-        std::cerr << "displacement(i, j) not implemented for model\n";
-        std::exit(EXIT_FAILURE);
     }
     
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {

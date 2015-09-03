@@ -180,11 +180,6 @@ vec3 MostovoyModel::position(int i) {
     return {x, y, z};
 }
 
-vec3 MostovoyModel::displacement(int i, int j) {
-    std::cerr << "displacement(i, j) not implemented for MostovoyModel\n";
-    std::exit(EXIT_FAILURE);
-}
-
 Vec<int> MostovoyModel::groups(int n_colors) {
     n_colors = std::min(n_colors, n_sites);
     int c_len = int(std::cbrt(n_colors));

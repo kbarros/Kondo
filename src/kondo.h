@@ -76,7 +76,8 @@ public:
     virtual void set_neighbors(int rank, int k, Vec<int>& idx) = 0;
     virtual vec3 dimensions() = 0;
     virtual vec3 position(int i) = 0;
-    virtual vec3 displacement(int i, int j) = 0;
+    virtual void pbc_shear(double& xy, double& xz, double& yz);
+    virtual vec3 displacement(int i, int j);
     virtual Vec<int> groups(int n_colors) = 0;
 };
 
@@ -120,7 +121,6 @@ public:
     void set_neighbors(int rank, int k, Vec<int>& idx);
     vec3 dimensions();
     vec3 position(int i);
-    vec3 displacement(int i, int j);
     Vec<int> groups(int n_colors);
 };
 

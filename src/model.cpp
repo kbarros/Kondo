@@ -44,8 +44,9 @@ void Model::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, V
     
     // Site-local forces
     for (int i = 0; i < n_sites; i++) {
-        force[i] += zeeman;
-        force[i].z += easy_z*spin[i].z;
+        force[i]   += - 2 * s0 * spin[i];
+        force[i]   += zeeman;
+        force[i].z += easy_z * spin[i].z;
     }
     
     // Super-exchange forces
@@ -68,8 +69,9 @@ double Model::energy_classical(Vec<vec3> const& spin) {
     
     // Site-local energy
     for (int i = 0; i < n_sites; i++) {
-        acc += -zeeman.dot(spin[i]);
-        acc += -easy_z*spin[i].z*spin[i].z;
+        acc += s0 * spin[i].norm2();
+        acc += - zeeman.dot(spin[i]);
+        acc += - easy_z * spin[i].z * spin[i].z;
     }
     
     // Super-exchange energy

@@ -50,7 +50,7 @@ void triangular(int argc, char *argv[]) {
     //std::cout << "using T=0, change back later!" << std::endl;
     //m->kT_init = 0.0;
     m->kT_decay = g.get_unwrap<double>("model.kT_decay", 0);
-    m->B_zeeman = {g.get_unwrap<double>("model.zeeman_x", 0), g.get_unwrap<double>("model.zeeman_y", 0), g.get_unwrap<double>("model.zeeman_z", 0)};
+    m->zeeman   = {g.get_unwrap<double>("model.zeeman_x", 0), g.get_unwrap<double>("model.zeeman_y", 0), g.get_unwrap<double>("model.zeeman_z", 0)};
     m->easy_z   = g.get_unwrap<double>("model.easy_z", 0);
     m->s1       = g.get_unwrap<double>("model.s1", 0);
     m->s2       = g.get_unwrap<double>("model.s2", 0);

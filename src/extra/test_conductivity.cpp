@@ -15,10 +15,9 @@ inline int pos_square(int x, int y, int lx) { int temp = x + lx * y; assert(temp
 
 
 
-void testKPM5() {
-    std::cout << std::endl << "testKPM5: Hall conductivity on square lattice." << std::endl;
+void testConductivity1() {
+    std::cout << std::endl << "test1: Hall conductivity on square lattice." << std::endl;
     auto engine = fkpm::mk_engine<cx_double>();
-    
     int lx = 100;
     int n  = lx * lx;
     int s  = 4;
@@ -88,11 +87,11 @@ void testKPM5() {
     engine->set_R_uncorrelated(n, s, rng);
     
     auto mu_xy = engine->moments2_v1(M, j2_BSR, j1_BSR);
-    auto cmn = fkpm::electrical_conductivity_coefficients(M, Mq, kT, -3.5, 0.0, es, kernel);
+    auto cmn = fkpm::electrical_conductivity_coefficients_v2(M, Mq, kT, -3.5, 0.0, es, kernel);
     std::cout << "sigma_{xy}(mu = -3.5) = " << std::real(fkpm::moment_product(cmn, mu_xy)) << std::endl;
     std::cout << "expecting: 1.526508389 (increased moments would give 1)" << std::endl;
     
-    cmn = fkpm::electrical_conductivity_coefficients(M, Mq, kT, -2.8, 0.0, es, kernel);
+    cmn = fkpm::electrical_conductivity_coefficients_v2(M, Mq, kT, -2.8, 0.0, es, kernel);
     std::cout << "sigma_{xy}(mu = -2.8) = " << std::real(fkpm::moment_product(cmn, mu_xy)) << std::endl;
     std::cout << "expecting: 2.44531456  (increased moments would give 2)" << std::endl;
     
@@ -100,8 +99,52 @@ void testKPM5() {
     j1_BSR.clear();
     j2_BSR.clear();
     std::cout << "done!" << std::endl;
-    
 }
+
+
+// triangular lattice
+void testConductivity2() {
+    std::cout << std::endl << "test2: conductivity on triangular lattice." << std::endl;
+    int w = 100, h = 100;
+    auto m = SimpleModel::mk_triangular(w, h);
+    m->J = 5.0 * sqrt(3.0);
+    m->t1 = -1;
+    int M = 40;
+    int Mq = 2*M;
+    int n_colors = 16;
+    auto kernel = fkpm::jackson_kernel(M);
+    auto engine = fkpm::mk_engine<cx_flt>();
+    
+    m->set_spins("allout", mk_toml(""), m->spin);
+    m->set_hamiltonian(m->spin);
+    
+    auto es = engine->energy_scale(m->H, 0.1);
+    engine->set_H(m->H, es);
+    
+    fkpm::RNG rng(0);
+    engine->set_R_uncorrelated(m->H.n_rows, 2*n_colors, rng);
+    
+    auto jx = m->electric_current_operator(m->spin, {1,0,0});
+    auto jy = m->electric_current_operator(m->spin, {0,1,0});
+    auto mu_xx = engine->moments2_v1(M, jx, jx);
+    auto mu_xy = engine->moments2_v1(M, jx, jy);
+    
+    auto cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), -10.5, 0.0, es, kernel);
+    std::cout << "sigma_{xx}(mu = -10.5) = " << std::real(fkpm::moment_product(cmn, mu_xx))
+              << " (expecting 1.76782)" << std::endl;
+    cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), -9.0, 0.0, es, kernel);
+    std::cout << "sigma_{xy}(mu = -9) = " << std::real(fkpm::moment_product(cmn, mu_xy))
+              << " (expecting: 1.5038)" << std::endl;
+    cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), 0.0, 0.0, es, kernel);
+    std::cout << "sigma_{xx}(mu = 0) = " << std::real(fkpm::moment_product(cmn, mu_xx))
+              << " (expecting: -0.000621003)" << std::endl;
+    std::cout << "sigma_{xy}(mu = 0) = " << std::real(fkpm::moment_product(cmn, mu_xy))
+              << " (expecting: -4.77897e-05)" << std::endl;
+    cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), 9.0, 0.0, es, kernel);
+    std::cout << "sigma_{xy}(mu = 9) = " << std::real(fkpm::moment_product(cmn, mu_xy))
+              << " (expecting: -1.69192)" << std::endl;
+}
+
 
 void test_AndersonModel() {
     int lx = 32;
@@ -873,11 +916,8 @@ void testKondo6() {
     
     //    auto u_fourier = transformU(4);
     
-    double area = w*h*sqrt(3.0)/2.0;
     auto jx = m->electric_current_operator(m->spin, {1,0,0});
     auto jy = m->electric_current_operator(m->spin, {0,1,0});
-    jx.scale(1/sqrt(area));
-    jy.scale(1/sqrt(area));
     
     cout << "calculating moments2... " << std::flush;
     fkpm::timer[0].reset();
@@ -1069,8 +1109,9 @@ void testKondo7() {
 
 
 int main(int argc, char **argv) {
-    //testKPM5();
-    test_AndersonModel();
+    testConductivity1();
+    testConductivity2();
+    //test_AndersonModel();
     //test_PRL101_156402_v0();
     //test_PRL101_156402_v1();
     //test_Hall_SquareLattice();

@@ -109,11 +109,8 @@ void triangular(int argc, char *argv[]) {
     auto kernel = fkpm::jackson_kernel(M);
     engine->set_H(m->H, es);
     
-    double area = m->n_sites*sqrt(3.0)/2.0;
     auto jx = m->electric_current_operator(m->spin, {1,0,0});
     auto jy = m->electric_current_operator(m->spin, {0,1,0});
-    jx.scale(1/sqrt(area));
-    jy.scale(1/sqrt(area));
     
     json_file.close();
     
@@ -127,6 +124,7 @@ void triangular(int argc, char *argv[]) {
     
     std::cout << "calculating moments2... " << std::flush;
     fkpm::timer[0].reset();
+    auto mu_xx = engine->moments2_v1(M, jx, jx);
     auto mu_xy = engine->moments2_v1(M, jx, jy);
     cout << " done. " << fkpm::timer[0].measure() << "s.\n";
     
@@ -135,14 +133,17 @@ void triangular(int argc, char *argv[]) {
                         "_color"+std::to_string(n_colors)+"_seed"+std::to_string(seed)+".dat", std::ios::out);
     fout2 << std::scientific << std::right;
     fout2 << std::setw(20) << "#M" << std::setw(20) << "beta" << std::setw(20) << "mu"
-          << std::setw(20) << "rho" << std::setw(20) << "sigma_xy" << std::endl;
+          << std::setw(20) << "rho" << std::setw(20) << "sigma_xx" << std::setw(20) << "sigma_xy" << std::endl;
+    arma::Col<double> sigma_xx(Mq);
     arma::Col<double> sigma_xy(Mq);
+    sigma_xx.zeros();
     sigma_xy.zeros();
     for (int i = 0; i < Mq; i++) {
         auto cmn = electrical_conductivity_coefficients(M, Mq, m->kT(), mu_list[i], 0.0, es, kernel);
+        sigma_xx(i) = std::real(fkpm::moment_product(cmn, mu_xx));
         sigma_xy(i) = std::real(fkpm::moment_product(cmn, mu_xy));
         fout2 << std::setw(20) << M << std::setw(20) << 1.0/m->kT() << std::setw(20) << mu_list[i]
-              << std::setw(20) << rho[i] << std::setw(20) << sigma_xy(i) << std::endl;
+              << std::setw(20) << rho[i] << std::setw(20) << sigma_xx(i) << std::setw(20) << sigma_xy(i) << std::endl;
     }
     fout2.close();
     cout << " done. " << fkpm::timer[0].measure() << "s.\n";
@@ -154,10 +155,12 @@ void triangular(int argc, char *argv[]) {
         std::ofstream fout3("quarter_time"+std::to_string(time)+".dat", std::ios::out | std::ios::app );
         fout3 << std::setw(20) << "#(1)" << std::setw(20) << "(2)" << std::setw(20) << "(3)"
               << std::setw(20) << "(4)" << std::setw(20) << "(5)" << std::setw(20) << "(6)"
-              << std::setw(20) << "(7)" << std::setw(20) << "(8)" << std::endl;
+              << std::setw(20) << "(7)" << std::setw(20) << "(8)"
+              << std::setw(20) << "(9)" << std::setw(20) << "(10)" << std::endl;
         fout3 << std::setw(20) << "#M" << std::setw(20) << "mu" << std::setw(20)
               << "mu_extra" << std::setw(20) << "colors" << std::setw(20) << "seed"
-              << std::setw(20) << "F" << std::setw(20) << "sigma_xy"
+              << std::setw(20) << "F" << std::setw(20) << "sigma_xx"
+              << std::setw(20) << "sigma_xx_extra"<< std::setw(20) << "sigma_xy"
               << std::setw(20) << "sigma_xy_extra" << std::endl;
         fout3.close();
     }
@@ -168,6 +171,8 @@ void triangular(int argc, char *argv[]) {
     fout3 << std::setw(20) << M << std::setw(20) << mu << std::setw(20) << mu_extra
           << std::setw(20) << n_colors << std::setw(20) << seed
           << std::setw(20) << fkpm::electronic_energy(gamma, es, m->kT(), filling, mu)/m->n_sites
+          << std::setw(20) << std::real(fkpm::moment_product(cmn, mu_xx))
+          << std::setw(20) << std::real(fkpm::moment_product(cmn_extra, mu_xx))
           << std::setw(20) << std::real(fkpm::moment_product(cmn, mu_xy))
           << std::setw(20) << std::real(fkpm::moment_product(cmn_extra, mu_xy)) << std::endl;
     fout3.close();

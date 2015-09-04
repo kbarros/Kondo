@@ -62,6 +62,40 @@ void Model::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, V
             }
         }
     }
+    
+    // Spin transfer torque
+    if (current.norm2() > 0) {
+        for (int i = 0; i < n_sites; i++) {
+            // -- Build matrix of nearest neighbor displacements
+            int nn_rank = 0;
+            set_neighbors(nn_rank, i, js);
+            arma::mat X(js.size(), 3);
+            for (int idx = 0; idx < js.size(); idx++) {
+                vec3 dr = displacement(js[idx], i);
+                X.row(idx) = arma::rowvec{dr.x, dr.y, dr.z};
+            }
+            
+            // -- Calculate directional derivative stencil
+            arma::mat gram = X.t()*X;
+            // The Gram matrix is positive semi-definite. If any diagonal component is zero, this indicates
+            // that all displacement vectors are perpendicular to that cartesian unit vector. To avoid a
+            // singularity in the Gram inverse, we create non-zero diagonal elements as needed. In effect, we
+            // are assuming that each gradient component is zero unless there is evidence to the contrary.
+            for (int dir = 0; dir < 3; dir++) {
+                if (gram(dir, dir) == 0.0) gram(dir, dir) = 1.0;
+            }
+            arma::mat stencil = arma::rowvec{current.x, current.y, current.z} * arma::solve(gram, X.t());
+            
+            // -- Add spin transfer torque to each force
+            for (int idx = 0; idx < js.size(); idx++) {
+                vec3 dS = spin[js[idx]] - spin[i];
+                X.row(idx) = arma::rowvec{dS.x, dS.y, dS.z};
+            }
+            arma::rowvec t = stencil * X; // (j dot grad) S
+            vec3 torque {t[0], t[1], t[2]};
+            force[i] += - spin[i].cross(torque);
+        }
+    }
 }
 
 double Model::energy_classical(Vec<vec3> const& spin) {

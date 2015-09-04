@@ -55,6 +55,7 @@ public:
     int n_orbs;  // Number of rows in Hamilitonian
     double kT_init = 0, kT_decay = 0;
     vec3 zeeman = {0, 0, 0};        // Magnetic field zeeman coupling
+    vec3 current = {0, 0, 0};       // Generates spin transfer torque
     double easy_z = 0;              // Easy axis anisotropy (z direction)
     double s0=0, s1=0, s2=0, s3=0;  // Exchange interactions
     fkpm::SpMatElems<cx_flt> H_elems, D_elems;

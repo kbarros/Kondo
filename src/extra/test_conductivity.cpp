@@ -130,18 +130,18 @@ void testConductivity2() {
     auto mu_xy = engine->moments2_v1(M, jx, jy);
     
     auto cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), -10.5, 0.0, es, kernel);
-    std::cout << "sigma_{xx}(mu = -10.5) = " << std::real(fkpm::moment_product(cmn, mu_xx))
+    std::cout << "sigma_{xx}(mu = -10.5) \t= " << std::real(fkpm::moment_product(cmn, mu_xx))
               << " (expecting 1.76782)" << std::endl;
     cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), -9.0, 0.0, es, kernel);
-    std::cout << "sigma_{xy}(mu = -9) = " << std::real(fkpm::moment_product(cmn, mu_xy))
+    std::cout << "sigma_{xy}(mu = -9) \t= " << std::real(fkpm::moment_product(cmn, mu_xy))
               << " (expecting: 1.5038)" << std::endl;
     cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), 0.0, 0.0, es, kernel);
-    std::cout << "sigma_{xx}(mu = 0) = " << std::real(fkpm::moment_product(cmn, mu_xx))
+    std::cout << "sigma_{xx}(mu = 0) \t= " << std::real(fkpm::moment_product(cmn, mu_xx))
               << " (expecting: -0.000621003)" << std::endl;
-    std::cout << "sigma_{xy}(mu = 0) = " << std::real(fkpm::moment_product(cmn, mu_xy))
+    std::cout << "sigma_{xy}(mu = 0) \t= " << std::real(fkpm::moment_product(cmn, mu_xy))
               << " (expecting: -4.77897e-05)" << std::endl;
     cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), 9.0, 0.0, es, kernel);
-    std::cout << "sigma_{xy}(mu = 9) = " << std::real(fkpm::moment_product(cmn, mu_xy))
+    std::cout << "sigma_{xy}(mu = 9) \t= " << std::real(fkpm::moment_product(cmn, mu_xy))
               << " (expecting: -1.69192)" << std::endl;
 }
 
@@ -1032,7 +1032,7 @@ void testKondo7() {
     m->J = 15.0 * sqrt(3.0);
     m->t1 = -3.5;
     int M = 300;
-    int Mq = M;
+    int Mq = 2*M;
     int Lc = 4;
     int n_colors = 3 * Lc * Lc;
     auto kernel = fkpm::jackson_kernel(M);
@@ -1075,11 +1075,11 @@ void testKondo7() {
     
     //    auto u_fourier = transformU(4);
     
-    double area = 4. * w*h*sqrt(3.0)/2.0;
+    //double area = 4. * w*h*sqrt(3.0)/2.0;
     auto jx = m->electric_current_operator(m->spin, {1,0,0});
     auto jy = m->electric_current_operator(m->spin, {0,1,0});
-    jx.scale(1/sqrt(area));
-    jy.scale(1/sqrt(area));
+    //jx.scale(1/sqrt(area));
+    //jy.scale(1/sqrt(area));
     
     cout << "calculating moments2... " << std::flush;
     fkpm::timer[0].reset();
@@ -1098,7 +1098,7 @@ void testKondo7() {
     sigma_xx.zeros();
     for (int i = 0; i < n_mus; i++) {
         double mu = es.lo + i * (es.hi-es.lo) / n_mus;
-        auto cmn = electrical_conductivity_coefficients(M, Mq, m->kT(), mu, 0.0, es, kernel);
+        auto cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), mu, 0.0, es, kernel);
         sigma_xy(i) = std::real(fkpm::moment_product(cmn, mu_xy));
         sigma_xx(i) = std::real(fkpm::moment_product(cmn, mu_xx));
         fout2 << std::setw(20) << M << std::setw(20) << 1.0/m->kT() << std::setw(20) << mu << std::setw(20) << sigma_xy(i) << '\t' << sigma_xx(i) << std::endl;

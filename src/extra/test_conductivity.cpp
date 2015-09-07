@@ -87,13 +87,17 @@ void testConductivity1() {
     engine->set_R_uncorrelated(n, s, rng);
     
     auto mu_xy = engine->moments2_v1(M, j2_BSR, j1_BSR);
+    std::cout << "mu[3,5]=" << mu_xy[3][5] << "\n\t[expecting (-0.0013152,-0.235975)]" << std::endl;
+    std::cout << "mu[9,17]=" << mu_xy[9][17] << "\n\t[expecting (0.00215957,0.148249)]" << std::endl;
     auto cmn = fkpm::electrical_conductivity_coefficients_v2(M, Mq, kT, -3.5, 0.0, es, kernel);
-    std::cout << "sigma_{xy}(mu = -3.5) = " << std::real(fkpm::moment_product(cmn, mu_xy)) << std::endl;
-    std::cout << "expecting: 1.526508389 (increased moments would give 1)" << std::endl;
+    std::cout << "cmn[8,5]=" << cmn[8][5] << "\n\t[expecting (3465.91,-9.31494)]" << std::endl;
+    std::cout << "cmn[13,20]=" << cmn[13][20] << "\n\t[expecting (928.206,15.9604)]" << std::endl;
+    std::cout << "sigma_{xy}(mu = -3.5) = " << std::real(fkpm::moment_product(cmn, mu_xy))
+              << " [expecting 1.52646]" << std::endl;
     
     cmn = fkpm::electrical_conductivity_coefficients_v2(M, Mq, kT, -2.8, 0.0, es, kernel);
-    std::cout << "sigma_{xy}(mu = -2.8) = " << std::real(fkpm::moment_product(cmn, mu_xy)) << std::endl;
-    std::cout << "expecting: 2.44531456  (increased moments would give 2)" << std::endl;
+    std::cout << "sigma_{xy}(mu = -2.8) = " << std::real(fkpm::moment_product(cmn, mu_xy))
+              << " [expecting 2.44527]" << std::endl;
     
     H.clear();
     j1_BSR.clear();
@@ -128,21 +132,27 @@ void testConductivity2() {
     auto jy = m->electric_current_operator(m->spin, {0,1,0});
     auto mu_xx = engine->moments2_v1(M, jx, jx);
     auto mu_xy = engine->moments2_v1(M, jx, jy);
+    std::cout << "muxx[3,5]=" << mu_xx[3][5] << "\n\t[expecting (-0.66667,-0.007521)]" << std::endl;
+    std::cout << "muxx[10,10]=" << mu_xx[10][10] << "\n\t[expecting (-1.45544,-0.00315318)]" << std::endl;
+    std::cout << "muxy[12,2]=" << mu_xy[12][2] << "\n\t[expecting (-0.00180327,0.0903677)]" << std::endl;
+    std::cout << "muxy[25,14]=" << mu_xy[25][14] << "\n\t[expecting (-4.24795e-05,0.0554915)]" << std::endl;
     
     auto cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), -10.5, 0.0, es, kernel);
+    std::cout << "cmn[30,30]=" << cmn[30][30] << "\n\t[expecting (-1.54866,0)]" << std::endl;
     std::cout << "sigma_{xx}(mu = -10.5) \t= " << std::real(fkpm::moment_product(cmn, mu_xx))
-              << " (expecting 1.76782)" << std::endl;
+              << " [expecting 1.76782]" << std::endl;
     cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), -9.0, 0.0, es, kernel);
+    std::cout << "cmn[9,9]=" << cmn[9][9] << "\n\t[expecting (-316.044,0)]" << std::endl;
     std::cout << "sigma_{xy}(mu = -9) \t= " << std::real(fkpm::moment_product(cmn, mu_xy))
-              << " (expecting: 1.5038)" << std::endl;
+              << " [expecting: 1.5038]" << std::endl;
     cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), 0.0, 0.0, es, kernel);
     std::cout << "sigma_{xx}(mu = 0) \t= " << std::real(fkpm::moment_product(cmn, mu_xx))
-              << " (expecting: -0.000621003)" << std::endl;
+              << " [expecting: -0.000621003]" << std::endl;
     std::cout << "sigma_{xy}(mu = 0) \t= " << std::real(fkpm::moment_product(cmn, mu_xy))
-              << " (expecting: -4.77897e-05)" << std::endl;
+              << " [expecting: -4.77897e-05]" << std::endl;
     cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), 9.0, 0.0, es, kernel);
     std::cout << "sigma_{xy}(mu = 9) \t= " << std::real(fkpm::moment_product(cmn, mu_xy))
-              << " (expecting: -1.69192)" << std::endl;
+              << " [expecting: -1.69192]" << std::endl;
 }
 
 

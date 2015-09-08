@@ -275,7 +275,7 @@ void test_AndersonModel() {
             }
         }
         for (int i = 0; i < omega.size(); i++) {
-            auto cmn    = fkpm::electrical_conductivity_coefficients(M, Mq, kT, mu, omega[i], es, kernel);
+            auto cmn    = fkpm::electrical_conductivity_coefficients_v2(M, Mq, kT, mu, omega[i], es, kernel);
             optical[i] += std::real(fkpm::moment_product(cmn, mu_longitudinal));
         }
         
@@ -413,7 +413,7 @@ void test_Hall_SquareLattice() {
     sigma_xy.zeros(mu_list.size());
     
     for (int i = 0; i < mu_list.size(); i++) {
-        auto cmn = fkpm::electrical_conductivity_coefficients(M, Mq, kT, mu_list[i], 0.0, es, kernel);
+        auto cmn = fkpm::electrical_conductivity_coefficients_v2(M, Mq, kT, mu_list[i], 0.0, es, kernel);
         sigma_xy(i) = std::real(fkpm::moment_product(cmn, mu_xy));
     }
     
@@ -551,7 +551,7 @@ void test_PRL101_156402_v0() {
     sigma_xy.zeros(mu_list.size());
     
     for (int i = 0; i < mu_list.size(); i++) {
-        auto cmn = fkpm::electrical_conductivity_coefficients(M, Mq, kT, mu_list[i], 0.0, es, kernel);
+        auto cmn = fkpm::electrical_conductivity_coefficients_v2(M, Mq, kT, mu_list[i], 0.0, es, kernel);
         sigma_xy(i) = std::real(fkpm::moment_product(cmn, mu_xy));
     }
     
@@ -757,7 +757,7 @@ void test_PRL101_156402_v1() {
     // comment: slow in the loop below, probably something stupid here
     for (int i = 0; i < mu_list.size(); i++) {
         //std::cout << "mu=" << mu_list[i] << std::endl;
-        auto cmn = fkpm::electrical_conductivity_coefficients(M, Mq, kT, mu_list[i], 0.0, es, kernel);
+        auto cmn = fkpm::electrical_conductivity_coefficients_v2(M, Mq, kT, mu_list[i], 0.0, es, kernel);
         //        sigma_xx(i) = std::real(fkpm::moment_product(cmn, mu_xx));
         sigma_xy(i) = std::real(fkpm::moment_product(cmn, mu_xy));
         //std::cout <<  "mu = " << mu_list[i] << ", sigma_xx = " << sigma_xx(i) << std::endl;
@@ -944,7 +944,7 @@ void testKondo6() {
     sigma_xy.zeros();
     for (int i = 0; i < Mq; i++) {
         double mu = es.lo + i * (es.hi-es.lo) / Mq;
-        auto cmn = electrical_conductivity_coefficients(M, Mq, m->kT(), mu, 0.0, es, kernel);
+        auto cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), mu, 0.0, es, kernel);
         sigma_xy(i) = std::real(fkpm::moment_product(cmn, mu_xy));
         fout2 << std::setw(20) << M << std::setw(20) << 1.0/m->kT() << std::setw(20) << mu << std::setw(20) << sigma_xy(i) << std::endl;
     }

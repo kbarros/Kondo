@@ -142,8 +142,8 @@ void triangular(int argc, char *argv[]) {
     
     std::cout << "calculating moments2... " << std::flush;
     fkpm::timer[0].reset();
-    auto mu_xx = engine->moments2_v1(M, jx, jx);
-    auto mu_xy = engine->moments2_v1(M, jx, jy);
+    auto mu_xx = engine->moments2_v1(M, jx, jx, 4, 16);
+    auto mu_xy = engine->moments2_v1(M, jx, jy, 4, 16);
     cout << " done. " << fkpm::timer[0].measure() << "s.\n";
     
     cout << "calculating dc conductivities... " << std::flush;

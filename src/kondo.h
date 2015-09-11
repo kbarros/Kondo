@@ -40,12 +40,6 @@ namespace std {
     }
 }
 
-template<typename T>
-Vec3<T> gaussian_vec3(fkpm::RNG& rng) {
-    static std::normal_distribution<T> dist;
-    return { dist(rng), dist(rng), dist(rng) };
-}
-
 class Model {
 protected:
     Vec<int> colors_to_groups(Vec<int> const& colors);
@@ -135,8 +129,11 @@ public:
     // Inertial Langevin dynamics using Grønbech-Jensen Farago, velocity explicit
     // NOTE: This integrator is only O(dt) accurate due to poor constraint implementation
     static std::unique_ptr<Dynamics> mk_gjf(double alpha, double dt);
-    // Stochastic Landau Lifshitz using Heun-p
+    // Stochastic Landau Lifshitz using Heun-p (Mentink et al., 2010)
     static std::unique_ptr<Dynamics> mk_sll(double alpha, double dt);
+    // Stochastic Landau Lifshitz using SIB (Mentink et al., 2010)
+    // Compared to Heun-p, the SIB dynamics might better conserve energy when alpha is small
+    static std::unique_ptr<Dynamics> mk_sll_sib(double alpha, double dt);
     
     virtual void init(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) {}
     virtual void step(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) = 0;

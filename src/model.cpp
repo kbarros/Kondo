@@ -28,8 +28,9 @@ Model::Model(int n_sites, int n_orbs):
 }
 
 void Model::set_spins_random(fkpm::RNG &rng, Vec<vec3> &spin) {
+    static std::normal_distribution<double> dist;
     for (int i = 0; i < spin.size(); i++) {
-        spin[i] = gaussian_vec3<double>(rng).normalized();
+        spin[i] = vec3(dist(rng), dist(rng), dist(rng)).normalized();
     }
 }
 

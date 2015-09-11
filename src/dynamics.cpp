@@ -1,9 +1,15 @@
 #include "kondo.h"
+#include <cassert>
 
 
 // project vector p onto plane that is normal to x
 vec3 project_tangent(vec3 x, vec3 p) {
     return p - x * (p.dot(x) / x.norm2());
+}
+
+vec3 gaussian_vec3(fkpm::RNG& rng) {
+    static std::normal_distribution<double> dist;
+    return { dist(rng), dist(rng), dist(rng) };
 }
 
 
@@ -15,7 +21,7 @@ public:
         Vec<vec3>& f = m.dyn_stor[0];
         calc_force(m.spin, f);
         for (int i = 0; i < m.n_sites; i++) {
-            vec3 beta = sqrt(dt*2*m.kT()) * gaussian_vec3<double>(rng);
+            vec3 beta = sqrt(dt*2*m.kT()) * gaussian_vec3(rng);
             m.spin[i] += project_tangent(m.spin[i], dt*f[i]+beta);
             m.spin[i] = m.spin[i].normalized();
         }
@@ -57,7 +63,7 @@ public:
         Vec<vec3>& beta = m.dyn_stor[3];
         
         for (int i = 0; i < m.n_sites; i++) {
-            beta[i] = sqrt(dt*2*alpha*m.kT()) * gaussian_vec3<double>(rng);
+            beta[i] = sqrt(dt*2*alpha*m.kT()) * gaussian_vec3(rng);
             vec3 ds = b*dt*v[i] + (b*dt*dt/(2*mass))*f1[i] + (b*dt/(2*mass))*beta[i];
             s[i] += project_tangent(s[i], ds);
             s[i] = s[i].normalized();
@@ -107,7 +113,7 @@ public:
         
         double D = (alpha / (1 + alpha*alpha)) * m.kT();
         for (int i = 0; i < m.n_sites; i++) {
-            beta[i] = sqrt(dt*2*D) * gaussian_vec3<double>(rng);
+            beta[i] = sqrt(dt*2*D) * gaussian_vec3(rng);
         }
         
         // one euler step starting from s (with force f), accumulated into sp
@@ -138,5 +144,58 @@ public:
 std::unique_ptr<Dynamics> Dynamics::mk_sll(double alpha, double dt) {
     return std::make_unique<SLL>(alpha, dt);
 }
+
+
+class SLL_SIB: public Dynamics {
+public:
+    double alpha;
+    
+    SLL_SIB(double alpha, double dt): alpha(alpha) { this->dt = dt; }
+    
+    void step(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) {
+        Vec<vec3>& s    = m.spin;
+        Vec<vec3>& sp   = m.dyn_stor[0];
+        Vec<vec3>& spp  = m.dyn_stor[1];
+        Vec<vec3>& f    = m.dyn_stor[2];
+        Vec<vec3>& fp   = m.dyn_stor[3];
+        Vec<vec3>& beta = m.dyn_stor[4];
+        
+        double D = (alpha / (1 + alpha*alpha)) * m.kT();
+        for (int i = 0; i < m.n_sites; i++) {
+            beta[i] = sqrt(dt*2*D) * gaussian_vec3(rng);
+        }
+        
+        // one semi-implicit step starting with s (with force f[s]), written to sp
+        auto implicit_solve = [&](Vec<vec3> const& s, Vec<vec3> const& f, Vec<vec3>& sp) {
+            for (int i = 0; i < m.n_sites; i++) {
+                vec3 w = 0.5 * (- dt*f[i] - alpha*s[i].cross(dt*f[i]) +
+                                - beta[i] - alpha*s[i].cross(beta[i]));
+                vec3 rhs = s[i] + s[i].cross(w);
+                double denom = 1 + w.norm2();
+                sp[i].x = vec3(1+w.x*w.x,   w.x*w.y+w.z, w.x*w.z-w.y).dot(rhs) / denom;
+                sp[i].y = vec3(w.x*w.y-w.z, 1+w.y*w.y,   w.y*w.z+w.x).dot(rhs) / denom;
+                sp[i].z = vec3(w.x*w.z+w.y, w.y*w.z-w.x, 1+w.z*w.z  ).dot(rhs) / denom;
+                // check target equation: sp = s + (s + sp) cross w
+                assert((sp[i] - s[i] - (s[i]+sp[i]).cross(w)).norm() < 1e-8);
+            }
+        };
+        
+        calc_force(s, f);
+        implicit_solve(s, f, sp);
+        for (int i = 0; i < m.n_sites; i++) {
+            sp[i] = 0.5 * (s[i] + sp[i]);
+        }
+        calc_force(sp, fp);
+        implicit_solve(s, fp, spp);
+        s = spp;
+        
+        n_steps++;
+        m.time = n_steps * dt;
+    }
+};
+std::unique_ptr<Dynamics> Dynamics::mk_sll_sib(double alpha, double dt) {
+    return std::make_unique<SLL_SIB>(alpha, dt);
+}
+
 
 

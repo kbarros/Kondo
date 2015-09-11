@@ -48,7 +48,9 @@ std::unique_ptr<Model> mk_model(cpptoml::toml_group g) {
     if (type == "simple") {
         auto lattice = g.get_unwrap<std::string>("model.lattice");
         std::unique_ptr<SimpleModel> m;
-        if (lattice == "square") {
+        if (lattice == "linear") {
+            m = SimpleModel::mk_linear(g.get_unwrap<int64_t>("model.w"));
+        } else if (lattice == "square") {
             m = SimpleModel::mk_square(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
         } else if (lattice == "triangular") {
             m = SimpleModel::mk_triangular(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
@@ -104,7 +106,10 @@ std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
         return Dynamics::mk_gjf(g.get_unwrap<double>("dynamics.alpha"), dt);
     } else if (type == "sll") {
         return Dynamics::mk_sll(g.get_unwrap<double>("dynamics.alpha"), dt);
+    } else if (type == "sll_sib") {
+        return Dynamics::mk_sll_sib(g.get_unwrap<double>("dynamics.alpha"), dt);
     }
+    
     cerr << "Unsupported dynamics type `" << type << "`!\n";
     std::exit(EXIT_FAILURE);
 }

@@ -447,20 +447,32 @@ public:
         xz = yz = 0.0;
     }
     
+    
+    void set_spins_3q(Vec<vec3> b, Vec<vec3>& spin) {
+        for (int i = 0; i < n_sites; i++) {
+            int x = i%w;
+            int y = i/w;
+            if (x%2 == 0 && y%2 == 0) {
+                spin[i] =  b[0] + b[1] + b[2];
+            } else if (x%2 == 1 && y%2 == 0) {
+                spin[i] =  b[0] - b[1] - b[2];
+            } else if (x%2 == 0 && y%2 == 1) {
+                spin[i] = -b[0] + b[1] - b[2];
+            } else if (x%2 == 1 && y%2 == 1) {
+                spin[i] = -b[0] - b[1] + b[2];
+            }
+        }
+    }
+    
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, vec3{0, 0, 1});
         } else if (name == "allout") {
-            for (int i = 0; i < n_sites; i++) {
-                int x = i % w;
-                int y = i / w;
-                switch (2*(y%2) + x%2) {
-                    case 0: spin[i] = vec3(+1, +1, +1).normalized(); break;
-                    case 1: spin[i] = vec3(-1, +1, -1).normalized(); break;
-                    case 2: spin[i] = vec3(+1, -1, -1).normalized(); break;
-                    case 3: spin[i] = vec3(-1, -1, +1).normalized(); break;
-                }
-            }
+            double Delta = params.get_unwrap<double>("Delta", 1.0 / sqrt(3.0));
+            set_spins_3q({{Delta, 0, 0}, {0, Delta, 0}, {0, 0, Delta}}, spin);
+        } else if (name == "3q_collinear") {
+            double Delta = params.get_unwrap<double>("Delta", 1.0);
+            set_spins_3q({{0, 0, Delta}, {0, 0, Delta}, {0, 0, Delta}}, spin);
         }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";

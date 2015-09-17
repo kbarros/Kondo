@@ -19,12 +19,12 @@ Model::Model(int n_sites, int n_orbs):
     H_elems(n_sites*n_orbs, n_sites*n_orbs, 1),
     D_elems(n_sites*n_orbs, n_sites*n_orbs, 1)
 {
-    spin.assign(n_sites, vec3{0, 0, 0});
-    dyn_stor[0].assign(n_sites, vec3{0, 0, 0});
-    dyn_stor[1].assign(n_sites, vec3{0, 0, 0});
-    dyn_stor[2].assign(n_sites, vec3{0, 0, 0});
-    dyn_stor[3].assign(n_sites, vec3{0, 0, 0});
-    dyn_stor[4].assign(n_sites, vec3{0, 0, 0});
+    spin.assign(n_sites, {0, 0, 0});
+    dyn_stor[0].assign(n_sites, {0, 0, 0});
+    dyn_stor[1].assign(n_sites, {0, 0, 0});
+    dyn_stor[2].assign(n_sites, {0, 0, 0});
+    dyn_stor[3].assign(n_sites, {0, 0, 0});
+    dyn_stor[4].assign(n_sites, {0, 0, 0});
 }
 
 void Model::set_spins_random(fkpm::RNG &rng, Vec<vec3> &spin) {
@@ -273,7 +273,7 @@ public:
     
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
-            spin.assign(n_sites, vec3{0, 0, 1});
+            spin.assign(n_sites, {0, 0, 1});
         }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";
@@ -335,7 +335,7 @@ public:
     
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
-            spin.assign(n_sites, vec3{0, 0, 1});
+            spin.assign(n_sites, {0, 0, 1});
         }
         else if (name == "meron") {
             set_spins_meron(params.get_unwrap<double>("a"), params.get_unwrap<int64_t>("q"), spin);
@@ -466,7 +466,7 @@ public:
     
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
-            spin.assign(n_sites, vec3{0, 0, 1});
+            spin.assign(n_sites, {0, 0, 1});
         } else if (name == "allout") {
             double Delta = params.get_unwrap<double>("Delta", 1.0 / sqrt(3.0));
             set_spins_3q({{Delta, 0, 0}, {0, Delta, 0}, {0, 0, Delta}}, spin);
@@ -602,7 +602,7 @@ public:
     
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
-            spin.assign(n_sites, vec3{0, 0, 1});
+            spin.assign(n_sites, {0, 0, 1});
         } else if (name == "ncp1") {
             // Chiral phase, 3/12, 7/12 fillings
             // Orthogonal sublattice vectors

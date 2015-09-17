@@ -124,16 +124,23 @@ public:
     int n_steps = 0;
     double dt;
     
-    // Overdamped relaxation using Euler integration
+    // Overdamped relaxation using Euler integration, with constrained spin magnitude
     static std::unique_ptr<Dynamics> mk_overdamped(double dt);
-    // Inertial Langevin dynamics using Grønbech-Jensen Farago, velocity explicit
-    // NOTE: This integrator is only O(dt) accurate due to poor constraint implementation
-    static std::unique_ptr<Dynamics> mk_gjf(double alpha, double dt);
+    
     // Stochastic Landau Lifshitz using Heun-p (Mentink et al., 2010)
     static std::unique_ptr<Dynamics> mk_sll(double alpha, double dt);
+    
     // Stochastic Landau Lifshitz using SIB (Mentink et al., 2010)
-    // Compared to Heun-p, the SIB dynamics might better conserve energy when alpha is small
+    // Compared to Heun-p, the SIB dynamics:
+    //   - Perfectly conserves spin magnitude
+    //   - Is more accurate when alpha is small
+    //   - Appears less accurate when alpha is order 1
     static std::unique_ptr<Dynamics> mk_sll_sib(double alpha, double dt);
+    
+    // Inertial Langevin dynamics using Grønbech-Jensen Farago, velocity explicit method
+    //   N. Gr{\o}nbech-Jensen, O. Farago, Mol. Phys. 111 (2013) 983
+    // Spin magnitude is *not* conserved
+    static std::unique_ptr<Dynamics> mk_gjf(double alpha, double dt);
     
     virtual void init(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) {}
     virtual void step(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) = 0;

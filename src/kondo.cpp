@@ -102,12 +102,12 @@ std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
     auto type = g.get_unwrap<std::string>("dynamics.type");
     if (type == "overdamped") {
         return Dynamics::mk_overdamped(dt);
-    } else if (type == "gjf") {
-        return Dynamics::mk_gjf(g.get_unwrap<double>("dynamics.alpha"), dt);
     } else if (type == "sll") {
         return Dynamics::mk_sll(g.get_unwrap<double>("dynamics.alpha"), dt);
     } else if (type == "sll_sib") {
         return Dynamics::mk_sll_sib(g.get_unwrap<double>("dynamics.alpha"), dt);
+    } else if (type == "gjf") {
+        return Dynamics::mk_gjf(g.get_unwrap<double>("dynamics.alpha"), dt);
     }
     
     cerr << "Unsupported dynamics type `" << type << "`!\n";

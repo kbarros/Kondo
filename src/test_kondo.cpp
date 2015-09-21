@@ -4,6 +4,8 @@
 
 
 void testKondo1() {
+    auto engine = fkpm::mk_engine<cx_flt>();
+    
     int w = 6, h = 6;
     double mu = 0.103;
     auto m = SimpleModel::mk_square(w, h);
@@ -12,7 +14,6 @@ void testKondo1() {
     m->t3 = -0.5;
     m->s1 = 0.1;
     m->set_spins("ferro", mk_toml(""), m->spin);
-    //m->lattice->set_spins("meron", nullptr, m->spin);
     m->spin[0] = vec3(1, 1, 1).normalized();
     
     m->set_hamiltonian(m->spin);
@@ -21,15 +22,13 @@ void testKondo1() {
     arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m->H.to_arma_dense()));
     double E1 = fkpm::electronic_grand_energy(eigs, m->kT(), mu) / m->n_sites;
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = energy_scale(m->H, extra, tolerance);
+    auto es = engine->energy_scale(m->H, 0.1);
     int M = 2000;
     int Mq = 4*M;
     using std::placeholders::_1;
     auto g_c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m->kT(), mu), es);
     auto f_c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_density, _1, m->kT(), mu), es);
-    auto engine = fkpm::mk_engine<cx_flt>();
+    
     engine->set_H(m->H, es);
     engine->set_R_identity(n);
     
@@ -51,6 +50,8 @@ void testKondo1() {
 }
 
 void testKondo2() {
+    auto engine = fkpm::mk_engine<cx_flt>();
+    
     int w = 8, h = 8;
     double mu = -1.98397;
     auto m = SimpleModel::mk_kagome(w, h);
@@ -62,7 +63,6 @@ void testKondo2() {
     
     m->set_spins("ncp1", mk_toml(""), m->spin);
     m->set_hamiltonian(m->spin);
-    auto engine = fkpm::mk_engine<cx_flt>();
     engine->set_H(m->H, es);
     
     cout << "calculating exact eigenvalues... " << std::flush;
@@ -94,6 +94,8 @@ void testKondo2() {
 }
 
 void testKondo3() {
+    auto engine = fkpm::mk_engine<cx_flt>();
+    
     fkpm::RNG rng(1);
     __attribute__((unused))
     int w = 2048, h = w;
@@ -112,15 +114,12 @@ void testKondo3() {
     int n_colors = 4;
     Vec<int> groups = m->groups(n_colors);
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = energy_scale(m->H, extra, tolerance);
+    auto es = engine->energy_scale(m->H, 0.1);
     int M = 1000;
     int Mq = 4*M;
     using std::placeholders::_1;
     auto g_c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m->kT(), mu), es);
     auto f_c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_density, _1, m->kT(), mu), es);
-    auto engine = fkpm::mk_engine<cx_flt>();
     engine->set_H(m->H, es);
     
     Vec<vec3>& f1 = m->dyn_stor[0];
@@ -181,10 +180,7 @@ void conductivity() {
     m->set_spins("allout", mk_toml(""), m->spin);
     m->set_hamiltonian(m->spin);
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = energy_scale(m->H, extra, tolerance);
-    
+    auto es = engine->energy_scale(m->H, 0.1);
     engine->set_H(m->H, es);
     
     fkpm::RNG rng(1);
@@ -203,6 +199,8 @@ void conductivity() {
 }
 
 void mostovoy_energy() {
+    auto engine = fkpm::mk_engine<cx_flt>();
+    
     fkpm::RNG rng(1);
     int lx = 4;
     auto m = MostovoyModel(lx, lx, lx);
@@ -225,13 +223,10 @@ void mostovoy_energy() {
     E_diag = fkpm::electronic_energy(eigs, m.kT(), filling) / m.n_sites;
     cout << "E_diag      : " << E_diag << " [-6.15479] (J=2)\n";
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = energy_scale(m.H, extra, tolerance);
+    auto es = engine->energy_scale(m.H, 0.1);
     int M = 200;
     int Mq = 4*M;
     
-    auto engine = fkpm::mk_engine<cx_flt>();
     engine->set_H(m.H, es);
     
     int n_colors = 4*4*4;

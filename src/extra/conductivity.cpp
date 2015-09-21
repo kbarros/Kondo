@@ -91,11 +91,7 @@ void triangular(int argc, char *argv[]) {
     }
     m->set_hamiltonian(m->spin);
     
-    //fkpm::EnergyScale es{g.get_unwrap<double>("kpm.energy_scale_lo"), g.get_unwrap<double>("kpm.energy_scale_hi")};
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = energy_scale(m->H, extra, tolerance);
-    
+    auto es = engine->energy_scale(m->H, 0.1);
     
     std::stringstream convert_M(argv[3]);
     int M;

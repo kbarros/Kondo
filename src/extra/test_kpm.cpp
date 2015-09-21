@@ -55,6 +55,8 @@ void testMat() {
 template <typename T>
 void testKPM1() {
     cout << "testKPM1: Energy/density matrix for simple Hamiltonian, templated input\n";
+    auto engine = fkpm::mk_engine<T>();
+    
     int n = 4;
     fkpm::SpMatElems<T> elems(4, 4, 1);
     Vec<T> v {5, -5, 0, 0};
@@ -66,10 +68,7 @@ void testKPM1() {
     auto g = [](double x) { return x*x; };
     auto f = [](double x) { return 2*x; }; // dg/dx
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = fkpm::energy_scale(H, extra, tolerance);
-    auto engine = fkpm::mk_engine<T>();
+    auto es = engine->energy_scale(H, 0.1);
     engine->set_R_identity(n);
     engine->set_H(H, es);
     
@@ -100,6 +99,8 @@ void testKPM1() {
 
 void testKPM2() {
     cout << "testKPM2: Energy/density matrix with various stochastic approximations\n";
+    auto engine = fkpm::mk_engine<cx_double>();
+    
     int n = 100;
     int s = n/4;
     double noise = 0.2;
@@ -126,14 +127,11 @@ void testKPM2() {
     auto g = std::bind(fkpm::fermi_energy, _1, kT, mu);
     auto f = std::bind(fkpm::fermi_density, _1, kT, mu);
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = fkpm::energy_scale(H, extra, tolerance);
+    auto es = engine->energy_scale(H, 0.1);
     int M = 2000;
     int Mq = 4*M;
     auto g_c = expansion_coefficients(M, Mq, g, es);
     auto f_c = expansion_coefficients(M, Mq, f, es);
-    auto engine = fkpm::mk_engine<cx_double>();
     engine->set_H(H, es);
     auto D = H;
     
@@ -183,6 +181,8 @@ void testKPM2() {
 
 void testKPM3() {
     cout << "testKPM3: Comparing autodiff matrix with finite differencing\n";
+    auto engine = fkpm::mk_engine<cx_double>();
+    
     int n = 100;
     double noise = 0.2;
     fkpm::RNG rng(0);
@@ -205,14 +205,11 @@ void testKPM3() {
     auto g = std::bind(fkpm::fermi_energy, _1, 0, mu);
     auto f = std::bind(fkpm::fermi_density, _1, 0, mu);
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = fkpm::energy_scale(H, extra, tolerance);
+    auto es = engine->energy_scale(H, 0.1);
     int M = 500;
     int Mq = 4*M;
     auto g_c = expansion_coefficients(M, Mq, g, es);
     auto f_c = expansion_coefficients(M, Mq, f, es);
-    auto engine = fkpm::mk_engine<cx_double>();
     engine->set_R_uncorrelated(n, 4, rng);
 //    engine->set_R_identity(n);
     
@@ -247,6 +244,8 @@ void testKPM3() {
 
 void testKPM4() {
     cout << "testKPM4: Energy/density matrix calculated using chunked R\n";
+    auto engine = fkpm::mk_engine<cx_double>();
+    
     int n = 20;
     int s = n/2;
     double noise = 0.2;
@@ -273,14 +272,11 @@ void testKPM4() {
     auto g = std::bind(fkpm::fermi_energy, _1, kT, mu);
     auto f = std::bind(fkpm::fermi_density, _1, 0, mu);
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = fkpm::energy_scale(H, extra, tolerance);
+    auto es = engine->energy_scale(H, 0.1);
     int M = 1000;
     int Mq = 4*M;
     auto g_c = expansion_coefficients(M, Mq, g, es);
     auto f_c = expansion_coefficients(M, Mq, f, es);
-    auto engine = fkpm::mk_engine<cx_double>();
     engine->set_H(H, es);
     
     fkpm::RNG rng0 = rng;

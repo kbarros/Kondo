@@ -17,6 +17,8 @@ inline int pos_square(int x, int y, int lx) { int temp = x + lx * y; assert(temp
 
 void testKPM5() {
     std::cout << std::endl << "testKPM5: Hall conductivity on square lattice." << std::endl;
+    auto engine = fkpm::mk_engine<cx_double>();
+    
     int lx = 100;
     int n  = lx * lx;
     int s  = 4;
@@ -79,10 +81,7 @@ void testKPM5() {
     fkpm::SpMatBsr<cx_double> H(H_elems);
     H_elems.clear();
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = fkpm::energy_scale(H, extra, tolerance);
-    auto engine = fkpm::mk_engine<cx_double>();
+    auto es = engine->energy_scale(H, 0.1);
     engine->set_H(H, es);
     
     fkpm::RNG rng(0);
@@ -264,6 +263,8 @@ void test_AndersonModel() {
 }
 
 void test_Hall_SquareLattice() {
+    auto engine = fkpm::mk_engine<cx_double>();
+    
     int lx = 100;
     int n  = lx * lx;
     int s  = 10;
@@ -326,10 +327,7 @@ void test_Hall_SquareLattice() {
     fkpm::SpMatBsr<cx_double> H(H_elems);
     H_elems.clear();
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = fkpm::energy_scale(H, extra, tolerance);
-    auto engine = fkpm::mk_engine<cx_double>();
+    auto es = engine->energy_scale(H, 0.1);
     engine->set_H(H, es);
     
     fkpm::RNG rng(0);
@@ -385,6 +383,8 @@ void test_Hall_SquareLattice() {
 // square lattice, each triangle threaded by quarter flux.
 // for spinless electron, at half filling, sigma_{xy}=1
 void test_PRL101_156402_v0() {
+    auto engine = fkpm::mk_engine<cx_double>();
+    
     int lx = 100;
     int n  = lx * lx;
     int s  = 10;
@@ -464,11 +464,8 @@ void test_PRL101_156402_v0() {
     fkpm::SpMatBsr<cx_double> H(H_elems);
     H_elems.clear();
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = fkpm::energy_scale(H, extra, tolerance);
+    auto es = engine->energy_scale(H, 0.1);
     //fkpm::EnergyScale es {-5.0, 5.0};
-    auto engine = fkpm::mk_engine<cx_double>();
     engine->set_H(H, es);
     
     fkpm::RNG rng(0);
@@ -529,6 +526,8 @@ void test_PRL101_156402_v0() {
 // S_3 = (-1, 1,-1)
 // S_4 = (-1,-1, 1)
 void test_PRL101_156402_v1() {
+    auto engine = fkpm::mk_engine<cx_double>();
+    
     int lx = 100;
     int n  = lx * lx;
     int s  = 40;
@@ -652,11 +651,7 @@ void test_PRL101_156402_v1() {
     fkpm::SpMatBsr<cx_double> H(H_elems);
     H_elems.clear();
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = fkpm::energy_scale(H, extra, tolerance);
-    //auto engine = fkpm::mk_engine<cx_double>();
-    auto engine = fkpm::mk_engine_cpu<cx_double>();
+    auto es = engine->energy_scale(H, 0.1);
     engine->set_H(H, es);
     
     fkpm::RNG rng(0);
@@ -735,7 +730,6 @@ void test_PRL101_156402_v1() {
 
 
 void testKondo1_cubic() {//cubic
-    
     auto engine = fkpm::mk_engine<cx_flt>();
     if (engine == nullptr) std::exit(EXIT_FAILURE);
     
@@ -772,15 +766,12 @@ void testKondo1_cubic() {//cubic
         arma::vec eigs = arma::conv_to<arma::vec>::from(arma::eig_gen(m->H.to_arma_dense()));
         //double E1 = electronic_grand_energy(eigs, m->kT(), mu) / m->n_sites;
         
-        double extra = 0.1;
-        double tolerance = 1e-2;
-        auto es = energy_scale(m->H, extra, tolerance);
+        auto es = engine->energy_scale(m->H, 0.1);
         int M = 2000;
         int Mq = 4*M;
         using std::placeholders::_1;
         auto g_c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_energy, _1, m->kT(), mu), es);
         auto f_c = expansion_coefficients(M, Mq, std::bind(fkpm::fermi_density, _1, m->kT(), mu), es);
-        auto engine = fkpm::mk_engine<cx_flt>();
         engine->set_H(m->H, es);
         engine->set_R_identity(n);
         
@@ -857,6 +848,8 @@ arma::cx_mat transformU(int lx) {
 
 // triangular lattice
 void testKondo6() {
+    auto engine = fkpm::mk_engine<cx_flt>();
+    
     int w = 100, h = 100;
     auto m = SimpleModel::mk_triangular(w, h);
     m->J = 5.0 * sqrt(3.0);
@@ -866,15 +859,11 @@ void testKondo6() {
     int n_colors = 12;
     auto kernel = fkpm::jackson_kernel(M);
     
-    auto engine = fkpm::mk_engine<cx_flt>();
     
     m->set_spins("allout", mk_toml(""), m->spin);
     m->set_hamiltonian(m->spin);
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = energy_scale(m->H, extra, tolerance);
-    
+    auto es = engine->energy_scale(m->H, 0.1);
     engine->set_H(m->H, es);
     
     fkpm::RNG rng(0);
@@ -996,6 +985,8 @@ void testKondo6() {
 }
 
 void testKondo7() {
+    auto engine = fkpm::mk_engine<cx_flt>();
+    
     int w = 32, h = 32;
     auto m = SimpleModel::mk_kagome(w, h);
     m->J = 15.0 * sqrt(3.0);
@@ -1006,10 +997,7 @@ void testKondo7() {
     int n_colors = 3 * Lc * Lc;
     auto kernel = fkpm::jackson_kernel(M);
     
-    auto engine = fkpm::mk_engine<cx_flt>();
-    
     //m->set_spins("allout", mk_toml(""), m->spin);
-    
     double dz = 0.55;
     for(int i=0; i<m->n_sites; i++) {
         int v = i % 3;
@@ -1023,9 +1011,7 @@ void testKondo7() {
     
     m->set_hamiltonian(m->spin);
     
-    double extra = 0.1;
-    double tolerance = 1e-2;
-    auto es = energy_scale(m->H, extra, tolerance);
+    auto es = engine->energy_scale(m->H, 0.1);
     
     engine->set_H(m->H, es);
     

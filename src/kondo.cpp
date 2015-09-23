@@ -188,10 +188,12 @@ int main(int argc, char *argv[]) {
     auto m = mk_model(g);
     auto dynamics = mk_dynamics(g);
     
-    fkpm::EnergyScale es{g.get_unwrap<double>("kpm.energy_scale_lo"), g.get_unwrap<double>("kpm.energy_scale_hi")};
-    // double extra = 0.1;
-    // double tolerance = 1e-2;
-    // auto es = energy_scale(m.H, extra, tolerance);
+    // global energy scale
+    fkpm::EnergyScale es;
+    fkpm::EnergyScale ges { g.get_unwrap<double>("kpm.energy_scale_lo", 0.0),
+                            g.get_unwrap<double>("kpm.energy_scale_hi", 0.0) };
+    int lanczos_iters    = g.get_unwrap<double>("kpm.lanczos_iters", 128);
+    int lanczos_extend   = g.get_unwrap<double>("kpm.lanczos_extend", 0.02);
     
     int M                = g.get_unwrap<int64_t>("kpm.cheby_order");
     int M_prec           = g.get_unwrap<int64_t>("kpm.cheby_order_precise");
@@ -208,6 +210,7 @@ int main(int argc, char *argv[]) {
     // assumes random vectors R have been set appropriately
     auto build_kpm = [&](Vec<vec3> const& spin, int M, int Mq) {
         m->set_hamiltonian(spin);
+        es = (ges.lo < ges.hi) ? ges : engine->energy_scale(m->H, lanczos_extend, lanczos_iters);
         engine->set_H(m->H, es);
         moments = engine->moments(M);
         gamma = fkpm::moment_transform(moments, Mq);
@@ -244,6 +247,8 @@ int main(int argc, char *argv[]) {
         "\"filling\":" << filling << ",\n" <<
         "\"mu\":" << mu << ",\n" <<
         "\"eig\":[]" << ",\n" <<
+        "\"energy_scale_lo\":" << es.lo << ",\n" <<
+        "\"energy_scale_hi\":" << es.hi << ",\n" <<
         "\"moments\":[";
         for (int i = 0; i < moments.size(); i++) {
             dump_file << moments[i];

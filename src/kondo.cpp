@@ -182,7 +182,7 @@ int main(int argc, char *argv[]) {
         mu = g.get_unwrap<double>("ensemble.mu");
     } else {
         filling = g.get_unwrap<double>("ensemble.filling");
-        delta_filling = g.get_unwrap<double>("ensemble.delta_filling");
+        delta_filling = g.get_unwrap<double>("ensemble.delta_filling", 0.0);
     }
     
     auto m = mk_model(g);

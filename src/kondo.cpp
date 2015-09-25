@@ -125,7 +125,7 @@ void read_state_from_dump(boost::filesystem::path const& dump_dir, fkpm::RNG &rn
     boost::property_tree::ptree pt;
     boost::property_tree::read_json (is, pt);
     
-    std::cout << "RESUMING from " << v.back() << "!\n";
+    std::cout << "Resuming simulation from " << v.back() << ".\n";
     
     // Read random state
     std::string rng_state = pt.get<std::string>("rng_state");
@@ -171,6 +171,7 @@ int main(int argc, char *argv[]) {
     cpptoml::parser p{input_file};
     cpptoml::toml_group g = p.parse();
     
+    bool overwrite_dump = g.get_unwrap<bool>("overwrite_dump", false);
     fkpm::RNG rng(g.get_unwrap<int64_t>("random_seed"));
     int steps_per_dump = g.get_unwrap<int64_t>("steps_per_dump");
     int max_steps = g.get_unwrap<int64_t>("max_steps");
@@ -310,7 +311,7 @@ int main(int argc, char *argv[]) {
         boost::filesystem::create_directory(base_dir/"dump");
     }
     boost::filesystem::directory_iterator it(base_dir/"dump"), end_it;
-    if(it != end_it) {
+    if(!overwrite_dump && it != end_it) {
         // non-empty dump directory -- resume previous simulation
         read_state_from_dump(base_dir/"dump", rng, *m, *dynamics);
     }
@@ -337,6 +338,7 @@ int main(int argc, char *argv[]) {
             dump(dynamics->n_steps);
         }
     }
-    
+    std::cout << "Reached max_steps value = " << max_steps << ".\n";
+
     return EXIT_SUCCESS;
 }

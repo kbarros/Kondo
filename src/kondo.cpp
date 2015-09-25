@@ -192,8 +192,8 @@ int main(int argc, char *argv[]) {
     fkpm::EnergyScale es;
     fkpm::EnergyScale ges { g.get_unwrap<double>("kpm.energy_scale_lo", 0.0),
                             g.get_unwrap<double>("kpm.energy_scale_hi", 0.0) };
-    int lanczos_iters    = g.get_unwrap<double>("kpm.lanczos_iters", 128);
-    int lanczos_extend   = g.get_unwrap<double>("kpm.lanczos_extend", 0.02);
+    double lanczos_extend = g.get_unwrap<double>("kpm.lanczos_extend", 0.02);
+    int    lanczos_iters  = g.get_unwrap<int64_t>("kpm.lanczos_iters", 128);
     
     int M                = g.get_unwrap<int64_t>("kpm.cheby_order");
     int M_prec           = g.get_unwrap<int64_t>("kpm.cheby_order_precise");

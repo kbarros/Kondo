@@ -87,19 +87,11 @@ void triangular(int argc, char *argv[]) {
     }
     m->set_hamiltonian(m->spin);
     
-    double energy_low, energy_high;
-    int M, Mq, use_correlated, n_colors, seed;
-    std::cout << "Input energy_scale(low):" << std::endl;
-    std::cin >> energy_low;
-    std::cout << "Input energy_scale(high) (if smaller value than low, then automatic energyscale)" << std::endl;
-    std::cin >> energy_high;
+    int purpose, M, Mq, use_correlated, n_colors, seed;
+    std::cout << "Inut 0/1/2 for calculating sigma_xx/sigma_xy/both: " << std::endl;
+    std::cin >> purpose;
     fkpm::EnergyScale es;
-    if (energy_low < energy_high) {
-        es.lo = energy_low;
-        es.hi = energy_high;
-    } else {
-        es = engine->energy_scale(m->H, 0.1);
-    }
+    es = engine->energy_scale(m->H, 0.1);
     std::cout << "energyscale: [" << es.lo << ", " << es.hi << "]" << std::endl;
     std::cout << "Input M:" << std::endl;
     std::cin >> M;
@@ -142,8 +134,17 @@ void triangular(int argc, char *argv[]) {
     
     std::cout << "calculating moments2... " << std::flush;
     fkpm::timer[0].reset();
-    auto mu_xx = engine->moments2_v1(M, jx, jx, 4, 16);
-    auto mu_xy = engine->moments2_v1(M, jx, jy, 4, 16);
+    Vec<Vec<fkpm::cx_double>> mu_xx, mu_xy;
+    if (purpose == 0) {
+        mu_xx = engine->moments2_v1(M, jx, jx, 10, 16);
+        mu_xy = mu_xx; // invalid
+    } else if (purpose == 1){
+        mu_xy = engine->moments2_v1(M, jx, jy, 10, 16);
+        mu_xx = mu_xy; // invalid
+    } else {
+        mu_xx = engine->moments2_v1(M, jx, jx, 10, 16);
+        mu_xy = engine->moments2_v1(M, jx, jy, 10, 16);
+    }
     cout << " done. " << fkpm::timer[0].measure() << "s.\n";
     
     cout << "calculating dc conductivities... " << std::flush;

@@ -87,8 +87,11 @@ void testConductivity1() {
     engine->set_R_uncorrelated(n, s, rng);
     
     auto mu_xy = engine->moments2_v1(M, j2_BSR, j1_BSR);
+    std::cout << "mu[7,7]=" << mu_xy[7][7] << "\n\t[expecting (0.00242202,-0.00292942)]" << std::endl;
     std::cout << "mu[3,5]=" << mu_xy[3][5] << "\n\t[expecting (-0.0013152,-0.235975)]" << std::endl;
+    std::cout << "mu[5,3]=" << mu_xy[5][3] << "\n\t[expecting (-0.00104142,0.233898)]" << std::endl;
     std::cout << "mu[9,17]=" << mu_xy[9][17] << "\n\t[expecting (0.00215957,0.148249)]" << std::endl;
+    std::cout << "mu[17,9]=" << mu_xy[17][9] << "\n\t[expecting (-0.000153006,-0.14291)]" << std::endl;
     auto cmn = fkpm::electrical_conductivity_coefficients_v2(M, Mq, kT, -3.5, 0.0, es, kernel);
     std::cout << "cmn[8,5]=" << cmn[8][5] << "\n\t[expecting (3465.91,-9.31494)]" << std::endl;
     std::cout << "cmn[13,20]=" << cmn[13][20] << "\n\t[expecting (928.206,15.9604)]" << std::endl;
@@ -102,6 +105,12 @@ void testConductivity1() {
     H.clear();
     j1_BSR.clear();
     j2_BSR.clear();
+//    for (int m1=0; m1 < M; m1++) {
+//        for (int m2 = 0; m2 < M; m2++) {
+//            std::cout << "m1=" << m1 << ", m2=" << m2 << ", mu=" << mu_xy[m1][m2] << std::endl;
+//        }
+//    }
+    
     std::cout << "done!" << std::endl;
 }
 
@@ -132,27 +141,27 @@ void testConductivity2() {
     auto jy = m->electric_current_operator(m->spin, {0,1,0});
     auto mu_xx = engine->moments2_v1(M, jx, jx);
     auto mu_xy = engine->moments2_v1(M, jx, jy);
-    std::cout << "muxx[3,5]=" << mu_xx[3][5] << "\n\t[expecting (-0.66667,-0.007521)]" << std::endl;
-    std::cout << "muxx[10,10]=" << mu_xx[10][10] << "\n\t[expecting (-1.45544,-0.00315318)]" << std::endl;
-    std::cout << "muxy[12,2]=" << mu_xy[12][2] << "\n\t[expecting (-0.00180327,0.0903677)]" << std::endl;
-    std::cout << "muxy[25,14]=" << mu_xy[25][14] << "\n\t[expecting (-4.24795e-05,0.0554915)]" << std::endl;
+    std::cout << "muxx[3,5]=" << mu_xx[3][5] << "\n\t[expecting (-0.664472,0.00428363)]" << std::endl;
+    std::cout << "muxx[10,10]=" << mu_xx[10][10] << "\n\t[expecting (-1.4545,-0.00293068)]" << std::endl;
+    std::cout << "muxy[12,2]=" << mu_xy[12][2] << "\n\t[expecting (-0.000104344,-0.089929)]" << std::endl;
+    std::cout << "muxy[25,14]=" << mu_xy[25][14] << "\n\t[expecting (-0.00318346,-0.0581466)]" << std::endl;
     
     auto cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), -10.5, 0.0, es, kernel);
-    std::cout << "cmn[30,30]=" << cmn[30][30] << "\n\t[expecting (-1.54866,0)]" << std::endl;
+    std::cout << "cmn[30,30]=" << cmn[30][30] << "\n\t[expecting (-1.54812,0)]" << std::endl;
     std::cout << "sigma_{xx}(mu = -10.5) \t= " << std::real(fkpm::moment_product(cmn, mu_xx))
-              << " [expecting 1.76782]" << std::endl;
+              << " [expecting 1.76712]" << std::endl;
     cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), -9.0, 0.0, es, kernel);
-    std::cout << "cmn[9,9]=" << cmn[9][9] << "\n\t[expecting (-316.044,0)]" << std::endl;
+    std::cout << "cmn[9,9]=" << cmn[9][9] << "\n\t[expecting (-315.933,0)]" << std::endl;
     std::cout << "sigma_{xy}(mu = -9) \t= " << std::real(fkpm::moment_product(cmn, mu_xy))
-              << " [expecting: 1.5038]" << std::endl;
+              << " [expecting: -1.50499]" << std::endl;
     cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), 0.0, 0.0, es, kernel);
     std::cout << "sigma_{xx}(mu = 0) \t= " << std::real(fkpm::moment_product(cmn, mu_xx))
-              << " [expecting: -0.000621003]" << std::endl;
+              << " [expecting: -0.00053196]" << std::endl;
     std::cout << "sigma_{xy}(mu = 0) \t= " << std::real(fkpm::moment_product(cmn, mu_xy))
-              << " [expecting: -4.77897e-05]" << std::endl;
+              << " [expecting: -6.9186e-05]" << std::endl;
     cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), 9.0, 0.0, es, kernel);
     std::cout << "sigma_{xy}(mu = 9) \t= " << std::real(fkpm::moment_product(cmn, mu_xy))
-              << " [expecting: -1.69192]" << std::endl;
+              << " [expecting: 1.69197]" << std::endl;
 }
 
 
@@ -585,7 +594,7 @@ void test_PRL101_156402_v1() {
     int n  = lx * lx;
     int s  = 40;
     int M  = 200;
-    int Mq = M;
+    int Mq = 2*M;
     
     double hopping = 1.0;
     double Jkondo  = 5.0;
@@ -730,7 +739,7 @@ void test_PRL101_156402_v1() {
     
     std::cout << "calculating transverse conductivity..." << std::endl;
     //auto mu_xx = engine->moments2_v1(M, j1_BSR, j1_BSR);
-    auto mu_xy = engine->moments2_v2(M, j1_BSR, j2_BSR);
+    auto mu_xy = engine->moments2_v1(M, j1_BSR, j2_BSR);
     
     //    auto gamma_jxx = fkpm::moment_transform(mu_xx, Mq, kernel);
     //    Vec<Vec<cx_double>> jxx;

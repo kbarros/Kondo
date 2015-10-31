@@ -128,7 +128,7 @@ void testConductivity2() {
     auto kernel = fkpm::jackson_kernel(M);
     auto engine = fkpm::mk_engine<cx_flt>();
     
-    m->set_spins("allout", mk_toml(""), m->spin);
+    m->set_spins("allout", toml_from_str(""), m->spin);
     m->set_hamiltonian(m->spin);
     
     auto es = engine->energy_scale(m->H, 0.1);

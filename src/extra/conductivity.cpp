@@ -1,6 +1,6 @@
 #include "kondo.h"
 #include "iostream_util.h"
-
+#include <cstdio>
 #include <sstream>
 #include <boost/filesystem.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -142,6 +142,7 @@ void triangular(int argc, char *argv[]) {
         mu_xy = engine->moments2_v1(M, jx, jy, 10, 16);
         mu_xx = mu_xy; // invalid
     } else {
+        assert(false && "conflicting with dumping");
         mu_xx = engine->moments2_v1(M, jx, jx, 10, 16);
         mu_xy = engine->moments2_v1(M, jx, jy, 10, 16);
     }
@@ -159,12 +160,16 @@ void triangular(int argc, char *argv[]) {
     arma::Col<double> sigma_xy(Mq);
     sigma_xx.zeros();
     sigma_xy.zeros();
-    for (int i = 0; i < Mq; i++) {
+    
+    int interval = Mq/400;
+    for (int i = 0; i < Mq; i+=interval) {
         auto cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), mu_list[i], 0.0, es, kernel);
-        sigma_xx(i) = std::real(fkpm::moment_product(cmn, mu_xx));
-        sigma_xy(i) = std::real(fkpm::moment_product(cmn, mu_xy));
+        auto sigma_xx = std::real(fkpm::moment_product(cmn, mu_xx));
+        auto sigma_xy = std::real(fkpm::moment_product(cmn, mu_xy));
         fout2 << std::setw(20) << M << std::setw(20) << m->kT() << std::setw(20) << mu_list[i]
-              << std::setw(20) << rho[i] << std::setw(20) << sigma_xx(i) << std::setw(20) << sigma_xy(i) << std::endl;
+              << std::setw(20) << rho[i] << std::setw(20) << sigma_xx << std::setw(20) << sigma_xy;
+        fout2 << std::endl;
+
     }
     fout2.close();
     cout << " done. " << fkpm::timer[0].measure() << "s.\n";
@@ -199,6 +204,8 @@ void triangular(int argc, char *argv[]) {
           << std::setw(20) << std::real(fkpm::moment_product(cmn_extra, mu_xy)) << std::endl;
     fout3.close();
     std::cout << std::endl;
+    std::remove("dump_device0.dat");
+    std::remove("dump_device1.dat");
 }
 
 int main(int argc, char *argv[]) {

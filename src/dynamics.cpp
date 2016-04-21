@@ -154,7 +154,7 @@ public:
     void init(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) {
         Vec<vec3>& v = m.dyn_stor[0];
         Vec<vec3>& f1 = m.dyn_stor[1];
-        v.assign(m.n_sites, vec3(0,0,0));
+        v.assign(m.n_sites, {0,0,0});
         calc_force(m.spin, f1);
     }
     

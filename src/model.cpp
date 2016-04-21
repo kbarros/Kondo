@@ -190,11 +190,13 @@ void SimpleModel::set_hamiltonian(Vec<vec3> const& spin) {
             cx_flt t = ts[rank];
             for (int i = 0; i < n_sites; i++) {
                 set_neighbors(rank, i, js);
-                // To handle current, would need to add phase:
-                // // flt theta = 2*Pi*(dx*current.x/w + dy*current.y/h);
-                // // theta *= (1 + current_growth*time) * cos(current_freq*time);
-                // // cx_flt v = exp(I*theta)*flt(t);
                 for (int j : js) {
+                    // To handle oscillating current, add phase:
+                    // vec3 dim = dimensions();
+                    // vec3 delta = displacement(i, j);
+                    // flt theta = 2*Pi*(delta.x*current.x/dim.x + delta.y*current.y/dim.y);
+                    // theta *= (1 + current_growth*time) * cos(current_freq*time);
+                    // cx_flt t = exp(I*theta)*ts[rank];
                     H_elems.add(2*i+0, 2*j+0, &t);
                     H_elems.add(2*i+1, 2*j+1, &t);
                 }

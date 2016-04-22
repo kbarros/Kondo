@@ -466,6 +466,23 @@ public:
         }
     }
     
+    void set_spins_hexagonal_vortices(double magnitude) {
+        vec3 Q1 { 4.0*Pi/7.0, -8.0*Pi/(7.0*sqrt(3.0)), 0.0};
+        vec3 Q2 {-6.0*Pi/7.0, -2.0*Pi/(7.0*sqrt(3.0)), 0.0};
+        vec3 Q3 { 2.0*Pi/7.0, 10.0*Pi/(7.0*sqrt(3.0)), 0.0};
+        
+        double d1 = 0.60162300894888405;
+        double d2 = 0.45768802314662158;
+        vec3 Delta1 = 1.0 * vec3{ d1,                                d2, 1e-6};
+        vec3 Delta2 = 0.5 * vec3{-d1 + sqrt(3.0)*d2, -sqrt(3.0)*d1 - d2, 1e-6};
+        vec3 Delta3 = 0.5 * vec3{-d1 - sqrt(3.0)*d2,  sqrt(3.0)*d1 - d2, 1e-6};
+        
+        for (int i = 0; i < n_sites; i++) {
+            vec3 x = position(i);
+            spin[i] = magnitude * (Delta1 * sin(Q1.dot(x)) + Delta2 * sin(Q2.dot(x)) + Delta3 * sin(Q3.dot(x)));
+        }
+    }
+    
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, {0, 0, 1});
@@ -475,6 +492,9 @@ public:
         } else if (name == "3q_collinear") {
             double Delta = params.get_unwrap<double>("Delta", 1.0);
             set_spins_3q({{0, 0, Delta}, {0, 0, Delta}, {0, 0, Delta}}, spin);
+        } else if (name == "hexagonal_vortices") {
+            double Delta = params.get_unwrap<double>("Delta", 1.0);
+            set_spins_hexagonal_vortices(Delta);
         }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";

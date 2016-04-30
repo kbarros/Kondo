@@ -190,7 +190,6 @@ int main(int argc, char *argv[]) {
     auto dynamics = mk_dynamics(g);
     
     // global energy scale
-    fkpm::EnergyScale es;
     fkpm::EnergyScale ges { g.get_unwrap<double>("kpm.energy_scale_lo", 0.0),
                             g.get_unwrap<double>("kpm.energy_scale_hi", 0.0) };
     double lanczos_extend = g.get_unwrap<double>("kpm.lanczos_extend", 0.02);
@@ -204,6 +203,7 @@ int main(int argc, char *argv[]) {
     Vec<int> groups_prec = m->groups(g.get_unwrap<int64_t>("kpm.n_colors_precise"));
     
     // variables that will be updated in `build_kpm(spin)`
+    fkpm::EnergyScale es;
     Vec<double> moments;
     Vec<double> gamma;
     double energy;
@@ -241,24 +241,52 @@ int main(int argc, char *argv[]) {
         fname << "dump" << std::setfill('0') << std::setw(4) << step/steps_per_dump << ".json";
         cout << "Dumping file " << base_dir/"dump"/fname.str() << ", time=" << m->time << ", energy=" << e << ", n=" << filling << ", mu=" << mu << endl;
         boost::filesystem::ofstream dump_file(base_dir/"dump"/fname.str());
+        
+        auto write_vec = [&](std::string name, Vec<double> &v) {
+            dump_file << "\"" << name << "\":[";
+            for (int i = 0; i < v.size(); i++) {
+                dump_file << v[i];
+                if (i < v.size()-1) dump_file << ",";
+            }
+            dump_file << "],\n";
+        };
+        
         dump_file << "{\n" <<
         "\"n_steps\":" << dynamics->n_steps << ",\n" <<
         "\"time\":" << m->time << ",\n" <<
         "\"action\":" << e << ",\n" <<
         "\"filling\":" << filling << ",\n" <<
         "\"mu\":" << mu << ",\n" <<
-        "\"eig\":[]" << ",\n" <<
         "\"energy_scale_lo\":" << es.lo << ",\n" <<
-        "\"energy_scale_hi\":" << es.hi << ",\n" <<
-        "\"moments\":[";
-        for (int i = 0; i < moments.size(); i++) {
-            dump_file << moments[i];
-            if (i < moments.size()-1) dump_file << ",";
+        "\"energy_scale_hi\":" << es.hi << ",\n";
+        
+        // density of states
+        Vec<double> dos_x, dos_rho, dos_irho;
+        density_function(gamma, es, dos_x, dos_rho);
+        integrated_density_function(gamma, es, dos_x, dos_irho);
+        for (int i = 0; i < dos_x.size(); i++) {
+            dos_rho[i]  /= m->n_sites * m->n_orbs;
+            dos_irho[i] /= m->n_sites * m->n_orbs;
         }
-        dump_file << "],\n";
+        write_vec("dos_x", dos_x);
+        write_vec("dos_rho", dos_rho);
+        write_vec("dos_irho", dos_irho);
+        
+        // rng state
         dump_file << "\"rng_state\":\"";
         serialize_to_hex(rng, dump_file);
         dump_file << "\",\n";
+        
+        // site occupations
+        Vec<double> occupation(m->n_sites, 0.0);
+        for (int i = 0; i < m->n_sites; i++) {
+            for (int o = 0; o < m->n_orbs; o++) {
+                occupation[i] += std::real(*m->D(m->n_orbs*i+o, m->n_orbs*i+o)) / m->n_orbs;
+            }
+        }
+        write_vec("occupation", occupation);
+        
+        // spins
         dump_file << "\"spin\":[";
         for (int i = 0; i < m->n_sites; i++) {
             dump_file << m->spin[i].x << ",";
@@ -266,8 +294,9 @@ int main(int argc, char *argv[]) {
             dump_file << m->spin[i].z;
             if (i < m->n_sites-1) dump_file << ",";
         }
-        dump_file << "]\n" <<
-        "}\n";
+        dump_file << "]\n";
+        
+        dump_file << "}\n";
         dump_file.close();
     };
     

@@ -70,9 +70,16 @@ public:
         spp = s;
         accum_euler(s, f,  0.5, spp);
         accum_euler(sp, fp, 0.5, spp);
-        s = spp;
+        
+        // copy s = spp, but ensure norm is unchanged (by discretization error)
         for (int i = 0; i < m.n_sites; i++) {
-            s[i] = s[i].normalized();
+            if (spp[i].norm() == 0.0) {
+                assert(s[i].norm() == 0.0);
+                // no update to s required
+            }
+            else {
+                s[i] = spp[i].normalized() * s[i].norm();
+            }
         }
         
         n_steps++;

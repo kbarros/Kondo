@@ -265,6 +265,7 @@ int main(int argc, char *argv[]) {
         density_function(gamma, es, dos_x, dos_rho);
         integrated_density_function(gamma, es, dos_x, dos_irho);
         for (int i = 0; i < dos_x.size(); i++) {
+            dos_x[i]    -= mu;
             dos_rho[i]  /= m->n_sites * m->n_orbs;
             dos_irho[i] /= m->n_sites * m->n_orbs;
         }

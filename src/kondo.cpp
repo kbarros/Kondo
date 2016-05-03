@@ -353,6 +353,10 @@ int main(int argc, char *argv[]) {
         } else {
             m->set_spins(init_spins_type, *g.get_group("init_spins"), m->spin);
         }
+        double magnitude = g.get_unwrap("init_spins.magnitude", 1.0);
+        for (vec3 &s : m->spin) {
+            s *= magnitude;
+        }
         
         write_json_vis();
         dump(dynamics->n_steps);

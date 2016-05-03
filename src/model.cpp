@@ -142,7 +142,7 @@ vec3 Model::displacement(int i, int j) {
     // row vectors of inverse of [vx, vy, vz] matrix
     vec3 ux = vec3{1, -sxy, -sxz} / dim.x;
     vec3 uy = vec3{0,    1, -syz} / dim.y;
-    vec3 uz = vec3{0,    0,    1} / dim.y;
+    vec3 uz = vec3{0,    0,    1} / dim.z;
     
     // naive offset
     vec3 dR = position(i) - position(j);

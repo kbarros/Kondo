@@ -175,7 +175,7 @@ void SimpleModel::set_hamiltonian(Vec<vec3> const& spin) {
     for (int i = 0; i < n_sites; i++) {
         for (int s1 = 0; s1 < 2; s1++) {
             for (int s2 = 0; s2 < 2; s2++) {
-                cx_flt v = -flt(J) * pauli[s1][s2].dot(spin[i]);
+                cx_flt v = -pauli[s1][s2].dot(flt(J)*spin[i] + zeeman);
                 H_elems.add(2*i+s1, 2*i+s2, &v);
                 D_elems.add(2*i+s1, 2*i+s2, &zero);
             }

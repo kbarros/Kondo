@@ -483,6 +483,15 @@ public:
         }
     }
     
+    void set_spins_collinear_stripes() {
+        vec3 Q {Pi, 0, 0};
+        
+        for (int i = 0; i < n_sites; i++) {
+            vec3 x = position(i);
+            spin[i] = {0, 0, sin(Q.dot(x))+cos(Q.dot(x))};
+        }
+    }
+    
     void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, {0, 0, 1});
@@ -493,6 +502,8 @@ public:
             set_spins_3q({{0, 0, 1}, {0, 0, 1}, {0, 0, 1}}, spin);
         } else if (name == "hexagonal_vortices") {
             set_spins_hexagonal_vortices();
+        } else if (name == "collinear_stripes") {
+            set_spins_collinear_stripes();
         }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";

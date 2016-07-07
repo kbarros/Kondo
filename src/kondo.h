@@ -138,9 +138,14 @@ public:
     static std::unique_ptr<Dynamics> mk_sll_sib(double alpha, double dt);
     
     // Inertial Langevin dynamics using Grønbech-Jensen Farago, velocity explicit method
-    //   N. Gr{\o}nbech-Jensen, O. Farago, Mol. Phys. 111 (2013) 983
+    //   N. Gr{\o}nbech-Jensen, O. Farago, Mol. Phys. 111, 983--991 (2013)
     // Spin magnitude is *not* conserved
     static std::unique_ptr<Dynamics> mk_gjf(double alpha, double dt);
+    
+    // Generalized Langevin Spin Dynamics (GLSD) using Heun integration
+    //   P.-W. Ma and S. L. Dudarev, Phys. Rev. B 86, 054416 (2012)
+    // Spin magnitude is *not* conserved
+    static std::unique_ptr<Dynamics> mk_glsd(double alpha, double dt);
     
     virtual void init(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) {}
     virtual void step(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) = 0;

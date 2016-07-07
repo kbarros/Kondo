@@ -108,6 +108,8 @@ std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
         return Dynamics::mk_sll_sib(g.get_unwrap<double>("dynamics.alpha"), dt);
     } else if (type == "gjf") {
         return Dynamics::mk_gjf(g.get_unwrap<double>("dynamics.alpha"), dt);
+    } else if (type == "glsd") {
+        return Dynamics::mk_glsd(g.get_unwrap<double>("dynamics.alpha"), dt);
     }
     
     cerr << "Unsupported dynamics type `" << type << "`!\n";

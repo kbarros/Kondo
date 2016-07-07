@@ -55,6 +55,8 @@ public:
         }
         
         // one euler step starting from s (with force f), accumulated into sp
+        // TODO: scale D terms by 1/|s_i| ?
+        // See appendix in Skubic et al., J. Phys.: Condens. Matter 20, 315203 (2008)
         auto accum_euler = [&](Vec<vec3> const& s, Vec<vec3> const& f, double scale, Vec<vec3>& sp) {
             for (int i = 0; i < m.n_sites; i++) {
                 vec3 a     = - f[i]    - alpha*s[i].cross(f[i]);
@@ -111,6 +113,8 @@ public:
         }
         
         // one semi-implicit step starting with s (with force f[s]), written to sp
+        // TODO: scale D terms by 1/|s_i| ?
+        // See appendix in Skubic et al., J. Phys.: Condens. Matter 20, 315203 (2008)
         auto implicit_solve = [&](Vec<vec3> const& s, Vec<vec3> const& f, Vec<vec3>& sp) {
             for (int i = 0; i < m.n_sites; i++) {
                 vec3 w = 0.5 * (- dt*f[i] - alpha*s[i].cross(dt*f[i]) +
@@ -203,4 +207,46 @@ std::unique_ptr<Dynamics> Dynamics::mk_gjf(double alpha, double dt) {
     return std::make_unique<GJF>(alpha, dt);
 }
 
+
+class GLSD: public Dynamics {
+public:
+    double alpha;
+    
+    GLSD(double alpha, double dt): alpha(alpha) { this->dt = dt; }
+    
+    void step(CalcForce const& calc_force, fkpm::RNG& rng, Model& m) {
+        Vec<vec3>& s    = m.spin;
+        Vec<vec3>& sp   = m.dyn_stor[0];
+        Vec<vec3>& spp  = m.dyn_stor[1];
+        Vec<vec3>& f    = m.dyn_stor[2];
+        Vec<vec3>& fp   = m.dyn_stor[3];
+        Vec<vec3>& noise = m.dyn_stor[4];
+        
+        for (int i = 0; i < m.n_sites; i++) {
+            noise[i] = sqrt(2*alpha*m.kT()) * gaussian_vec3(rng);
+        }
+        
+        // one euler step starting from s (with force f), accumulated into sp
+        auto accum_euler = [&](Vec<vec3> const& s, Vec<vec3> const& f, double scale, Vec<vec3>& sp) {
+            for (int i = 0; i < m.n_sites; i++) {
+                sp[i] += scale * (dt*s[i].cross(f[i]) + dt*alpha*f[i] + sqrt(dt)*noise[i]);
+            }
+        };
+        
+        calc_force(s, f);
+        sp = s;
+        accum_euler(s, f, 1.0, sp);
+        calc_force(sp, fp);
+        spp = s;
+        accum_euler(s, f,  0.5, spp);
+        accum_euler(sp, fp, 0.5, spp);
+        s = spp;
+        
+        n_steps++;
+        m.time = n_steps * dt;
+    }
+};
+std::unique_ptr<Dynamics> Dynamics::mk_glsd(double alpha, double dt) {
+    return std::make_unique<GLSD>(alpha, dt);
+}
 

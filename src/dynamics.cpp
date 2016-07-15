@@ -229,7 +229,18 @@ public:
         // one euler step starting from s (with force f), accumulated into sp
         auto accum_euler = [&](Vec<vec3> const& s, Vec<vec3> const& f, double scale, Vec<vec3>& sp) {
             for (int i = 0; i < m.n_sites; i++) {
-                sp[i] += scale * (dt*s[i].cross(f[i]) + dt*alpha*f[i] + sqrt(dt)*noise[i]);
+                // magnitude conserving dynamics
+                double sp_norm = sp[i].norm();
+                sp[i] += scale*dt*s[i].cross(f[i]);
+                
+                // magnitude can shift by O(dt^2). manually rescale sp[i] for better accuracy
+                // TODO: test empirically and justify mathematically?
+                if (sp[i].norm() > 0.0) {
+                    sp[i] = sp[i].normalized() * sp_norm;
+                }
+                
+                // langevin dynamics
+                sp[i] += scale * (dt*alpha*f[i] + sqrt(dt)*noise[i]);
             }
         };
         

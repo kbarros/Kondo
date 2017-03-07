@@ -39,8 +39,6 @@ void triangular(int argc, char *argv[]) {
     m->t2 = toml_get(g, "model.t2", 0.0);
     m->t3 = toml_get(g, "model.t3", 0.0);
     m->kT_init  = toml_get<double>(g, "model.kT");
-    //std::cout << "using T=0, change back later!" << std::endl;
-    //m->kT_init = 0.0;
     m->kT_decay = toml_get(g, "model.kT_decay", 0.0);
     m->zeeman   = {toml_get(g, "model.zeeman_x", 0.0), toml_get(g, "model.zeeman_y", 0.0), toml_get(g, "model.zeeman_z", 0.0)};
     m->easy_z   = toml_get(g, "model.easy_z", 0.0);
@@ -142,7 +140,6 @@ void triangular(int argc, char *argv[]) {
         mu_xy = engine->moments2_v1(M, jx, jy, 10, 16);
         mu_xx = mu_xy; // invalid
     } else {
-        assert(false && "conflicting with dumping");
         mu_xx = engine->moments2_v1(M, jx, jx, 10, 16);
         mu_xy = engine->moments2_v1(M, jx, jy, 10, 16);
     }
@@ -156,57 +153,47 @@ void triangular(int argc, char *argv[]) {
           << std::setw(20) << "(4)" << std::setw(20) << "(5)" << std::setw(20) << "(6)" << std::endl;
     fout2 << std::setw(20) << "M" << std::setw(20) << "kT" << std::setw(20) << "mu"
           << std::setw(20) << "rho" << std::setw(20) << "sigma_xx" << std::setw(20) << "sigma_xy" << std::endl;
-    arma::Col<double> sigma_xx(Mq);
-    arma::Col<double> sigma_xy(Mq);
-    sigma_xx.zeros();
-    sigma_xy.zeros();
-    
-    int interval = Mq/400;
+    int interval = std::max(Mq/400,5);
     for (int i = 0; i < Mq; i+=interval) {
         auto cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), mu_list[i], 0.0, es, kernel);
         auto sigma_xx = std::real(fkpm::moment_product(cmn, mu_xx));
         auto sigma_xy = std::real(fkpm::moment_product(cmn, mu_xy));
         fout2 << std::setw(20) << M << std::setw(20) << m->kT() << std::setw(20) << mu_list[i]
-              << std::setw(20) << rho[i] << std::setw(20) << sigma_xx << std::setw(20) << sigma_xy;
-        fout2 << std::endl;
-
+              << std::setw(20) << rho[i] << std::setw(20) << sigma_xx << std::setw(20) << sigma_xy << std::endl;
     }
     fout2.close();
     cout << " done. " << fkpm::timer[0].measure() << "s.\n";
     
-    double mu_extra=-5.0;
-    std::ifstream fin0("quarter_time"+std::to_string(time)+".dat");
+    std::ifstream fin0("result_time"+std::to_string(time)+".dat");
     if (! fin0.good()) {
         fin0.close();
-        std::ofstream fout3("quarter_time"+std::to_string(time)+".dat", std::ios::out | std::ios::app );
+        std::ofstream fout3("result_time"+std::to_string(time)+".dat", std::ios::out | std::ios::app );
         fout3 << std::setw(20) << "#(1)" << std::setw(20) << "(2)" << std::setw(20) << "(3)"
               << std::setw(20) << "(4)" << std::setw(20) << "(5)" << std::setw(20) << "(6)"
-              << std::setw(20) << "(7)" << std::setw(20) << "(8)" << std::setw(20) << "(9)"
-              << std::setw(20) << "(10)" << std::setw(20) << "(11)" << std::endl;
+              << std::setw(20) << "(7)" << std::setw(20) << "(8)" << std::endl;
         fout3 << std::setw(20) << "M" << std::setw(20) << "correlated" << std::setw(20) << "colors"
               << std::setw(20) << "seed" << std::setw(20) << "F" << std::setw(20) << "mu"
-              << std::setw(20) << "sigma_xx" << std::setw(20) << "sigma_xy" << std::setw(20) << "mu_extra"
-              << std::setw(20) << "sigma_xx_extra" << std::setw(20) << "sigma_xy_extra" << std::endl;
+              << std::setw(20) << "sigma_xx" << std::setw(20) << "sigma_xy" << std::endl;
         fout3.close();
     }
-    std::ofstream fout3("quarter_time"+std::to_string(time)+".dat", std::ios::out | std::ios::app );
+    std::ofstream fout3("result_time"+std::to_string(time)+".dat", std::ios::out | std::ios::app );
     fout3 << std::scientific << std::right;
     auto cmn       = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), mu, 0.0, es, kernel);
-    auto cmn_extra = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), mu_extra, 0.0, es, kernel);
+
     fout3 << std::setw(20) << M << std::setw(20) << use_correlated << std::setw(20) << n_colors
           << std::setw(20) << seed
           << std::setw(20) << fkpm::electronic_energy(gamma, es, m->kT(), filling, mu)/m->n_sites
           << std::setw(20) << mu
           << std::setw(20) << std::real(fkpm::moment_product(cmn, mu_xx))
           << std::setw(20) << std::real(fkpm::moment_product(cmn, mu_xy))
-          << std::setw(20) << mu_extra
-          << std::setw(20) << std::real(fkpm::moment_product(cmn_extra, mu_xx))
-          << std::setw(20) << std::real(fkpm::moment_product(cmn_extra, mu_xy)) << std::endl;
+          << std::endl;
     fout3.close();
     std::cout << std::endl;
     std::remove("dump_device0.dat");
     std::remove("dump_device1.dat");
 }
+
+
 
 int main(int argc, char *argv[]) {
     triangular(argc, argv);

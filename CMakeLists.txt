@@ -52,7 +52,7 @@ if (WITH_MPI)
 endif()
 
 # Armadillo
-find_package(Armadillo 4.400.2 REQUIRED CONFIG
+find_package(Armadillo REQUIRED CONFIG
              PATHS "/usr/local" "$ENV{ARMA_ROOT}" NO_SYSTEM_ENVIRONMENT_PATH)
 include_directories(SYSTEM ${ARMADILLO_INCLUDE_DIRS})
 set(LIBS ${LIBS} ${ARMADILLO_LIBRARIES})

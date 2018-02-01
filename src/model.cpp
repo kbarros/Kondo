@@ -247,7 +247,7 @@ fkpm::SpMatBsr<cx_flt> SimpleModel::electric_current_operator(Vec<vec3> const& s
                 set_neighbors(rank, i, js);
                 for (int j : js) {
                     vec3 dR = displacement(i, j);
-                    cx_flt v = I * flt(dir.normalized().dot(dR) * ts[rank] / sqrt_vol);
+                    cx_flt v = -I * flt(dir.normalized().dot(dR) * ts[rank] / sqrt_vol);
                     j_elems.add(2*i+0, 2*j+0, &v);
                     j_elems.add(2*i+1, 2*j+1, &v);
                 }

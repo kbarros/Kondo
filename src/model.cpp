@@ -47,7 +47,7 @@ void Model::set_forces(fkpm::SpMatBsr<cx_flt> const& D, Vec<vec3> const& spin, V
     for (int i = 0; i < n_sites; i++) {
         force[i]   += - 2 * s0 * spin[i];
         force[i]   += zeeman;
-        force[i].z += easy_z * spin[i].z;
+        force[i].z += 2 * easy_z * spin[i].z;
     }
     
     // Super-exchange forces

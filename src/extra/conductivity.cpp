@@ -31,30 +31,24 @@ void triangular(int argc, char *argv[]) {
     }
     
     std::string base_dir(argv[1]);
-    auto toml_name = base_dir + "/config.toml";
-    std::ifstream toml_file(toml_name);
-    if (!toml_file.is_open()) {
-        cerr << "Unable to open file `" << toml_name << "`!\n";
-        std::exit(EXIT_FAILURE);
-    }
-    std::cout << "using toml file `" << toml_name << "`!\n";
-    cpptoml::parser p{toml_file};
-    cpptoml::toml_group g = p.parse();
+    auto input_name = base_dir + "/config.toml";
+    std::cout << "using toml file `" << input_name << "`!\n";
+    toml_ptr g = toml_from_file(input_name);
     
-    auto m = SimpleModel::mk_triangular(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
-    m->J  = g.get_unwrap<double>("model.J");
-    m->t1 = g.get_unwrap<double>("model.t1", 0);
-    m->t2 = g.get_unwrap<double>("model.t2", 0);
-    m->t3 = g.get_unwrap<double>("model.t3", 0);
-    m->kT_init  = g.get_unwrap<double>("model.kT");
+    auto m = SimpleModel::mk_triangular(toml_get<int64_t>(g, "model.w"), toml_get<int64_t>(g, "model.h"));
+    m->J  = toml_get<double>(g, "model.J");
+    m->t1 = toml_get(g, "model.t1", 0.0);
+    m->t2 = toml_get(g, "model.t2", 0.0);
+    m->t3 = toml_get(g, "model.t3", 0.0);
+    m->kT_init  = toml_get<double>(g, "model.kT");
     //std::cout << "using T=0, change back later!" << std::endl;
     //m->kT_init = 0.0;
-    m->kT_decay = g.get_unwrap<double>("model.kT_decay", 0);
-    m->zeeman   = {g.get_unwrap<double>("model.zeeman_x", 0), g.get_unwrap<double>("model.zeeman_y", 0), g.get_unwrap<double>("model.zeeman_z", 0)};
-    m->easy_z   = g.get_unwrap<double>("model.easy_z", 0);
-    m->s1       = g.get_unwrap<double>("model.s1", 0);
-    m->s2       = g.get_unwrap<double>("model.s2", 0);
-    m->s3       = g.get_unwrap<double>("model.s3", 0);
+    m->kT_decay = toml_get(g, "model.kT_decay", 0.0);
+    m->zeeman   = {toml_get(g, "model.zeeman_x", 0.0), toml_get(g, "model.zeeman_y", 0.0), toml_get(g, "model.zeeman_z", 0.0)};
+    m->easy_z   = toml_get(g, "model.easy_z", 0.0);
+    m->s1       = toml_get(g, "model.s1", 0.0);
+    m->s2       = toml_get(g, "model.s2", 0.0);
+    m->s3       = toml_get(g, "model.s3", 0.0);
     
     std::string json_name(argv[2]);
     json_name = base_dir + "/dump/" + json_name;
@@ -75,7 +69,7 @@ void triangular(int argc, char *argv[]) {
     auto mu      = pt_json.get<double> ("mu");
     auto spin    = as_vector<double>(pt_json, "spin");
     
-    std::cout << "lattice: " << g.get_unwrap<std::string>("model.lattice") << std::endl;
+    std::cout << "lattice: " << toml_get<std::string>(g, "model.lattice") << std::endl;
     std::cout << "time:    " << time << std::endl;
     std::cout << "action:  " << action << std::endl;
     std::cout << "filling: " << filling << std::endl;
@@ -121,7 +115,6 @@ void triangular(int argc, char *argv[]) {
     jx.scale(1/sqrt(area));
     jy.scale(1/sqrt(area));
     
-    toml_file.close();
     json_file.close();
     
     auto mu_dos = engine->moments(M);

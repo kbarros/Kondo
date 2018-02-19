@@ -42,74 +42,74 @@ void deserialize_from_hex(std::istream& is, T& data) {
 }
 
 
-std::unique_ptr<Model> mk_model(cpptoml::toml_group g) {
+std::unique_ptr<Model> mk_model(const toml_ptr g) {
     std::unique_ptr<Model> ret;
-    auto type = g.get_unwrap<std::string>("model.type");
+    auto type = toml_get<std::string>(g, "model.type");
     if (type == "simple") {
-        auto lattice = g.get_unwrap<std::string>("model.lattice");
+        auto lattice = toml_get<std::string>(g, "model.lattice");
         std::unique_ptr<SimpleModel> m;
         if (lattice == "linear") {
-            m = SimpleModel::mk_linear(g.get_unwrap<int64_t>("model.w"));
+            m = SimpleModel::mk_linear(toml_get<int64_t>(g, "model.w"));
         } else if (lattice == "square") {
-            m = SimpleModel::mk_square(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
+            m = SimpleModel::mk_square(toml_get<int64_t>(g, "model.w"), toml_get<int64_t>(g, "model.h"));
         } else if (lattice == "triangular") {
-            m = SimpleModel::mk_triangular(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
+            m = SimpleModel::mk_triangular(toml_get<int64_t>(g, "model.w"), toml_get<int64_t>(g, "model.h"));
         } else if (lattice == "kagome") {
-            m = SimpleModel::mk_kagome(g.get_unwrap<int64_t>("model.w"), g.get_unwrap<int64_t>("model.h"));
+            m = SimpleModel::mk_kagome(toml_get<int64_t>(g, "model.w"), toml_get<int64_t>(g, "model.h"));
         } else if (lattice == "cubic") {
-            m = SimpleModel::mk_cubic(g.get_unwrap<int64_t>("model.lx"), g.get_unwrap<int64_t>("model.ly"), g.get_unwrap<int64_t>("model.lz"));
+            m = SimpleModel::mk_cubic(toml_get<int64_t>(g, "model.lx"), toml_get<int64_t>(g, "model.ly"), toml_get<int64_t>(g, "model.lz"));
         } else {
             std::cerr << "Simple model lattice '" << lattice << "' not supported.\n";
             std::exit(EXIT_FAILURE);
         }
-        m->J  = g.get_unwrap<double>("model.J");
-        m->t1 = g.get_unwrap<double>("model.t1", 0);
-        m->t2 = g.get_unwrap<double>("model.t2", 0);
-        m->t3 = g.get_unwrap<double>("model.t3", 0);
+        m->J  = toml_get<double>(g, "model.J");
+        m->t1 = toml_get<double>(g, "model.t1", 0);
+        m->t2 = toml_get<double>(g, "model.t2", 0);
+        m->t3 = toml_get<double>(g, "model.t3", 0);
         ret = std::move(m);
     } else if (type == "mostovoy") {
-        auto lattice = g.get_unwrap<std::string>("model.lattice");
+        auto lattice = toml_get<std::string>(g, "model.lattice");
         if (lattice != "cubic") {
             std::cerr << "Mostovoy model requires `lattice = \"cubic\"`\n";
             std::exit(EXIT_FAILURE);
         }
-        auto m = std::make_unique<MostovoyModel>(g.get_unwrap<int64_t>("model.lx"),
-                                                 g.get_unwrap<int64_t>("model.ly"),
-                                                 g.get_unwrap<int64_t>("model.lz"));
-        m->J     = g.get_unwrap<double>("model.J");
-        m->t_pds = g.get_unwrap<double>("model.t_pds");
-        m->t_pp  = g.get_unwrap<double>("model.t_pp");
-        m->delta = g.get_unwrap<double>("model.delta");
+        auto m = std::make_unique<MostovoyModel>(toml_get<int64_t>(g, "model.lx"),
+                                                 toml_get<int64_t>(g, "model.ly"),
+                                                 toml_get<int64_t>(g, "model.lz"));
+        m->J     = toml_get<double>(g, "model.J");
+        m->t_pds = toml_get<double>(g, "model.t_pds");
+        m->t_pp  = toml_get<double>(g, "model.t_pp");
+        m->delta = toml_get<double>(g, "model.delta");
         ret = std::move(m);
     } else {
         std::cerr << "Model type '" << type << "' not supported.\n";
         std::exit(EXIT_FAILURE);
     }
-    ret->kT_init  = g.get_unwrap<double>("model.kT");
-    ret->kT_decay = g.get_unwrap<double>("model.kT_decay", 0);
-    ret->zeeman   = {g.get_unwrap<double>("model.zeeman_x",  0), g.get_unwrap<double>("model.zeeman_y",  0), g.get_unwrap<double>("model.zeeman_z",  0)};
-    ret->current  = {g.get_unwrap<double>("model.current_x", 0), g.get_unwrap<double>("model.current_y", 0), g.get_unwrap<double>("model.current_z", 0)};
-    ret->easy_z   = g.get_unwrap<double>("model.easy_z", 0);
-    ret->s0       = g.get_unwrap<double>("model.s0", 0);
-    ret->s1       = g.get_unwrap<double>("model.s1", 0);
-    ret->s2       = g.get_unwrap<double>("model.s2", 0);
-    ret->s3       = g.get_unwrap<double>("model.s3", 0);
+    ret->kT_init  = toml_get<double>(g, "model.kT");
+    ret->kT_decay = toml_get<double>(g, "model.kT_decay", 0);
+    ret->zeeman   = {toml_get<double>(g, "model.zeeman_x",  0), toml_get<double>(g, "model.zeeman_y",  0), toml_get<double>(g, "model.zeeman_z",  0)};
+    ret->current  = {toml_get<double>(g, "model.current_x", 0), toml_get<double>(g, "model.current_y", 0), toml_get<double>(g, "model.current_z", 0)};
+    ret->easy_z   = toml_get<double>(g, "model.easy_z", 0);
+    ret->s0       = toml_get<double>(g, "model.s0", 0);
+    ret->s1       = toml_get<double>(g, "model.s1", 0);
+    ret->s2       = toml_get<double>(g, "model.s2", 0);
+    ret->s3       = toml_get<double>(g, "model.s3", 0);
     return ret;
 }
 
-std::unique_ptr<Dynamics> mk_dynamics(cpptoml::toml_group g) {
-    double dt = g.get_unwrap<double>("dynamics.dt");
-    auto type = g.get_unwrap<std::string>("dynamics.type");
+std::unique_ptr<Dynamics> mk_dynamics(const toml_ptr g) {
+    double dt = toml_get<double>(g, "dynamics.dt");
+    auto type = toml_get<std::string>(g, "dynamics.type");
     if (type == "overdamped") {
         return Dynamics::mk_overdamped(dt);
     } else if (type == "sll") {
-        return Dynamics::mk_sll(g.get_unwrap<double>("dynamics.alpha"), dt);
+        return Dynamics::mk_sll(toml_get<double>(g, "dynamics.alpha"), dt);
     } else if (type == "sll_sib") {
-        return Dynamics::mk_sll_sib(g.get_unwrap<double>("dynamics.alpha"), dt);
+        return Dynamics::mk_sll_sib(toml_get<double>(g, "dynamics.alpha"), dt);
     } else if (type == "gjf") {
-        return Dynamics::mk_gjf(g.get_unwrap<double>("dynamics.alpha"), dt);
+        return Dynamics::mk_gjf(toml_get<double>(g, "dynamics.alpha"), dt);
     } else if (type == "glsd") {
-        return Dynamics::mk_glsd(g.get_unwrap<double>("dynamics.alpha"), dt);
+        return Dynamics::mk_glsd(toml_get<double>(g, "dynamics.alpha"), dt);
     }
     
     cerr << "Unsupported dynamics type `" << type << "`!\n";
@@ -162,47 +162,39 @@ int main(int argc, char *argv[]) {
     boost::filesystem::path base_dir(argv[1]);
     
     auto input_name = base_dir / "config.toml";
-    boost::filesystem::ifstream input_file(input_name);
-    if (!input_file.is_open()) {
-        cerr << "Unable to open file " << input_name << "!\n";
-        std::exit(EXIT_FAILURE);
-    }
-    
     cout << "Using input file " << input_name << ".\n";
+    toml_ptr g = toml_from_file(input_name.string());
     
-    cpptoml::parser p{input_file};
-    cpptoml::toml_group g = p.parse();
-    
-    bool overwrite_dump = g.get_unwrap<bool>("overwrite_dump", false);
-    fkpm::RNG rng(g.get_unwrap<int64_t>("random_seed"));
-    int steps_per_dump = g.get_unwrap<int64_t>("steps_per_dump");
-    int max_steps = g.get_unwrap<int64_t>("max_steps");
+    bool overwrite_dump = toml_get<bool>(g, "overwrite_dump", false);
+    fkpm::RNG rng(toml_get<int64_t>(g, "random_seed"));
+    int steps_per_dump = toml_get<int64_t>(g, "steps_per_dump");
+    int max_steps = toml_get<int64_t>(g, "max_steps");
     
     auto nan = std::numeric_limits<double>::quiet_NaN();
-    auto ensemble_type = g.get_unwrap<std::string>("ensemble.type");
+    auto ensemble_type = toml_get<std::string>(g, "ensemble.type");
     double mu=nan, filling=nan, delta_filling=nan;
     if (ensemble_type == "grand") {
-        mu = g.get_unwrap<double>("ensemble.mu");
+        mu = toml_get<double>(g, "ensemble.mu");
     } else {
-        filling = g.get_unwrap<double>("ensemble.filling");
-        delta_filling = g.get_unwrap<double>("ensemble.delta_filling", 0.0);
+        filling = toml_get<double>(g, "ensemble.filling");
+        delta_filling = toml_get<double>(g, "ensemble.delta_filling", 0.0);
     }
     
     auto m = mk_model(g);
     auto dynamics = mk_dynamics(g);
     
     // global energy scale
-    fkpm::EnergyScale ges { g.get_unwrap<double>("kpm.energy_scale_lo", 0.0),
-                            g.get_unwrap<double>("kpm.energy_scale_hi", 0.0) };
-    double lanczos_extend = g.get_unwrap<double>("kpm.lanczos_extend", 0.02);
-    int    lanczos_iters  = g.get_unwrap<int64_t>("kpm.lanczos_iters", 128);
+    fkpm::EnergyScale ges { toml_get<double>(g, "kpm.energy_scale_lo", 0.0),
+                            toml_get<double>(g, "kpm.energy_scale_hi", 0.0) };
+    double lanczos_extend = toml_get<double>(g, "kpm.lanczos_extend", 0.02);
+    int    lanczos_iters  = toml_get<int64_t>(g, "kpm.lanczos_iters", 128);
     
-    int M                = g.get_unwrap<int64_t>("kpm.cheby_order");
-    int M_prec           = g.get_unwrap<int64_t>("kpm.cheby_order_precise");
+    int M                = toml_get<int64_t>(g, "kpm.cheby_order");
+    int M_prec           = toml_get<int64_t>(g, "kpm.cheby_order_precise");
     int Mq               = 4*M;
     int Mq_prec          = 4*M_prec;
-    Vec<int> groups      = m->groups(g.get_unwrap<int64_t>("kpm.n_colors"));
-    Vec<int> groups_prec = m->groups(g.get_unwrap<int64_t>("kpm.n_colors_precise"));
+    Vec<int> groups      = m->groups(toml_get<int64_t>(g, "kpm.n_colors"));
+    Vec<int> groups_prec = m->groups(toml_get<int64_t>(g, "kpm.n_colors_precise"));
     
     // variables that will be updated in `build_kpm(spin)`
     fkpm::EnergyScale es;
@@ -318,15 +310,15 @@ int main(int argc, char *argv[]) {
             "initSpin": 0,
             "model": {
                 )";
-                auto lattice = g.get_unwrap<std::string>("model.lattice");
+                auto lattice = toml_get<std::string>(g, "model.lattice");
                 json_file << "    \"type\": \"" << lattice << "\",\n";
                 if (lattice == "cubic") {
-                    json_file << "    \"w\": " << g.get_unwrap<int64_t>("model.lx") << ",\n";
-                    json_file << "    \"h\": " << g.get_unwrap<int64_t>("model.ly")*g.get_unwrap<int64_t>("model.lz") << ",";
+                    json_file << "    \"w\": " << toml_get<int64_t>(g, "model.lx") << ",\n";
+                    json_file << "    \"h\": " << toml_get<int64_t>(g, "model.ly")*toml_get<int64_t>(g, "model.lz") << ",";
                 }
                 else {
-                    json_file << "    \"w\": " << g.get_unwrap<int64_t>("model.w") << ",\n";
-                    json_file << "    \"h\": " << g.get_unwrap<int64_t>("model.h") << ",";
+                    json_file << "    \"w\": " << toml_get<int64_t>(g, "model.w") << ",\n";
+                    json_file << "    \"h\": " << toml_get<int64_t>(g, "model.h") << ",";
                 }
                 json_file << R"(
                 "t": 0,
@@ -349,13 +341,13 @@ int main(int argc, char *argv[]) {
     }
     else {
         // empty dump directory -- start from scratch
-        auto init_spins_type = g.get_unwrap<std::string>("init_spins.type");
+        auto init_spins_type = toml_get<std::string>(g, "init_spins.type");
         if (init_spins_type == "random") {
             m->set_spins_random(rng, m->spin);
         } else {
-            m->set_spins(init_spins_type, *g.get_group("init_spins"), m->spin);
+            m->set_spins(init_spins_type, toml_get<toml_ptr>(g, "init_spins"), m->spin);
         }
-        double magnitude = g.get_unwrap("init_spins.magnitude", 1.0);
+        double magnitude = toml_get(g,"init_spins.magnitude", 1.0);
         for (vec3 &s : m->spin) {
             s *= magnitude;
         }

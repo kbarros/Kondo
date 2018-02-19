@@ -745,7 +745,7 @@ void testKondo1_cubic() {//cubic
     m->t1 = -1;
     m->t3 = 0.5;
     m->s1 = 0.0;
-    m->set_spins("ferro", mk_toml(""), m->spin);
+    m->set_spins("ferro", toml_from_str(""), m->spin);
     //m->lattice->set_spins("meron", nullptr, m->spin);
     m->spin[0] = vec3(1, 1, 1).normalized();
     
@@ -860,7 +860,7 @@ void testKondo6() {
     auto kernel = fkpm::jackson_kernel(M);
     
     
-    m->set_spins("allout", mk_toml(""), m->spin);
+    m->set_spins("allout", toml_from_str(""), m->spin);
     m->set_hamiltonian(m->spin);
     
     auto es = engine->energy_scale(m->H, 0.1);

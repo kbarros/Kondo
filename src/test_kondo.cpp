@@ -13,7 +13,7 @@ void testKondo1() {
     m->t1 = -1;
     m->t3 = -0.5;
     m->s1 = 0.1;
-    m->set_spins("ferro", mk_toml(""), m->spin);
+    m->set_spins("ferro", toml_from_str(""), m->spin);
     m->spin[0] = vec3(1, 1, 1).normalized();
     
     m->set_hamiltonian(m->spin);
@@ -61,7 +61,7 @@ void testKondo2() {
     int M = 1000;
     int Mq = 4*M;
     
-    m->set_spins("ncp1", mk_toml(""), m->spin);
+    m->set_spins("ncp1", toml_from_str(""), m->spin);
     m->set_hamiltonian(m->spin);
     engine->set_H(m->H, es);
     
@@ -108,7 +108,7 @@ void testKondo3() {
     double mu = 0;
     
 //    m->set_spins_random(rng, m->spin);
-    m->set_spins("ferro", mk_toml(""), m->spin);
+    m->set_spins("ferro", toml_from_str(""), m->spin);
     m->set_hamiltonian(m->spin);
     
     int n_colors = 4;
@@ -177,7 +177,7 @@ void conductivity() {
     auto m = SimpleModel::mk_triangular(w, h);
     m->J = 1;
     m->t1 = -1;
-    m->set_spins("allout", mk_toml(""), m->spin);
+    m->set_spins("allout", toml_from_str(""), m->spin);
     m->set_hamiltonian(m->spin);
     
     auto es = engine->energy_scale(m->H, 0.1);

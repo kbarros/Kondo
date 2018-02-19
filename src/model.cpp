@@ -273,7 +273,7 @@ public:
         return {double(i), 0, 0};
     }
     
-    void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
+    void set_spins(std::string const& name, const toml_ptr params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, {0, 0, 1});
         }
@@ -335,12 +335,12 @@ public:
         return {x, y, 0};
     }
     
-    void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
+    void set_spins(std::string const& name, const toml_ptr params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, {0, 0, 1});
         }
         else if (name == "meron") {
-            set_spins_meron(params.get_unwrap<double>("a"), params.get_unwrap<int64_t>("q"), spin);
+            set_spins_meron(toml_get<double>(params, "a"), toml_get<int64_t>(params, "q"), spin);
         }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";
@@ -492,7 +492,7 @@ public:
         }
     }
     
-    void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
+    void set_spins(std::string const& name, const toml_ptr params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, {0, 0, 1});
         } else if (name == "allout") {
@@ -631,7 +631,7 @@ public:
         }
     }
     
-    void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
+    void set_spins(std::string const& name, const toml_ptr params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, {0, 0, 1});
         } else if (name == "ncp1") {
@@ -767,7 +767,7 @@ public:
         return {x, y, z};
     }
     
-    void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
+    void set_spins(std::string const& name, const toml_ptr params, Vec<vec3>& spin) {
         if (name == "ferro") {
             spin.assign(n_sites, vec3{0, 0, 1});
         }

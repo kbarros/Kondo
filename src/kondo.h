@@ -3,7 +3,6 @@
 
 #include "fastkpm.h"
 #include "vec3.h"
-#include "cpptoml.h"
 
 
 typedef float flt;
@@ -27,10 +26,6 @@ inline int positive_mod(int i, int n) {
     return (i%n + n) % n;
 }
 
-inline cpptoml::toml_group mk_toml(std::string str) {
-    std::istringstream is(str);
-    return cpptoml::parser(is).parse();
-}
 
 // C++14 feature missing in C++11
 namespace std {
@@ -39,6 +34,15 @@ namespace std {
         return std::unique_ptr<T>( new T( std::forward<Args>(args)... ) );
     }
 }
+
+// TOML utilities
+namespace cpptoml { class table; }
+typedef std::shared_ptr<cpptoml::table> toml_ptr;
+toml_ptr toml_from_str(std::string const& str);
+toml_ptr toml_from_file(std::string const& filename);
+template <class T> T toml_get(const toml_ptr table, const std::string& key);
+template <class T> T toml_get(const toml_ptr table, const std::string& key, T default_value);
+
 
 class Model {
 protected:
@@ -67,7 +71,7 @@ public:
     virtual double energy_classical(Vec<vec3> const& spin);
     virtual fkpm::SpMatBsr<cx_flt> electric_current_operator(Vec<vec3> const& spin, vec3 dir) = 0;
     
-    virtual void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) = 0;
+    virtual void set_spins(std::string const& name, const toml_ptr params, Vec<vec3>& spin) = 0;
     virtual void set_neighbors(int rank, int k, Vec<int>& idx) = 0;
     virtual vec3 dimensions() = 0;
     virtual vec3 position(int i) = 0;
@@ -111,7 +115,7 @@ public:
     fkpm::SpMatBsr<cx_flt> electric_current_operator(Vec<vec3> const& spin, vec3 dir);
     
     void set_spins_helical(int qx, int qy, int qz, Vec<vec3>& spin);
-    void set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin);
+    void set_spins(std::string const& name, const toml_ptr params, Vec<vec3>& spin);
     void set_neighbors(int rank, int k, Vec<int>& idx);
     vec3 dimensions();
     vec3 position(int i);

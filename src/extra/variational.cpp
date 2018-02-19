@@ -93,7 +93,7 @@ void sdw() {
     for (int i = 0; i < 20; i++) {
         double Delta = Delta0 + i*d_Delta;
         
-        auto toml = mk_toml("Delta = " + std::to_string(Delta));
+        auto toml = toml_from_str("Delta = " + std::to_string(Delta));
         
         m->set_spins("allout", toml, m->spin);
         double e1 = calc_energy();

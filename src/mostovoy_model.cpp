@@ -134,12 +134,12 @@ void MostovoyModel::set_spins_helical(int qx, int qy, int qz, Vec<vec3>& spin) {
     }
 }
 
-void MostovoyModel::set_spins(std::string const& name, cpptoml::toml_group const& params, Vec<vec3>& spin) {
+void MostovoyModel::set_spins(std::string const& name, const toml_ptr params, Vec<vec3>& spin) {
     if (name == "ferro") {
         spin.assign(n_sites, vec3{0, 0, 1});
     }
     else if (name == "helical") {
-        set_spins_helical(params.get_unwrap<int64_t>("qx", 0), params.get_unwrap<int64_t>("qy", 0), params.get_unwrap<int64_t>("qz", 0), spin);
+        set_spins_helical(toml_get<int64_t>(params, "qx", 0), toml_get<int64_t>(params, "qy", 0), toml_get<int64_t>(params, "qz", 0), spin);
     }
     else {
         std::cerr << "Unknown configuration type `" << name << "`\n";

@@ -170,7 +170,7 @@ void conductivity() {
     auto engine = fkpm::mk_engine<cx_flt>();
     int w = 4, h = 4;
     int M = 200;
-    int Mq = M;
+    int Mq = 2*M;
     int n_colors = 4*4;
     auto kernel = fkpm::jackson_kernel(M);
     
@@ -195,7 +195,7 @@ void conductivity() {
     auto gamma = fkpm::moment_transform(moments, Mq);
     auto mu = fkpm::filling_to_mu(gamma, es, m->kT(), 0.25, 0.0);
     auto cmn = electrical_conductivity_coefficients(M, Mq, m->kT(), mu, 0.0, es, kernel);
-    std::cout << "sigma_xy " << std::real(fkpm::moment_product(cmn, moments_xy)) << " [-1.22566]\n";
+    std::cout << "sigma_xy " << std::real(fkpm::moment_product(cmn, moments_xy)) << " [-1.22811]\n";
 }
 
 void mostovoy_energy() {

@@ -155,7 +155,7 @@ void triangular(int argc, char *argv[]) {
           << std::setw(20) << "rho" << std::setw(20) << "sigma_xx" << std::setw(20) << "sigma_xy" << std::endl;
     int interval = std::max(Mq/400,5);
     for (int i = 0; i < Mq; i+=interval) {
-        auto cmn = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), mu_list[i], 0.0, es, kernel);
+        auto cmn = electrical_conductivity_coefficients(M, Mq, m->kT(), mu_list[i], 0.0, es, kernel);
         auto sigma_xx = std::real(fkpm::moment_product(cmn, mu_xx));
         auto sigma_xy = std::real(fkpm::moment_product(cmn, mu_xy));
         fout2 << std::setw(20) << M << std::setw(20) << m->kT() << std::setw(20) << mu_list[i]
@@ -178,7 +178,7 @@ void triangular(int argc, char *argv[]) {
     }
     std::ofstream fout3("result_time"+std::to_string(time)+".dat", std::ios::out | std::ios::app );
     fout3 << std::scientific << std::right;
-    auto cmn       = electrical_conductivity_coefficients_v2(M, Mq, m->kT(), mu, 0.0, es, kernel);
+    auto cmn       = electrical_conductivity_coefficients(M, Mq, m->kT(), mu, 0.0, es, kernel);
 
     fout3 << std::setw(20) << M << std::setw(20) << use_correlated << std::setw(20) << n_colors
           << std::setw(20) << seed

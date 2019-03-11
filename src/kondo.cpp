@@ -4,6 +4,7 @@
 #include <climits>
 #include <cstdint>
 #include <sstream>
+#include <regex>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/property_tree/ptree.hpp>
@@ -119,9 +120,9 @@ std::unique_ptr<Dynamics> mk_dynamics(const toml_ptr g) {
 void read_state_from_dump(boost::filesystem::path const& dump_dir, fkpm::RNG &rng, Model &m, Dynamics &dynamics) {
     Vec<boost::filesystem::path> v;
     boost::filesystem::path p(dump_dir);
-    std::copy(boost::filesystem::directory_iterator(p),
-              boost::filesystem::directory_iterator(),
-              std::back_inserter(v));
+    for (auto &q : boost::filesystem::directory_iterator(p)) {
+        if (std::regex_match(q.path().filename().string(), std::regex("dump[[:digit:]]+\\.json"))) v.push_back(q);
+    }
     std::sort(v.begin(), v.end());
     boost::filesystem::ifstream is(v.back());
     boost::property_tree::ptree pt;

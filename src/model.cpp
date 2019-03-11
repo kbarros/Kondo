@@ -771,6 +771,19 @@ public:
         if (name == "ferro") {
             spin.assign(n_sites, vec3{0, 0, 1});
         }
+        else if (name == "antiferro") {
+            assert(lx%2 == 0 && ly%2 == 0 && lz%2 == 0);
+            for (int i = 0; i < n_sites; i++) {
+                int x = i % lx;
+                int y = (i/lx) % ly;
+                int z = i/(lx*ly);
+                if ((x+y+z)%2==0) {
+                    spin[i] = {0.0, 0.0, 1.0};
+                } else {
+                    spin[i] = {0.0, 0.0, -1.0};
+                }
+            }
+        }
         else {
             std::cerr << "Unknown configuration type `" << name << "`\n";
             std::exit(EXIT_FAILURE);

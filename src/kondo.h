@@ -63,6 +63,8 @@ public:
     Vec<vec3> dyn_stor[5]; // used by Dynamics to store intermediate data between steps
     
     Model(int n_sites, int n_orbs);
+    virtual ~Model() {}
+
     static void set_spins_random(fkpm::RNG& rng, Vec<vec3>& spin);
     double kT();
     

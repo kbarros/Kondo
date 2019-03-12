@@ -233,7 +233,7 @@ int main(int argc, char *argv[]) {
         double e = energy / m->n_sites;
         
         std::stringstream fname;
-        fname << "dump" << std::setfill('0') << std::setw(4) << step/steps_per_dump << ".json";
+        fname << "dump" << std::setfill('0') << std::setw(5) << step/steps_per_dump << ".json";
         cout << "Dumping file " << base_dir/"dump"/fname.str() << ", time=" << m->time << ", energy=" << e << ", n=" << filling << ", mu=" << mu << endl;
         boost::filesystem::ofstream dump_file(base_dir/"dump"/fname.str());
         

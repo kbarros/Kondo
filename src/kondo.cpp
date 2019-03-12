@@ -282,7 +282,7 @@ int main(int argc, char *argv[]) {
         }
         write_vec("occupation", occupation);
         
-        // spins
+        // classical magnetic moments
         dump_file << "\"spin\":[";
         for (int i = 0; i < m->n_sites; i++) {
             dump_file << m->spin[i].x << ",";

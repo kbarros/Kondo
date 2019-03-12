@@ -4,9 +4,9 @@ Kondo
 What it does
 ------------
 
-This code builds upon the [FastKPM](https://github.com/kbarros/FastKPM) library to enable fast simulations of the Kondo lattice model (KLM).
+This code builds upon the [FastKPM](https://github.com/kbarros/FastKPM) library to enable fast, linear-scaling simulations of the classical Kondo lattice model (KLM).
 
-The KLM is a model of itinerant electrons interacting with classical magnetic moments localized on each site. After "integrating out" the electrons, the effective interactions between magnetic moments can become long-range and many-body. For example, at weak coupling, the effective interactions are of the [RKKY type](https://en.wikipedia.org/wiki/RKKY_interaction). However, this code makes no assumptions about the coupling strength or the interaction range.
+The model contains itinerant electrons, whose spins couple to _classical_ magnetic moments localized on each site. After "integrating out" the itinerant electrons, the effective interactions between magnetic moments can be long-range and many-body. For example, at weak coupling `J`, the effective interactions are of the [RKKY type](https://en.wikipedia.org/wiki/RKKY_interaction). This code allows arbitrary `J`, and treats long-range interactions correctly.
 
 With GPU acceleration enabled, this code readily enables simulating the dynamics of 10k interacting magnetic moments, or even more.
 
@@ -27,12 +27,12 @@ Still needs to be documented...
 Applications
 ------------
 
-An early version of this code was presented in:
+An early version of this method was presented in:
 * [_Efficient Langevin simulation of coupled classical fields and fermions_](https://doi.org/10.1103/PhysRevB.88.235101), Barros et al., PRB (2013).
 
-However, the method has evolved significantly since then! Two important improvements are [gradient-based probing](https://arxiv.org/abs/1711.10570) and [more accurate](https://arxiv.org/abs/1002.1801) integration of the [magnetic dynamics](https://en.wikipedia.org/wiki/Landau%E2%80%93Lifshitz%E2%80%93Gilbert_equation).
+However, the method has evolved significantly since then! Two important improvements are [gradient-based probing](https://arxiv.org/abs/1711.10570) and [more accurate](https://arxiv.org/abs/1002.1801) integration of the magnetic dynamics.
 
-Subsequent versions of the code have been used to produce the following research papers:
+This code has been used in the following research papers:
 * [_Exotic magnetic orderings in the kagome Kondo-lattice model_](https://doi.org/10.1103/PhysRevB.90.245119), Barros et al., PRB (2014)
 * [_Vortex Crystals with Chiral Stripes in Itinerant Magnets_](https://doi.org/10.7566/JPSJ.85.103703), Ozawa et al., JPSJ (2016)
 * [_Resistivity Minimum in Highly Frustrated Itinerant Magnets_](https://doi.org/10.1103/PhysRevLett.117.206601), Wang et al., PRL (2016)
@@ -60,3 +60,8 @@ pages = {094107},
 year = {2018},
 }
 ```
+
+Authors
+-------
+
+The primary authors are [Kipton Barros](https://cnls.lanl.gov/~kbarros) (LANL) and [Zhentao Wang](https://scholar.google.com/citations?user=P3InF50AAAAJ&hl=en) (UTK). 

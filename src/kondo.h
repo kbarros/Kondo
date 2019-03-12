@@ -130,6 +130,8 @@ public:
     int n_steps = 0;
     double dt;
     
+    virtual ~Dynamics() {}
+    
     // Overdamped relaxation using Euler integration, with constrained spin magnitude
     static std::unique_ptr<Dynamics> mk_overdamped(double dt);
     
